@@ -1,0 +1,40 @@
+package main
+
+import (
+	"log"
+
+	"github.com/loeia/gopherSocialNetwork/internal/db"
+	"github.com/loeia/gopherSocialNetwork/internal/env"
+	"github.com/loeia/gopherSocialNetwork/internal/store"
+)
+
+func main() {
+
+	dbCfg := dbConfig{
+		dsn:          env.GetString("DB_DSN", "postgres://admin:admin123@localhost/gopher-social-network?sslmode=disable"),
+		maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
+		maxIdleConns: env.GetInt("DB_MAX_IDLE_CONNS", 30),
+		maxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
+		maxLifeTime:  env.GetString("DB_MAX_LIFE_TIME", "5m"),
+	}
+
+	config := config{
+		addr: env.GetString("ADDR", ":8080"),
+		db:   dbCfg,
+	}
+	db, err := db.New(dbCfg.dsn, dbCfg.maxOpenConns, dbCfg.maxIdleConns, dbCfg.maxIdleTime, dbCfg.maxLifeTime)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer db.Close()
+	log.Println("database connection pool established!")
+
+	store := store.NewStorage(db)
+
+	app := &application{
+		config: config,
+		store:  store,
+	}
+
+	log.Fatalln(app.run(app.mount()))
+}
