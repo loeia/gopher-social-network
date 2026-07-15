@@ -62,8 +62,8 @@ func (app *application) run(mux http.Handler) error {
 	server := &http.Server{
 		Addr:         app.addr,
 		Handler:      mux,
-		WriteTimeout: time.Second * 30,
-		ReadTimeout:  time.Second * 10,
+		WriteTimeout: time.Second * 90,
+		ReadTimeout:  time.Second * 90,
 		IdleTimeout:  time.Second * 60,
 	}
 
