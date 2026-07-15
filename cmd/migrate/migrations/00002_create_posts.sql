@@ -1,0 +1,14 @@
+-- +goose Up
+CREATE TABLE IF NOT EXISTS posts (
+  id BIGSERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  tags VARCHAR(100)[] NOT NULL,
+  version BIGINT DEFAULT 0,
+  created_at TIMESTAMP(0) WITH TIME ZONE not NULL DEFAULT NOW(),
+  updated_at TIMESTAMP(0) WITH TIME ZONE not NULL DEFAULT NOW()
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS posts;
