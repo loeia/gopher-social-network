@@ -25,6 +25,7 @@ type PostStorage interface {
 }
 type UserStorage interface {
 	Create(context.Context, *User) error
+	GetById(context.Context, int64) (*User, error)
 }
 type CommentStorage interface {
 	Create(context.Context, *Comment) error
