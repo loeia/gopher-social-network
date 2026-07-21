@@ -135,7 +135,7 @@ func (s *PostStore) Update(c context.Context, post *Post) error {
 
 func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedFeedQuery) ([]*PostWithMetaData, error) {
 	query := `
-			SELECT
+		SELECT
 		    p.id,
 		    p.user_id,
 		    p.title,
@@ -149,7 +149,9 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 		LEFT JOIN comments c ON c.post_id = p.id
 		LEFT JOIN users u ON p.user_id = u.id
 		LEFT JOIN followers f ON f.user_id = p.user_id
-		WHERE f.follower_id = $1 OR p.user_id = $1
+		WHERE f.follower_id = $1
+		AND (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%')
+		AND (p.tags @> $5 OR $5 = '{}')
 		GROUP BY p.id, u.username
 		ORDER BY p.created_at ` + pfq.Sort + `
 		LIMIT $2 OFFSET $3
@@ -158,7 +160,7 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	rows, err := s.db.QueryContext(ctx, query, userId, pfq.Limit, pfq.Offset)
+	rows, err := s.db.QueryContext(ctx, query, userId, pfq.Limit, pfq.Offset, pfq.Search, pq.Array(pfq.Tags))
 	if err != nil {
 		return nil, err
 	}
