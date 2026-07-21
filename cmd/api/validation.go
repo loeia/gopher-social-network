@@ -19,3 +19,7 @@ type UpdatePostPayload struct {
 	Content *string   `json:"content" validate:"omitempty,max=1000"`
 	Tags    *[]string `json:"tags" validate:"omitempty"`
 }
+
+type FollowUser struct {
+	UserID int64 `json:"user_id"`
+}

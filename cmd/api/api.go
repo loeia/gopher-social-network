@@ -55,6 +55,21 @@ func (app *application) mount() http.Handler {
 		})
 	})
 
+	r.Route("/users", func(r chi.Router) {
+		r.Group(func(r chi.Router) {
+			r.Get("/feed", app.getUserFeedHandler)
+		})
+
+		r.Route("/{userId}", func(r chi.Router) {
+			r.Use(app.usersContextMiddleware)
+
+			r.Get("/", app.getUserHandler)
+
+			r.Put("/follow", app.followUserHandler)
+			r.Put("/unfollow", app.unfollowUserHandler)
+		})
+	})
+
 	return r
 }
 
@@ -62,8 +77,8 @@ func (app *application) run(mux http.Handler) error {
 	server := &http.Server{
 		Addr:         app.addr,
 		Handler:      mux,
-		WriteTimeout: time.Second * 30,
-		ReadTimeout:  time.Second * 10,
+		WriteTimeout: time.Second * 90,
+		ReadTimeout:  time.Second * 90,
 		IdleTimeout:  time.Second * 60,
 	}
 

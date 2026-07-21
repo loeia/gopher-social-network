@@ -16,9 +16,15 @@ type Post struct {
 	Tags     []string   `json:"tags"`
 	Comments []*Comment `json:"comments"`
 	Version  int64      `json:"version"`
+	User     User       `json:"user"`
 
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
+}
+
+type PostWithMetaData struct {
+	Post         Post  `json:"post"`
+	CommentCount int64 `json:"comment_count"`
 }
 
 type PostStore struct {
@@ -80,7 +86,7 @@ func (s *PostStore) GetById(c context.Context, id int64) (*Post, error) {
 }
 
 func (s *PostStore) Delete(ctx context.Context, post *Post) error {
-	query := `delete from posts where id = $1`
+	query := `DELETE FROM posts WHERE id = $1`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -125,4 +131,60 @@ func (s *PostStore) Update(c context.Context, post *Post) error {
 	}
 
 	return nil
+}
+
+func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedFeedQuery) ([]*PostWithMetaData, error) {
+	query := `
+		SELECT
+		    p.id,
+		    p.user_id,
+		    p.title,
+		    p.content,
+		    p.created_at,
+		    p.version,
+		    p.tags,
+		    u.username,
+		    COUNT(c.id) AS comments_count
+		FROM posts p
+		LEFT JOIN comments c ON c.post_id = p.id
+		LEFT JOIN users u ON p.user_id = u.id
+		LEFT JOIN followers f ON f.user_id = p.user_id
+		WHERE f.follower_id = $1
+		AND (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%')
+		AND (p.tags @> $5 OR $5 = '{}')
+		GROUP BY p.id, u.username
+		ORDER BY p.created_at ` + pfq.Sort + `
+		LIMIT $2 OFFSET $3
+	`
+
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	rows, err := s.db.QueryContext(ctx, query, userId, pfq.Limit, pfq.Offset, pfq.Search, pq.Array(pfq.Tags))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var feed []*PostWithMetaData
+	for rows.Next() {
+		var post PostWithMetaData
+		if err := rows.Scan(
+			&post.Post.ID,
+			&post.Post.UserID,
+			&post.Post.Title,
+			&post.Post.Content,
+			&post.Post.CreatedAt,
+			&post.Post.Version,
+			pq.Array(&post.Post.Tags),
+			&post.Post.User.Username,
+			&post.CommentCount,
+		); err != nil {
+			return nil, err
+		}
+
+		feed = append(feed, &post)
+	}
+
+	return feed, nil
 }
