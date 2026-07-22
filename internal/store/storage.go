@@ -33,6 +33,7 @@ type UserStorage interface {
 	Create(context.Context, *User, *sql.Tx) error
 	GetById(context.Context, int64) (*User, error)
 	CreateAndInvite(context.Context, *User, string, time.Duration) error
+	Activate(context.Context, string) error
 }
 type CommentStorage interface {
 	Create(context.Context, *Comment) error

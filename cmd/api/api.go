@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 	"go.uber.org/zap"
 )
@@ -65,6 +65,8 @@ func (app *application) mount() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Get("/feed", app.getUserFeedHandler)
 		})
+
+		r.Put("/activate/{token}", app.activateUserHandler)
 
 		r.Route("/{userId}", func(r chi.Router) {
 			r.Use(app.usersContextMiddleware)

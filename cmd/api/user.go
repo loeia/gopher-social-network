@@ -17,6 +17,11 @@ type userKey string
 
 const userCtx userKey = "userID"
 
+type UserWithToken struct {
+	User  *store.User `json:"user"`
+	Token string      `json:"token"`
+}
+
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 
@@ -97,7 +102,31 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := app.JSONResponse(w, http.StatusCreated, nil); err != nil {
+	uwt := UserWithToken{
+		Token: plainToken,
+		User:  &user,
+	}
+
+	if err := app.JSONResponse(w, http.StatusCreated, uwt); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.PathValue("token")
+
+	if err := app.store.Users.Activate(r.Context(), token); err != nil {
+		switch err {
+		case store.ErrNotFound:
+			app.notFoundError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	if err := app.JSONResponse(w, http.StatusNoContent, nil); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
