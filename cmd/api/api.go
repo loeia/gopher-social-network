@@ -12,13 +12,18 @@ import (
 
 type application struct {
 	config
-	store *store.Storage
+	store  *store.Storage
 	logger *zap.SugaredLogger
 }
 
 type config struct {
 	addr string
 	db   dbConfig
+	mail mailConfig
+}
+
+type mailConfig struct {
+	exp time.Duration
 }
 
 type dbConfig struct {
@@ -71,6 +76,11 @@ func (app *application) mount() http.Handler {
 		})
 	})
 
+	// public routes
+	r.Route("/authentication", func(r chi.Router) {
+		r.Post("/users", app.registerUserHandler)
+	})
+
 	return r
 }
 
@@ -83,6 +93,6 @@ func (app *application) run(mux http.Handler) error {
 		IdleTimeout:  time.Second * 60,
 	}
 
-	app.logger.Infow("server has started","addr",app.config.addr)
+	app.logger.Infow("server has started", "addr", app.config.addr)
 	return server.ListenAndServe()
 }

@@ -23,3 +23,9 @@ type UpdatePostPayload struct {
 type FollowUser struct {
 	UserID int64 `json:"user_id"`
 }
+
+type RegisterUserPayload struct {
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Password string `json:"password"`
+	Username string `json:"username"`
+}

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/crypto/bcrypt"
@@ -19,8 +20,8 @@ type User struct {
 }
 
 type password struct {
-	Text *string
-	Hash []byte
+	text *string
+	hash []byte
 }
 
 func (p *password) Set(text string) error {
@@ -29,8 +30,8 @@ func (p *password) Set(text string) error {
 		return err
 	}
 
-	p.Text = &text
-	p.Hash = hash
+	p.text = &text
+	p.hash = hash
 
 	return nil
 }
@@ -45,13 +46,13 @@ func NewUserStore(db *sql.DB) *UserStore {
 	}
 }
 
-func (s *UserStore) Create(ctx context.Context, user *User) error {
+func (s *UserStore) Create(ctx context.Context, user *User, tx *sql.Tx) error {
 	query := `insert into users (username,password,email) values ($1,$2,$3) returning id,created_at`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	row := s.db.QueryRowContext(ctx, query, user.Username, user.Password.Hash, user.Email)
+	row := tx.QueryRowContext(ctx, query, user.Username, user.Password.hash, user.Email)
 	err := row.Scan(&user.ID, &user.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -80,7 +81,7 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 		&user.ID,
 		&user.Username,
 		&user.Email,
-		&user.Password.Hash,
+		&user.Password.hash,
 		&user.CreatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -90,4 +91,32 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 	}
 
 	return &user, nil
+}
+
+func (s *UserStore) CreateAndInvite(c context.Context, user *User, token string, invitationExp time.Duration) error {
+	return withTx(s.db, c, func(tx *sql.Tx) error {
+		ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+		defer cancel()
+
+		if err := s.Create(ctx, user, tx); err != nil {
+			return err
+		}
+
+		if err := s.createUserInvitation(ctx, tx, invitationExp, token, user.ID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (s *UserStore) createUserInvitation(c context.Context, tx *sql.Tx, exp time.Duration, token string, userId int64) error {
+	query := `INSERT INTO users_invitations (user_id,token,expriy) VALUES ($1,$2,$3)`
+
+	_, err := tx.ExecContext(c, query, userId, token, time.Now().Add(exp))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

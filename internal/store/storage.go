@@ -30,8 +30,9 @@ type PostStorage interface {
 	GetUserFeed(context.Context, int64, *PaginatedFeedQuery) ([]*PostWithMetaData, error)
 }
 type UserStorage interface {
-	Create(context.Context, *User) error
+	Create(context.Context, *User, *sql.Tx) error
 	GetById(context.Context, int64) (*User, error)
+	CreateAndInvite(context.Context, *User, string, time.Duration) error
 }
 type CommentStorage interface {
 	Create(context.Context, *Comment) error
@@ -56,4 +57,18 @@ func NewStorage(db *sql.DB) *Storage {
 		Comments:  NewCommentStore(db),
 		Followers: NewFollowerStore(db),
 	}
+}
+
+func withTx(db *sql.DB, c context.Context, fn func(*sql.Tx) error) error {
+	tx, err := db.BeginTx(c, nil)
+	if err != nil {
+		return err
+	}
+
+	if err := fn(tx); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
 }
