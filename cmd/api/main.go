@@ -1,11 +1,10 @@
 package main
 
 import (
-	"log"
-
 	"github.com/loeia/gopherSocialNetwork/internal/db"
 	"github.com/loeia/gopherSocialNetwork/internal/env"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -22,19 +21,26 @@ func main() {
 		addr: env.GetString("ADDR", ":8080"),
 		db:   dbCfg,
 	}
+
+	// Logger
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer logger.Sync()
+
+	// Database
 	db, err := db.New(dbCfg.dsn, dbCfg.maxOpenConns, dbCfg.maxIdleConns, dbCfg.maxIdleTime, dbCfg.maxLifeTime)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatalln(err)
 	}
 	defer db.Close()
-	log.Println("database connection pool established!")
+	logger.Info("database connection pool established!")
 
 	store := store.NewStorage(db)
 
 	app := &application{
 		config: config,
 		store:  store,
+		logger: logger,
 	}
 
-	log.Fatalln(app.run(app.mount()))
+	logger.Fatalln(app.run(app.mount()))
 }

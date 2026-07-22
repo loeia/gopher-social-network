@@ -1,18 +1,19 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
+	"go.uber.org/zap"
 )
 
 type application struct {
 	config
 	store *store.Storage
+	logger *zap.SugaredLogger
 }
 
 type config struct {
@@ -82,6 +83,6 @@ func (app *application) run(mux http.Handler) error {
 		IdleTimeout:  time.Second * 60,
 	}
 
-	log.Println("server running on port: ", server.Addr)
+	app.logger.Infow("server has started","addr",app.config.addr)
 	return server.ListenAndServe()
 }
