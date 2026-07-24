@@ -185,14 +185,41 @@ func (s *UserStore) update(ctx context.Context, tx *sql.Tx, user *User) error {
 	return nil
 }
 
-func (s *UserStore) deleteUserInvitations(ctx context.Context, tx *sql.Tx, userId int64) error {
+func (s *UserStore) deleteUserInvitations(c context.Context, tx *sql.Tx, userId int64) error {
 	query := `DELETE FROM user_invitations WHERE user_id = $1`
 
-	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
 	_, err := tx.ExecContext(ctx, query, userId)
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserStore) Delete(c context.Context, userId int64) error {
+	return withTx(s.db, c, func(tx *sql.Tx) error {
+		ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+		defer cancel()
+
+		if err := s.delete(ctx, tx, userId); err != nil {
+			return err
+		}
+
+		if err := s.deleteUserInvitations(c, tx, userId); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (s *UserStore) delete(c context.Context, tx *sql.Tx, userId int64) error {
+	query := `DELETE FROM users WHERE id = $1`
+
+	if _, err := tx.ExecContext(c, query, userId); err != nil {
 		return err
 	}
 

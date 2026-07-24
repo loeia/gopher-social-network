@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/loeia/gopherSocialNetwork/internal/mailer"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 	"go.uber.org/zap"
 )
@@ -14,16 +15,28 @@ type application struct {
 	config
 	store  *store.Storage
 	logger *zap.SugaredLogger
+	mailer mailer.Client
 }
 
 type config struct {
 	addr string
+	env  string
 	db   dbConfig
 	mail mailConfig
+
+	frontendURL string
 }
 
 type mailConfig struct {
-	exp time.Duration
+	fromEmail string
+	mailTrap  mailTrapConfig
+	exp       time.Duration
+}
+
+type mailTrapConfig struct {
+	apiKey string
+	sandboxUser string 
+	sandboxPass string 
 }
 
 type dbConfig struct {
@@ -40,7 +53,7 @@ func (app *application) mount() http.Handler {
 
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	r.Use(middleware.ClientIPFromRemoteAddr)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Timeout(time.Second * 60))
 
