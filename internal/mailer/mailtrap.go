@@ -54,8 +54,6 @@ func (m *MailTrapClient) Send(templateFile string, username string, email string
 
 	message.AddAlternative("text/html", body.String())
 
-	// dialer := gomail.NewDialer("live.smtp.mailtrap.io", 587, "api", m.apiKey)
-
 	var dialer *gomail.Dialer
 	if isSandbox {
 		dialer = gomail.NewDialer("sandbox.smtp.mailtrap.io", 2525, m.sandboxUser, m.sandboxPass)

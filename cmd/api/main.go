@@ -15,7 +15,7 @@ func main() {
 	config := config{
 		addr:        env.GetString("ADDR", ":8080"),
 		env:         env.GetString("ENV", "development"),
-		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:9000"),
+		frontendURL: env.GetString("FRONTEND_URL", "http://localhost:5173"),
 		db: dbConfig{
 			dsn:          env.GetString("DB_DSN", "postgres://admin:admin123@localhost/gopher-social-network?sslmode=disable"),
 			maxOpenConns: env.GetInt("DB_MAX_OPEN_CONNS", 30),
@@ -27,9 +27,9 @@ func main() {
 			exp:       time.Hour * 24 * 2, // 2 days
 			fromEmail: env.GetString("FROM_EMAIL", ""),
 			mailTrap: mailTrapConfig{
-				apiKey: env.GetString("MAILTRAP_API_KEY", ""),
+				apiKey:      env.GetString("MAILTRAP_API_KEY", ""),
 				sandboxUser: env.GetString("MAILTRAP_SANDBOX_USER", ""),
-    			sandboxPass: env.GetString("MAILTRAP_SANDBOX_PASS", ""),
+				sandboxPass: env.GetString("MAILTRAP_SANDBOX_PASS", ""),
 			},
 		},
 	}
