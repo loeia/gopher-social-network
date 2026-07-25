@@ -3,20 +3,22 @@ package main
 import (
 	"errors"
 	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 )
 
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 
-	var followUser FollowUser
-	if err := app.readJSON(w, r, &followUser); err != nil {
-		app.badRequestError(w, r, err)
+	followUserId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		app.internalServerError(w, r, err)
 		return
 	}
 
-	if err := app.store.Followers.Follow(r.Context(), followUser.UserID, user.ID); err != nil {
+	if err := app.store.Followers.Follow(r.Context(), followUserId, user.ID); err != nil {
 		if errors.Is(err, store.ErrConflict) {
 			app.conflictError(w, r, err)
 			return
@@ -25,29 +27,22 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := app.JSONResponse(w, http.StatusNoContent, nil); err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 
-	// TODO: Revert back to auth userID from ctx
-	var unfollowUser FollowUser
-	if err := app.readJSON(w, r, &unfollowUser); err != nil {
-		app.badRequestError(w, r, err)
-		return
-	}
-
-	if err := app.store.Followers.Unfollow(r.Context(), unfollowUser.UserID, user.ID); err != nil {
+	unfollowUserId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 
-	if err := app.JSONResponse(w, http.StatusNoContent, nil); err != nil {
+	if err := app.store.Followers.Unfollow(r.Context(), unfollowUserId, user.ID); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

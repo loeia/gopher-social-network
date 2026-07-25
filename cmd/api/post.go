@@ -1,12 +1,9 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"net/http"
-	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 )
 
@@ -26,9 +23,9 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	user := getUserFromCtx(r)
 	post := store.Post{
-		// TODO: Change after auth
-		UserID:  1,
+		UserID:  user.ID,
 		Title:   p.Title,
 		Content: p.Content,
 		Tags:    p.Tags,
@@ -115,35 +112,4 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 		app.internalServerError(w, r, err)
 		return
 	}
-}
-
-func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		postIdStr := chi.URLParam(r, "postId")
-		postId, err := strconv.ParseInt(postIdStr, 10, 64)
-		if err != nil {
-			app.internalServerError(w, r, err)
-			return
-		}
-
-		ctx := r.Context()
-
-		post, err := app.store.Posts.GetById(ctx, postId)
-		if err != nil {
-			switch {
-			case errors.Is(err, store.ErrNotFound):
-				app.notFoundError(w, r, err)
-			default:
-				app.internalServerError(w, r, err)
-			}
-			return
-		}
-
-		ctx = context.WithValue(ctx, postCtx, post)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func getPostFromCtx(r *http.Request) *store.Post {
-	return r.Context().Value(postCtx).(*store.Post)
 }

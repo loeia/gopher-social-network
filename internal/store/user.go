@@ -80,7 +80,7 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	query := "SELECT id,username,email,password,created_at FROM users WHERE id = $1 AND is_active = true"
+	query := "SELECT id,username,email,password,created_at,is_active FROM users WHERE id = $1 AND is_active = true"
 
 	var user User
 	if err := s.db.QueryRowContext(ctx, query, userId).Scan(
@@ -89,6 +89,7 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 		&user.Email,
 		&user.Password.hash,
 		&user.CreatedAt,
+		&user.IsActive,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound

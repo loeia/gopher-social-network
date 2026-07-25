@@ -20,10 +20,6 @@ type UpdatePostPayload struct {
 	Tags    *[]string `json:"tags" validate:"omitempty"`
 }
 
-type FollowUser struct {
-	UserID int64 `json:"user_id"`
-}
-
 type RegisterUserPayload struct {
 	Email    string `json:"email" validate:"required,email,max=255"`
 	Username string `json:"username" validate:"required,max=100"`
