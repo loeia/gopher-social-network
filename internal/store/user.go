@@ -38,6 +38,9 @@ func (p *password) Set(text string) error {
 
 	return nil
 }
+func (p *password) Compare(text string) error {
+	return bcrypt.CompareHashAndPassword(p.hash, []byte(text))
+}
 
 type UserStore struct {
 	db *sql.DB
@@ -50,7 +53,7 @@ func NewUserStore(db *sql.DB) *UserStore {
 }
 
 func (s *UserStore) Create(ctx context.Context, user *User, tx *sql.Tx) error {
-	query := `insert into users (username,password,email) values ($1,$2,$3) returning id,created_at`
+	query := `INSERT INTO users (username,password,email) VALUES ($1,$2,$3) RETURNING id,created_at`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
@@ -77,7 +80,7 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	query := "SELECT id,username,email,password,created_at FROM users WHERE id = $1"
+	query := "SELECT id,username,email,password,created_at FROM users WHERE id = $1 AND is_active = true"
 
 	var user User
 	if err := s.db.QueryRowContext(ctx, query, userId).Scan(
@@ -224,4 +227,30 @@ func (s *UserStore) delete(c context.Context, tx *sql.Tx, userId int64) error {
 	}
 
 	return nil
+}
+
+func (s *UserStore) GetByEmail(c context.Context, email string) (*User, error) {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := "SELECT id,email,username,password,created_at FROM users WHERE email = $1 AND is_active = true"
+
+	var user User
+	if err := s.db.QueryRowContext(ctx, query, email).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Username,
+		&user.Password.hash,
+		&user.CreatedAt,
+	); err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
+
 }

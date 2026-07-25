@@ -26,6 +26,11 @@ type FollowUser struct {
 
 type RegisterUserPayload struct {
 	Email    string `json:"email" validate:"required,email,max=255"`
-	Password string `json:"password"`
-	Username string `json:"username"`
+	Username string `json:"username" validate:"required,max=100"`
+	Password string `json:"password" validate:"required,min=3,max=72"`
+}
+
+type ReqCreateUserToken struct {
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Password string `json:"password" validate:"required,min=3,max=72"`
 }

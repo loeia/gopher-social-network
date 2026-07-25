@@ -152,8 +152,5 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := app.JSONResponse(w, http.StatusNoContent, nil); err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
+	w.WriteHeader(http.StatusNoContent)
 }

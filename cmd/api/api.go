@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/loeia/gopherSocialNetwork/internal/auth"
 	"github.com/loeia/gopherSocialNetwork/internal/mailer"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 	"go.uber.org/zap"
@@ -14,9 +15,10 @@ import (
 
 type application struct {
 	config
-	store  *store.Storage
-	logger *zap.SugaredLogger
-	mailer mailer.Client
+	store         *store.Storage
+	logger        *zap.SugaredLogger
+	mailer        mailer.Client
+	authenticator auth.Authenticator
 }
 
 type config struct {
@@ -24,6 +26,7 @@ type config struct {
 	env  string
 	db   dbConfig
 	mail mailConfig
+	auth authConfig
 
 	frontendURL string
 }
@@ -40,6 +43,14 @@ type mailTrapConfig struct {
 	sandboxPass string
 }
 
+type authConfig struct {
+	token tokenConfig
+}
+type tokenConfig struct {
+	secret string
+	exp    time.Duration
+	iss    string
+}
 type dbConfig struct {
 	dsn          string
 	maxOpenConns int
@@ -108,6 +119,7 @@ func (app *application) mount() http.Handler {
 	// public routes
 	r.Route("/authentication", func(r chi.Router) {
 		r.Post("/users", app.registerUserHandler)
+		r.Post("/token", app.createTokenHandler)
 	})
 
 	return r

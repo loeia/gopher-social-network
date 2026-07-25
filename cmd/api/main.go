@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/loeia/gopherSocialNetwork/internal/auth"
 	"github.com/loeia/gopherSocialNetwork/internal/db"
 	"github.com/loeia/gopherSocialNetwork/internal/env"
 	"github.com/loeia/gopherSocialNetwork/internal/mailer"
@@ -32,6 +33,13 @@ func main() {
 				sandboxPass: env.GetString("MAILTRAP_SANDBOX_PASS", ""),
 			},
 		},
+		auth: authConfig{
+			token: tokenConfig{
+				secret: env.GetString("AUTH_SECRET", "whoami"),
+				exp:    time.Hour * time.Duration(env.GetInt("AUTH_EXP", 72)), // default 3 days
+				iss:    env.GetString("AUTH_ISSUER", "gopher"),
+			},
+		},
 	}
 
 	// Logger
@@ -58,11 +66,14 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	jwtAuthenticator := auth.NewJWTAuthenticator(config.auth.token.secret, config.auth.token.iss, config.auth.token.iss)
+
 	app := &application{
-		config: config,
-		store:  store,
-		logger: logger,
-		mailer: mailtrap,
+		config:        config,
+		store:         store,
+		logger:        logger,
+		mailer:        mailtrap,
+		authenticator: jwtAuthenticator,
 	}
 
 	logger.Fatalln(app.run(app.mount()))
