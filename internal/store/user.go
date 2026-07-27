@@ -20,6 +20,8 @@ type User struct {
 	Password  password `json:"-"`
 	CreatedAt string   `json:"created_at"`
 	IsActive  bool     `json:"is_active"`
+	RoleID    int      `json:"role_id"`
+	Role      Role     `json:"role"`
 }
 
 type password struct {
@@ -53,12 +55,20 @@ func NewUserStore(db *sql.DB) *UserStore {
 }
 
 func (s *UserStore) Create(ctx context.Context, user *User, tx *sql.Tx) error {
-	query := `INSERT INTO users (username,password,email) VALUES ($1,$2,$3) RETURNING id,created_at`
+	query := `
+		INSERT INTO users (username,password,email,role_id)
+		VALUES ($1,$2,$3,(SELECT id FROM roles WHERE name = $4))
+		RETURNING id,created_at
+	`
 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	row := tx.QueryRowContext(ctx, query, user.Username, user.Password.hash, user.Email)
+	if user.Role.Name == "" {
+		user.Role.Name = "user"
+	}
+
+	row := tx.QueryRowContext(ctx, query, user.Username, user.Password.hash, user.Email, user.Role.Name)
 	err := row.Scan(&user.ID, &user.CreatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -80,7 +90,13 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	query := "SELECT id,username,email,password,created_at,is_active FROM users WHERE id = $1 AND is_active = true"
+	query := `
+			SELECT u.id,u.username,u.email,u.password,u.created_at,u.is_active,
+				   r.id,r.name,r.description,r.level
+			FROM users u
+			JOIN roles r ON r.id = u.role_id
+			WHERE u.id = $1 AND u.is_active = true
+	`
 
 	var user User
 	if err := s.db.QueryRowContext(ctx, query, userId).Scan(
@@ -90,6 +106,10 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 		&user.Password.hash,
 		&user.CreatedAt,
 		&user.IsActive,
+		&user.Role.ID,
+		&user.Role.Name,
+		&user.Role.Description,
+		&user.Role.Level,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound

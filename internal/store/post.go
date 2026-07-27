@@ -185,6 +185,9 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 
 		feed = append(feed, &post)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return feed, nil
 }

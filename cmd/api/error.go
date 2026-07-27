@@ -11,13 +11,13 @@ func (app *application) internalServerError(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) badRequestError(w http.ResponseWriter, r *http.Request, err error) {
-	app.logger.Errorw("bad request error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
+	app.logger.Warnw("bad request error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
 
 	app.writeJSONError(w, http.StatusBadRequest, err.Error())
 }
 
 func (app *application) conflictError(w http.ResponseWriter, r *http.Request, err error) {
-	app.logger.Errorw("conflict error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
+	app.logger.Warnw("conflict error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
 
 	app.writeJSONError(w, http.StatusConflict, err.Error())
 }
@@ -32,4 +32,10 @@ func (app *application) unauthorizedErrorResponse(w http.ResponseWriter, r *http
 	app.logger.Warnw("unauthorized error", "method", r.Method, "path", r.URL.Path, "error", err.Error())
 
 	app.writeJSONError(w, http.StatusUnauthorized, "unauthorized")
+}
+
+func (app *application) forbiddenResponse(w http.ResponseWriter, r *http.Request) {
+	app.logger.Warnw("forbidden", "method", r.Method, "path", r.URL.Path)
+
+	app.writeJSONError(w, http.StatusForbidden, "forbidden")
 }
