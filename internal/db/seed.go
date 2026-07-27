@@ -175,6 +175,9 @@ func generateUsers() (users []*store.User) {
 		user := &store.User{
 			Username: fmt.Sprintf("%s_%d", usernames[rand.IntN(50)], rand.IntN(112300)),
 			Email:    fmt.Sprintf("%s_%d@example%d.com", usernames[rand.IntN(50)], rand.IntN(10123230), rand.IntN(5123)),
+			Role: store.Role{
+				Name: "user",
+			},
 		}
 		if err := user.Password.Set("password123"); err != nil {
 			log.Fatal(err)

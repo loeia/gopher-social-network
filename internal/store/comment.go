@@ -60,6 +60,10 @@ func (s *CommentStore) GetById(c context.Context, postId int64) ([]*Comment, err
 		comments = append(comments, &comment)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return comments, nil
 }
 
