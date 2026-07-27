@@ -9,6 +9,8 @@ import (
 	"github.com/loeia/gopherSocialNetwork/internal/env"
 	"github.com/loeia/gopherSocialNetwork/internal/mailer"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
+	"github.com/loeia/gopherSocialNetwork/internal/store/cache"
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -40,6 +42,12 @@ func main() {
 				iss:    env.GetString("AUTH_ISSUER", "Bearer"),
 			},
 		},
+		redisCfg: redisConfig{
+			addr:     env.GetString("REDIS_ADDR", "localhost:6379"),
+			password: env.GetString("REDIS_PASSWORD", ""),
+			db:       env.GetInt("REDIS_DB", 0),
+			enabled:  env.GetBool("REDIS_ENABLED", false),
+		},
 	}
 
 	// Logger
@@ -54,7 +62,15 @@ func main() {
 	defer db.Close()
 	logger.Info("database connection pool established!")
 
+	// cache
+	var rdb *redis.Client
+	if config.redisCfg.enabled {
+		rdb = cache.NewRedisClient(config.redisCfg.addr, config.redisCfg.password, config.redisCfg.db)
+		logger.Info("redis cache connection established!")
+	}
+
 	store := store.NewStorage(db)
+	cacheStore := cache.NewCacheStorage(rdb)
 
 	mailtrap, err := mailer.NewMailTrapClient(
 		config.mail.fromEmail,
@@ -71,6 +87,7 @@ func main() {
 	app := &application{
 		config:        config,
 		store:         store,
+		cache:         cacheStore,
 		logger:        logger,
 		mailer:        mailtrap,
 		authenticator: jwtAuthenticator,

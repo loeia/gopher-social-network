@@ -10,25 +10,27 @@ import (
 	"github.com/loeia/gopherSocialNetwork/internal/auth"
 	"github.com/loeia/gopherSocialNetwork/internal/mailer"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
+	"github.com/loeia/gopherSocialNetwork/internal/store/cache"
 	"go.uber.org/zap"
 )
 
 type application struct {
 	config
 	store         *store.Storage
+	cache         *cache.Storage
 	logger        *zap.SugaredLogger
 	mailer        mailer.Client
 	authenticator auth.Authenticator
 }
 
 type config struct {
-	addr string
-	env  string
-	db   dbConfig
-	mail mailConfig
-	auth authConfig
-
+	addr        string
+	env         string
 	frontendURL string
+	db          dbConfig
+	mail        mailConfig
+	auth        authConfig
+	redisCfg    redisConfig
 }
 
 type mailConfig struct {
@@ -57,6 +59,12 @@ type dbConfig struct {
 	maxIdleConns int
 	maxIdleTime  string
 	maxLifeTime  string
+}
+type redisConfig struct {
+	addr     string
+	password string
+	db       int
+	enabled  bool
 }
 
 // 注册中间件和路由
