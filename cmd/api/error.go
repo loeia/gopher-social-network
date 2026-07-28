@@ -1,30 +1,49 @@
 package main
 
 import (
-	"log/slog"
 	"net/http"
 )
 
 func (app *application) internalServerError(w http.ResponseWriter, r *http.Request, err error) {
-	slog.Error("internal server error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
+	app.logger.Errorw("internal server error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
 
 	app.writeJSONError(w, http.StatusInternalServerError, "the server encountered a problem")
 }
 
 func (app *application) badRequestError(w http.ResponseWriter, r *http.Request, err error) {
-	slog.Error("bad request error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
+	app.logger.Warnw("bad request error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
 
 	app.writeJSONError(w, http.StatusBadRequest, err.Error())
 }
 
 func (app *application) conflictError(w http.ResponseWriter, r *http.Request, err error) {
-	slog.Error("conflict error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
+	app.logger.Warnw("conflict error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
 
 	app.writeJSONError(w, http.StatusConflict, err.Error())
 }
 
 func (app *application) notFoundError(w http.ResponseWriter, r *http.Request, err error) {
-	slog.Error("not found error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
+	app.logger.Warnw("not found error", "error", err.Error(), "method", r.Method, "url_path", r.URL.Path)
 
 	app.writeJSONError(w, http.StatusNotFound, "resource not found")
+}
+
+func (app *application) unauthorizedErrorResponse(w http.ResponseWriter, r *http.Request, err error) {
+	app.logger.Warnw("unauthorized error", "method", r.Method, "path", r.URL.Path, "error", err.Error())
+
+	app.writeJSONError(w, http.StatusUnauthorized, "unauthorized")
+}
+
+func (app *application) forbiddenResponse(w http.ResponseWriter, r *http.Request) {
+	app.logger.Warnw("forbidden", "method", r.Method, "path", r.URL.Path)
+
+	app.writeJSONError(w, http.StatusForbidden, "forbidden")
+}
+
+func (app *application) rateLimitExceededResponse(w http.ResponseWriter, r *http.Request, retryAfter string) {
+	app.logger.Warnw("rate limit exceeded", "method", r.Method, "path", r.URL.Path)
+
+	w.Header().Set("Retry-After", retryAfter)
+
+	app.writeJSONError(w, http.StatusTooManyRequests, "rate limit exceeded, retry after: "+retryAfter)
 }

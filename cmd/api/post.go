@@ -1,18 +1,36 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"net/http"
-	"strconv"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 )
 
 type postKey string
 
 const postCtx postKey = "post"
+
+type PostResponse struct {
+	ID        int64              `json:"id"`
+	AuthorId  int64              `json:"author_id"`
+	Author    string             `json:"author"`
+	Title     string             `json:"title"`
+	Content   string             `json:"content"`
+	Tags      []string           `json:"tags"`
+	Comments  []*CommentResponse `json:"comments,omitempty"`
+	CreatedAt string             `json:"created_at"`
+	UpdatedAt string             `json:"updated_at"`
+}
+
+type CommentResponse struct {
+	ID        int64  `json:"id"`
+	PostID    int64  `json:"post_id"`
+	Username  string `json:"username"`
+	UserID    int64  `json:"user_id"`
+	Content   string `json:"content"`
+	CreatedAt string `json:"created_at"`
+}
 
 func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request) {
 	var p CreatePostPayload
@@ -26,9 +44,9 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	user := getUserFromCtx(r)
 	post := store.Post{
-		// TODO: Change after auth
-		UserID:  1,
+		UserID:  user.ID,
 		Title:   p.Title,
 		Content: p.Content,
 		Tags:    p.Tags,
@@ -53,9 +71,33 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 		app.internalServerError(w, r, err)
 		return
 	}
-	post.Comments = comments
 
-	if err := app.JSONResponse(w, http.StatusOK, post); err != nil {
+	var responseComments []*CommentResponse
+	for _, c := range comments {
+		rc := CommentResponse{
+			ID:        c.ID,
+			PostID:    c.PostID,
+			UserID:    c.UserID,
+			Username:  c.User.Username,
+			Content:   c.Content,
+			CreatedAt: c.CreatedAt,
+		}
+		responseComments = append(responseComments, &rc)
+	}
+
+	resp := PostResponse{
+		ID:        post.ID,
+		AuthorId:  post.UserID,
+		Author:    post.User.Username,
+		Title:     post.Title,
+		Content:   post.Content,
+		Tags:      post.Tags,
+		Comments:  responseComments,
+		CreatedAt: post.CreatedAt,
+		UpdatedAt: post.UpdatedAt,
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -115,35 +157,4 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 		app.internalServerError(w, r, err)
 		return
 	}
-}
-
-func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		postIdStr := chi.URLParam(r, "postId")
-		postId, err := strconv.ParseInt(postIdStr, 10, 64)
-		if err != nil {
-			app.internalServerError(w, r, err)
-			return
-		}
-
-		ctx := r.Context()
-
-		post, err := app.store.Posts.GetById(ctx, postId)
-		if err != nil {
-			switch {
-			case errors.Is(err, store.ErrNotFound):
-				app.notFoundError(w, r, err)
-			default:
-				app.internalServerError(w, r, err)
-			}
-			return
-		}
-
-		ctx = context.WithValue(ctx, postCtx, post)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
-func getPostFromCtx(r *http.Request) *store.Post {
-	return r.Context().Value(postCtx).(*store.Post)
 }

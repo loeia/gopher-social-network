@@ -19,3 +19,14 @@ type UpdatePostPayload struct {
 	Content *string   `json:"content" validate:"omitempty,max=1000"`
 	Tags    *[]string `json:"tags" validate:"omitempty"`
 }
+
+type RegisterUserPayload struct {
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Username string `json:"username" validate:"required,max=100"`
+	Password string `json:"password" validate:"required,min=3,max=72"`
+}
+
+type ReqCreateUserToken struct {
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Password string `json:"password" validate:"required,min=3,max=72"`
+}
