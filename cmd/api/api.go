@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/loeia/gopherSocialNetwork/internal/auth"
 	"github.com/loeia/gopherSocialNetwork/internal/mailer"
+	"github.com/loeia/gopherSocialNetwork/internal/ratelimiter"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 	"github.com/loeia/gopherSocialNetwork/internal/store/cache"
 	"go.uber.org/zap"
@@ -26,6 +27,7 @@ type application struct {
 	logger        *zap.SugaredLogger
 	mailer        mailer.Client
 	authenticator auth.Authenticator
+	rateLimiter   ratelimiter.Limiter
 }
 
 type config struct {
@@ -36,6 +38,7 @@ type config struct {
 	mail        mailConfig
 	auth        authConfig
 	redisCfg    redisConfig
+	rateLimiter ratelimiter.Config
 }
 
 type mailConfig struct {
@@ -94,6 +97,10 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.ClientIPFromRemoteAddr)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Timeout(time.Second * 60))
+
+	if app.config.rateLimiter.Enabled {
+		r.Use(app.rateLimiterMiddleware)
+	}
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(200)

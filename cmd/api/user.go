@@ -42,7 +42,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := app.writeJSON(w, http.StatusOK, user); err != nil {
+	if err := app.JSONResponse(w, http.StatusOK, user); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundError(w, r, err)
 			return
