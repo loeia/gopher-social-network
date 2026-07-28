@@ -38,7 +38,7 @@ func main() {
 		},
 		auth: authConfig{
 			token: tokenConfig{
-				secret: env.GetString("AUTH_SECRET", "whoami"),
+				secret: env.GetString("AUTH_SECRET", ""),
 				exp:    time.Hour * time.Duration(env.GetInt("AUTH_EXP", 72)), // default 3 days
 				iss:    env.GetString("AUTH_ISSUER", "Bearer"),
 			},
