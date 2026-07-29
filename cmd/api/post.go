@@ -32,6 +32,7 @@ type CommentResponse struct {
 	CreatedAt string `json:"created_at"`
 }
 
+// createPostHandler handles creating a new post.
 func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request) {
 	var p CreatePostPayload
 	if err := app.readJSON(w, r, &p); err != nil {
@@ -63,6 +64,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// getPostHandler returns a single post with its comments.
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromCtx(r)
 
@@ -103,6 +105,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// deletePostHandler handles deleting a post.
 func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromCtx(r)
 
@@ -119,6 +122,7 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// updatePostHandler handles updating a post's title, content, or tags.
 func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromCtx(r)
 
@@ -159,6 +163,7 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
+// getRandomPosts returns random posts for unauthenticated users.
 func (app *application) getRandomPosts(w http.ResponseWriter, r *http.Request) {
 	posts, err := app.store.Posts.GetRandomPosts(r.Context(), 20)
 	if err != nil {

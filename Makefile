@@ -1,7 +1,10 @@
-.PHONY: run db seed
+.PHONY: run db seed build
 
 run:
 	@go run cmd/api/*.go
+
+build:
+	@go build cmd/api/*.go
 
 db:
 	@psql postgres://admin:admin123@localhost:5432/gopher-social-network

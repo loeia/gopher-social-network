@@ -6,6 +6,7 @@ import (
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 )
 
+// getUserFeedHandler returns the paginated feed for the authenticated user.
 func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Request) {
 	pfq := store.PaginatedFeedQuery{
 		Limit:  20,

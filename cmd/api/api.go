@@ -76,6 +76,7 @@ type redisConfig struct {
 	enabled  bool
 }
 
+// mount configures and returns the HTTP router with all routes and middleware.
 func (app *application) mount() http.Handler {
 	r := chi.NewRouter()
 
@@ -148,6 +149,7 @@ func (app *application) mount() http.Handler {
 	return r
 }
 
+// run starts the HTTP server and handles graceful shutdown.
 func (app *application) run(mux http.Handler) error {
 	server := &http.Server{
 		Addr:         app.addr,
