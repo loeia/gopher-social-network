@@ -141,6 +141,10 @@ func (app *application) mount() http.Handler {
 		r.Post("/token", app.createTokenHandler)
 	})
 
+	r.Route("/free", func(r chi.Router) {
+		r.Get("/", app.getRandomPosts)
+	})
+
 	return r
 }
 

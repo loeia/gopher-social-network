@@ -158,3 +158,16 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 }
+
+func (app *application) getRandomPosts(w http.ResponseWriter, r *http.Request) {
+	posts, err := app.store.Posts.GetRandomPosts(r.Context(), 20)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, posts); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}

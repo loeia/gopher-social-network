@@ -193,3 +193,46 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 
 	return feed, nil
 }
+
+func (s *PostStore) GetRandomPosts(c context.Context, count int) ([]*Post, error) {
+
+	query := `
+		SELECT p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,u.username
+		FROM posts p JOIN users u ON p.user_id = u.id
+		ORDER BY random()
+		LIMIT $1
+	`
+
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	rows, err := s.db.QueryContext(ctx, query, count)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []*Post
+	for rows.Next() {
+		var post Post
+		if err := rows.Scan(
+			&post.ID,
+			&post.UserID,
+			&post.Title,
+			&post.Content,
+			pq.Array(&post.Tags),
+			&post.Version,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+			&post.User.Username,
+		); err != nil {
+			return nil, err
+		}
+		posts = append(posts, &post)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}

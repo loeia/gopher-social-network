@@ -28,6 +28,7 @@ type PostStorage interface {
 	Delete(context.Context, *Post) error
 	Update(context.Context, *Post) error
 	GetUserFeed(context.Context, int64, *PaginatedFeedQuery) ([]*PostWithMetaData, error)
+	GetRandomPosts(context.Context, int) ([]*Post, error)
 }
 type UserStorage interface {
 	Create(context.Context, *User, *sql.Tx) error
