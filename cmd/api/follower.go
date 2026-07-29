@@ -9,6 +9,7 @@ import (
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 )
 
+// followUserHandler handles following another user.
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 
@@ -30,6 +31,7 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// unfollowUserHandler handles unfollowing another user.
 func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 

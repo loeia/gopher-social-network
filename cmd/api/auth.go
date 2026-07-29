@@ -8,6 +8,7 @@ import (
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 )
 
+// createTokenHandler handles user authentication and returns a JWT token.
 func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
 	var req ReqCreateUserToken
 	if err := app.readJSON(w, r, &req); err != nil {

@@ -23,6 +23,7 @@ type UserWithToken struct {
 	Token string      `json:"token"`
 }
 
+// getUserHandler returns a user by ID.
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
 	if err != nil {
@@ -52,6 +53,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// registerUserHandler handles user registration and sends an activation email.
 func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Request) {
 	var req RegisterUserPayload
 
@@ -126,6 +128,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 }
 
+// activateUserHandler activates a user account using a token from the URL.
 func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
 	token := r.PathValue("token")
 

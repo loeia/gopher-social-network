@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	dsn := env.GetString("DB_ADDR", "postgres://admin:admin123@localhost/gopher-social-network?sslmode=disable")
+	dsn := env.GetString("DB_ADDR", "postgres://admin:admin123@localhost/gopher-social-netowrk?sslmode=disable")
 	conn, err := db.New(dsn, 3, 3, "15m", "5m")
 	if err != nil {
 		panic(err)

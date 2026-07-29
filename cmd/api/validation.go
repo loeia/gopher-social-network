@@ -4,6 +4,7 @@ import "github.com/go-playground/validator/v10"
 
 var Validate *validator.Validate
 
+// init initializes the global validator instance.
 func init() {
 	Validate = validator.New(validator.WithRequiredStructEnabled())
 }
