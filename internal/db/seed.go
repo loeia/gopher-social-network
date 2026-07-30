@@ -162,10 +162,6 @@ func Seed(store *store.Storage, db *sql.DB) {
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
-		log.Fatalln(err)
-	}
-
 	log.Println("Seeding complete")
 }
 
