@@ -23,8 +23,9 @@ type Post struct {
 }
 
 type PostWithMetaData struct {
-	Post         Post  `json:"post"`
-	CommentCount int64 `json:"comment_count"`
+	Post         Post
+	CommentCount int64
+	LikeCount    int64
 }
 
 type PostStore struct {
@@ -146,7 +147,8 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 		    p.version,
 		    p.tags,
 		    u.username,
-		    COUNT(c.id) AS comments_count
+		    COUNT(c.id) AS comments_count,
+			(SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) AS likes_count
 		FROM posts p
 		LEFT JOIN comments c ON c.post_id = p.id
 		LEFT JOIN users u ON p.user_id = u.id
@@ -154,6 +156,8 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 		WHERE f.follower_id = $1
 		AND (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%')
 		AND (p.tags @> $5 OR $5 = '{}')
+		AND (p.created_at >= $6 OR $6 IS NULL)
+		AND (p.created_at <= $7 OR $7 IS NULL)
 		GROUP BY p.id, u.username
 		ORDER BY p.created_at ` + pfq.Sort + `
 		LIMIT $2 OFFSET $3
@@ -162,7 +166,17 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	rows, err := s.db.QueryContext(ctx, query, userId, pfq.Limit, pfq.Offset, pfq.Search, pq.Array(pfq.Tags))
+	var sinceArg any = nil
+	if pfq.Since != "" {
+		sinceArg = pfq.Since
+	}
+
+	var untilArg any = nil
+	if pfq.Until != "" {
+		untilArg = pfq.Until
+	}
+
+	rows, err := s.db.QueryContext(ctx, query, userId, pfq.Limit, pfq.Offset, pfq.Search, pq.Array(pfq.Tags), sinceArg, untilArg)
 	if err != nil {
 		return nil, err
 	}
@@ -181,6 +195,7 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 			pq.Array(&post.Post.Tags),
 			&post.Post.User.Username,
 			&post.CommentCount,
+			&post.LikeCount,
 		); err != nil {
 			return nil, err
 		}

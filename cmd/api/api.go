@@ -116,6 +116,9 @@ func (app *application) mount() http.Handler {
 			r.Get("/", app.getPostHandler)
 			r.Patch("/", app.checkPostOwnerShip("moderator", app.updatePostHandler))
 			r.Delete("/", app.checkPostOwnerShip("admin", app.deletePostHandler))
+
+			r.Put("/like", app.likePostHandler)
+			r.Put("/dislike", app.unlikePostHandler)
 		})
 	})
 

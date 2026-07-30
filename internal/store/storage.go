@@ -49,6 +49,11 @@ type FollowerStorage interface {
 type RoleStorage interface {
 	GetByName(context.Context, string) (*Role, error)
 }
+type LikeStorage interface {
+	Like(context.Context, int64, int64) error
+	Dislike(context.Context, int64, int64) error
+	GetPostLikes(context.Context, int64) (int64, error)
+}
 
 type Storage struct {
 	Posts     PostStorage
@@ -56,6 +61,7 @@ type Storage struct {
 	Comments  CommentStorage
 	Followers FollowerStorage
 	Roles     RoleStorage
+	PostLikes LikeStorage
 }
 
 func NewStorage(db *sql.DB) *Storage {
@@ -65,6 +71,7 @@ func NewStorage(db *sql.DB) *Storage {
 		Comments:  NewCommentStore(db),
 		Followers: NewFollowerStore(db),
 		Roles:     NewRoleStore(db),
+		PostLikes: NewPostLikeStore(db),
 	}
 }
 
@@ -75,7 +82,9 @@ func withTx(db *sql.DB, c context.Context, fn func(*sql.Tx) error) error {
 	}
 
 	if err := fn(tx); err != nil {
-		_ = tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
 		return err
 	}
 

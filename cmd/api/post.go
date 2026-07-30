@@ -19,6 +19,7 @@ type PostResponse struct {
 	Content   string             `json:"content"`
 	Tags      []string           `json:"tags"`
 	Comments  []*CommentResponse `json:"comments,omitempty"`
+	PostLikes int64              `json:"likes"`
 	CreatedAt string             `json:"created_at"`
 	UpdatedAt string             `json:"updated_at"`
 }
@@ -74,6 +75,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// comments
 	var responseComments []*CommentResponse
 	for _, c := range comments {
 		rc := CommentResponse{
@@ -87,6 +89,13 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 		responseComments = append(responseComments, &rc)
 	}
 
+	// likes
+	postLikes, err := app.store.PostLikes.GetPostLikes(r.Context(), post.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
 	resp := PostResponse{
 		ID:        post.ID,
 		AuthorId:  post.UserID,
@@ -95,6 +104,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 		Content:   post.Content,
 		Tags:      post.Tags,
 		Comments:  responseComments,
+		PostLikes: postLikes,
 		CreatedAt: post.CreatedAt,
 		UpdatedAt: post.UpdatedAt,
 	}

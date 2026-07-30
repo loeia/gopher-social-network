@@ -121,6 +121,7 @@ func (app *application) checkPostOwnerShip(requiredRole string, next http.Handle
 		next.ServeHTTP(w, r)
 	}
 }
+
 // checkRolePrecedence checks if the user's role level meets the required role level.
 func (app *application) checkRolePrecedence(c context.Context, user *store.User, roleName string) (bool, error) {
 	role, err := app.store.Roles.GetByName(c, roleName)
