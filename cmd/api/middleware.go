@@ -51,6 +51,11 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
+		if ver, ok := claims["ver"].(float64); !ok || int(ver) != user.TokenVer {
+			app.unauthorizedErrorResponse(w, r, fmt.Errorf("token has been revoked"))
+			return
+		}
+
 		ctx = context.WithValue(ctx, userCtx, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

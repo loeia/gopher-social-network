@@ -22,6 +22,7 @@ type User struct {
 	IsActive  bool     `json:"is_active"`
 	RoleID    int      `json:"role_id"`
 	Role      Role     `json:"role"`
+	TokenVer  int      `json:"token_ver"`
 }
 
 type password struct {
@@ -91,7 +92,7 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 	defer cancel()
 
 	query := `
-			SELECT u.id,u.username,u.email,u.password,u.created_at,u.is_active,
+			SELECT u.id,u.username,u.email,u.password,u.created_at,u.is_active,u.token_ver,
 				   r.id,r.name,r.description,r.level
 			FROM users u
 			JOIN roles r ON r.id = u.role_id
@@ -106,6 +107,7 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 		&user.Password.hash,
 		&user.CreatedAt,
 		&user.IsActive,
+		&user.TokenVer,
 		&user.Role.ID,
 		&user.Role.Name,
 		&user.Role.Description,
@@ -254,7 +256,7 @@ func (s *UserStore) GetByEmail(c context.Context, email string) (*User, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	query := "SELECT id,email,username,password,created_at FROM users WHERE email = $1 AND is_active = true"
+	query := "SELECT id,email,username,password,created_at,token_ver FROM users WHERE email = $1 AND is_active = true"
 
 	var user User
 	if err := s.db.QueryRowContext(ctx, query, email).Scan(
@@ -263,6 +265,7 @@ func (s *UserStore) GetByEmail(c context.Context, email string) (*User, error) {
 		&user.Username,
 		&user.Password.hash,
 		&user.CreatedAt,
+		&user.TokenVer,
 	); err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -274,4 +277,22 @@ func (s *UserStore) GetByEmail(c context.Context, email string) (*User, error) {
 
 	return &user, nil
 
+}
+
+func (s *UserStore) UpdatePassword(c context.Context, newPass string, userId int64) error {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	var p password
+	if err := p.Set(newPass); err != nil {
+		return err
+	}
+
+	query := "UPDATE users SET password = $1,token_ver = token_ver + 1 WHERE id = $2"
+
+	if _, err := s.db.ExecContext(ctx, query, p.hash, userId); err != nil {
+		return err
+	}
+
+	return nil
 }

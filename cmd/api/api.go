@@ -126,6 +126,7 @@ func (app *application) mount() http.Handler {
 		r.Group(func(r chi.Router) {
 			r.Use(app.AuthTokenMiddleware)
 			r.Get("/feed", app.getUserFeedHandler)
+			r.Patch("/reset", app.resetPasswordHandler)
 		})
 
 		r.Put("/activate/{token}", app.activateUserHandler)
@@ -134,6 +135,7 @@ func (app *application) mount() http.Handler {
 			r.Use(app.AuthTokenMiddleware)
 
 			r.Get("/", app.getUserHandler)
+
 			r.Put("/follow", app.followUserHandler)
 			r.Put("/unfollow", app.unfollowUserHandler)
 		})

@@ -144,3 +144,42 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// resetUserPasswordHandler reset user password, permission authentication is required
+func (app *application) resetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	var req ResetPassword
+	if err := app.readJSON(w, r, &req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(&req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	dbUser, err := app.store.Users.GetById(r.Context(), user.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := dbUser.Password.Compare(req.OldPassword); err != nil {
+		app.unauthorizedErrorResponse(w, r, err)
+		return
+	}
+
+	if err := app.store.Users.UpdatePassword(r.Context(), req.NewPassword, user.ID); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if app.config.redisCfg.enabled {
+		if err := app.cache.Delete(r.Context(), user.ID); err != nil {
+			app.logger.Errorw("error deleting user from cache", "error", err)
+		}
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

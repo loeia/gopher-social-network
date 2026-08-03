@@ -10,6 +10,7 @@ import (
 type User interface {
 	Get(context.Context, int64) (*store.User, error)
 	Set(context.Context, *store.User) error
+	Delete(context.Context, int64) error
 }
 
 type Storage struct {

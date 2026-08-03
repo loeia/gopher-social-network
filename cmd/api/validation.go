@@ -31,3 +31,8 @@ type ReqCreateUserToken struct {
 	Email    string `json:"email" validate:"required,email,max=255"`
 	Password string `json:"password" validate:"required,min=3,max=72"`
 }
+
+type ResetPassword struct {
+	OldPassword string `json:"old_password" validate:"required,min=3,max=72"`
+	NewPassword string `json:"new_password" validate:"required,min=3,max=72"`
+}

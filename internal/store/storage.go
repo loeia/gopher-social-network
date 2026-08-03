@@ -37,6 +37,7 @@ type UserStorage interface {
 	Activate(context.Context, string) error
 	Delete(context.Context, int64) error
 	GetByEmail(context.Context, string) (*User, error)
+	UpdatePassword(context.Context, string, int64) error
 }
 type CommentStorage interface {
 	Create(context.Context, *Comment) error
