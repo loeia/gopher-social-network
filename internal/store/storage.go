@@ -54,6 +54,7 @@ type LikeStorage interface {
 	Like(context.Context, int64, int64) error
 	Dislike(context.Context, int64, int64) error
 	GetPostLikes(context.Context, int64) (int64, error)
+	GetUserFavoritePosts(context.Context, int64) ([]*FavoritePostList, error)
 }
 
 type Storage struct {

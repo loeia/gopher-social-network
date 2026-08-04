@@ -127,6 +127,7 @@ func (app *application) mount() http.Handler {
 			r.Use(app.AuthTokenMiddleware)
 			r.Get("/feed", app.getUserFeedHandler)
 			r.Patch("/reset", app.resetPasswordHandler)
+			r.Get("/likes", app.getUserFavoritePosts)
 		})
 
 		r.Put("/activate/{token}", app.activateUserHandler)

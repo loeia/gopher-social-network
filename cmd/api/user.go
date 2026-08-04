@@ -183,3 +183,18 @@ func (app *application) resetPasswordHandler(w http.ResponseWriter, r *http.Requ
 
 	w.WriteHeader(http.StatusOK)
 }
+
+func (app *application) getUserFavoritePosts(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	posts, err := app.store.PostLikes.GetUserFavoritePosts(r.Context(), user.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, posts); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}

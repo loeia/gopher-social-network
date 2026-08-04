@@ -3,7 +3,15 @@ package store
 import (
 	"context"
 	"database/sql"
+	"time"
 )
+
+type FavoritePostList struct {
+	PostID    int64     `json:"post_id"`
+	Author    string    `json:"author"`
+	Title     string    `json:"title"`
+	CreatedAt time.Time `json:"created_at"`
+}
 
 type PostLikeStore struct {
 	db *sql.DB
@@ -54,4 +62,45 @@ func (s *PostLikeStore) GetPostLikes(c context.Context, postId int64) (int64, er
 	}
 
 	return count, nil
+}
+
+func (s *PostLikeStore) GetUserFavoritePosts(c context.Context, userId int64) ([]*FavoritePostList, error) {
+
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		SELECT p.id,u.username,p.title,p.created_at FROM posts p
+		LEFT JOIN post_likes l ON p.id = l.post_id
+		LEFT JOIN users u ON p.user_id = u.id
+		WHERE l.user_id = $1
+		ORDER BY l.created_at DESC
+	`
+
+	rows, err := s.db.QueryContext(ctx, query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	posts := make([]*FavoritePostList, 0)
+	for rows.Next() {
+		var post FavoritePostList
+
+		if err := rows.Scan(
+			&post.PostID,
+			&post.Author,
+			&post.Title,
+			&post.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, &post)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return posts, nil
 }
