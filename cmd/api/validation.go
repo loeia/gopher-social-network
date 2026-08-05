@@ -11,8 +11,8 @@ func init() {
 
 type CreatePostPayload struct {
 	Title   string   `json:"title" validate:"required,max=100"`
-	Content string   `json:"content" validate:"required,max=1000"`
-	Tags    []string `json:"tags" validate:"max=5"`
+	Content string   `json:"content" validate:"required,max=5000"`
+	Tags    []string `json:"tags" validate:"required,max=5"`
 }
 
 type UpdatePostPayload struct {

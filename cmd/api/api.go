@@ -107,18 +107,23 @@ func (app *application) mount() http.Handler {
 	})
 
 	r.Route("/posts", func(r chi.Router) {
-		r.Use(app.AuthTokenMiddleware)
-		r.Post("/", app.createPostHandler)
-
 		r.Route("/{postId}", func(r chi.Router) {
 			r.Use(app.postsContextMiddleware)
-
 			r.Get("/", app.getPostHandler)
-			r.Patch("/", app.checkPostOwnerShip("moderator", app.updatePostHandler))
-			r.Delete("/", app.checkPostOwnerShip("admin", app.deletePostHandler))
 
-			r.Put("/like", app.likePostHandler)
-			r.Put("/dislike", app.unlikePostHandler)
+			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
+				// TODO: Permission authentication is currently not used
+				r.Patch("/", app.checkPostOwnerShip("moderator", app.updatePostHandler))
+				r.Delete("/", app.checkPostOwnerShip("admin", app.deletePostHandler))
+				r.Put("/like", app.likePostHandler)
+				r.Put("/dislike", app.unlikePostHandler)
+			})
+		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(app.AuthTokenMiddleware)
+			r.Post("/", app.createPostHandler)
 		})
 	})
 
