@@ -119,6 +119,13 @@ func (app *application) mount() http.Handler {
 				r.Put("/like", app.likePostHandler)
 				r.Put("/dislike", app.unlikePostHandler)
 			})
+
+			r.Route("/comments", func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
+
+				r.Get("/", app.getPostCommentsHandler)
+				r.Post("/", app.createCommentHandler)
+			})
 		})
 
 		r.Group(func(r chi.Router) {
@@ -139,11 +146,20 @@ func (app *application) mount() http.Handler {
 
 		r.Route("/{userId}", func(r chi.Router) {
 			r.Use(app.AuthTokenMiddleware)
-
 			r.Get("/", app.getUserHandler)
-
 			r.Put("/follow", app.followUserHandler)
 			r.Put("/unfollow", app.unfollowUserHandler)
+		})
+	})
+
+	r.Route("/comments", func(r chi.Router) {
+		r.Use(app.AuthTokenMiddleware)
+
+		r.Route("/{commentId}", func(r chi.Router) {
+			r.Use(app.commentsContextMiddleware)
+
+			r.Get("/", app.getCommentHandler)
+			r.Delete("/", app.checkCommentOwnerShip("moderator", app.deleteCommentHandler))
 		})
 	})
 
@@ -152,7 +168,6 @@ func (app *application) mount() http.Handler {
 		r.Post("/users", app.registerUserHandler)
 		r.Post("/token", app.createTokenHandler)
 	})
-
 	r.Route("/free", func(r chi.Router) {
 		r.Get("/", app.getRandomPosts)
 	})

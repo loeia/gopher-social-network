@@ -44,8 +44,7 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 		}
 
 		ctx := r.Context()
-
-		user, err := app.getUser(r.Context(), userId)
+		user, err := app.getUser(ctx, userId)
 		if err != nil {
 			app.unauthorizedErrorResponse(w, r, err)
 			return
@@ -173,4 +172,62 @@ func (app *application) rateLimiterMiddleware(next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+// commentsContextMiddleware loads the comment by ID from the URL and sets it in the request context.
+func (app *application) commentsContextMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		commentId, err := strconv.ParseInt(chi.URLParam(r, "commentId"), 10, 64)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+		ctx := r.Context()
+
+		comment, err := app.store.Comments.GetById(ctx, commentId)
+		if err != nil {
+			switch {
+			case errors.Is(err, store.ErrNotFound):
+				app.notFoundError(w, r, err)
+			default:
+				app.internalServerError(w, r, err)
+			}
+			return
+		}
+
+		ctx = context.WithValue(ctx, CommentCtx, comment)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// getCommentFromCtx retrieves the comment from the request context.
+func getCommentFromCtx(r *http.Request) *store.Comment {
+	return r.Context().Value(CommentCtx).(*store.Comment)
+}
+
+// checkCommentOwnerShip verifies the user owns the comment or has the required role to proceed.
+func (app *application) checkCommentOwnerShip(requiredRole string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := getUserFromCtx(r)
+		comment := getCommentFromCtx(r)
+
+		if user.ID == comment.UserID {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// role precedence check
+		allowed, err := app.checkRolePrecedence(r.Context(), user, requiredRole)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		if !allowed {
+			app.forbiddenResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
 }

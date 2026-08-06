@@ -9,7 +9,7 @@ import (
 
 type postKey string
 
-const postCtx postKey = "post"
+const postCtx postKey = "postId"
 
 type PostResponse struct {
 	ID        int64              `json:"id"`
@@ -19,18 +19,9 @@ type PostResponse struct {
 	Content   string             `json:"content"`
 	Tags      []string           `json:"tags"`
 	Comments  []*CommentResponse `json:"comments,omitempty"`
-	PostLikes int64              `json:"likes"`
+	PostLikes int64              `json:"likes,omitempty"`
 	CreatedAt string             `json:"created_at"`
 	UpdatedAt string             `json:"updated_at"`
-}
-
-type CommentResponse struct {
-	ID        int64  `json:"id"`
-	PostID    int64  `json:"post_id"`
-	Username  string `json:"username"`
-	UserID    int64  `json:"user_id"`
-	Content   string `json:"content"`
-	CreatedAt string `json:"created_at"`
 }
 
 // createPostHandler handles creating a new post.
@@ -59,7 +50,18 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := app.JSONResponse(w, http.StatusCreated, post); err != nil {
+	resp := PostResponse{
+		ID:        post.ID,
+		AuthorId:  post.UserID,
+		Author:    post.User.Username,
+		Title:     post.Title,
+		Content:   post.Content,
+		Tags:      post.Tags,
+		CreatedAt: post.CreatedAt,
+		UpdatedAt: post.UpdatedAt,
+	}
+
+	if err := app.JSONResponse(w, http.StatusCreated, resp); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -69,7 +71,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromCtx(r)
 
-	comments, err := app.store.Comments.GetById(r.Context(), post.ID)
+	comments, err := app.store.Comments.GetByPostId(r.Context(), post.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -80,8 +82,6 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	for _, c := range comments {
 		rc := CommentResponse{
 			ID:        c.ID,
-			PostID:    c.PostID,
-			UserID:    c.UserID,
 			Username:  c.User.Username,
 			Content:   c.Content,
 			CreatedAt: c.CreatedAt,

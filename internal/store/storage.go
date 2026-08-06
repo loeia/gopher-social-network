@@ -40,8 +40,10 @@ type UserStorage interface {
 	UpdatePassword(context.Context, string, int64) error
 }
 type CommentStorage interface {
-	Create(context.Context, *Comment) error
-	GetById(context.Context, int64) ([]*Comment, error)
+	Create(context.Context, *Comment) (*Comment, error)
+	GetById(context.Context, int64) (*Comment, error)
+	Delete(context.Context, int64) error
+	GetByPostId(context.Context, int64) ([]*Comment, error)
 }
 type FollowerStorage interface {
 	Follow(context.Context, int64, int64) error

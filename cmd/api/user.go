@@ -16,7 +16,7 @@ import (
 
 type userKey string
 
-const userCtx userKey = "userID"
+const userCtx userKey = "userId"
 
 type UserWithToken struct {
 	User  *store.User `json:"user"`
@@ -31,7 +31,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := app.getUser(r.Context(), userId)
+	user, err := app.store.Users.getUser(r.Context(), userId)
 	if err != nil {
 		switch err {
 		case store.ErrNotFound:
