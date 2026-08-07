@@ -31,7 +31,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := app.store.Users.getUser(r.Context(), userId)
+	user, err := app.getUser(r.Context(), userId)
 	if err != nil {
 		switch err {
 		case store.ErrNotFound:

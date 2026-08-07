@@ -113,7 +113,6 @@ func (app *application) mount() http.Handler {
 
 			r.Group(func(r chi.Router) {
 				r.Use(app.AuthTokenMiddleware)
-				// TODO: Permission authentication is currently not used
 				r.Patch("/", app.checkPostOwnerShip("moderator", app.updatePostHandler))
 				r.Delete("/", app.checkPostOwnerShip("admin", app.deletePostHandler))
 				r.Put("/like", app.likePostHandler)
@@ -121,10 +120,12 @@ func (app *application) mount() http.Handler {
 			})
 
 			r.Route("/comments", func(r chi.Router) {
-				r.Use(app.AuthTokenMiddleware)
-
 				r.Get("/", app.getPostCommentsHandler)
-				r.Post("/", app.createCommentHandler)
+
+				r.Group(func(r chi.Router) {
+					r.Use(app.AuthTokenMiddleware)
+					r.Post("/", app.createCommentHandler)
+				})
 			})
 		})
 
@@ -153,17 +154,16 @@ func (app *application) mount() http.Handler {
 	})
 
 	r.Route("/comments", func(r chi.Router) {
-		r.Use(app.AuthTokenMiddleware)
-
 		r.Route("/{commentId}", func(r chi.Router) {
 			r.Use(app.commentsContextMiddleware)
-
 			r.Get("/", app.getCommentHandler)
-			r.Delete("/", app.checkCommentOwnerShip("moderator", app.deleteCommentHandler))
+			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
+				r.Delete("/", app.checkCommentOwnerShip("moderator", app.deleteCommentHandler))
+			})
 		})
 	})
 
-	// public routes
 	r.Route("/authentication", func(r chi.Router) {
 		r.Post("/users", app.registerUserHandler)
 		r.Post("/token", app.createTokenHandler)

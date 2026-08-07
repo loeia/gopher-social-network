@@ -85,7 +85,7 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 func (app *application) deleteCommentHandler(w http.ResponseWriter, r *http.Request) {
 	comment := getCommentFromCtx(r)
 
-	if err := app.store.Comments.Delete(r.Context(), comment.ID); err != nil {
+	if err := app.store.Comments.Delete(r.Context(), comment); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -103,7 +103,7 @@ func (app *application) getCommentHandler(w http.ResponseWriter, r *http.Request
 		CreatedAt: comment.CreatedAt,
 	}
 
-	if err := app.JSONResponse(w, http.StatusCreated, resp); err != nil {
+	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

@@ -12,16 +12,16 @@ type postKey string
 const postCtx postKey = "postId"
 
 type PostResponse struct {
-	ID        int64              `json:"id"`
-	AuthorId  int64              `json:"author_id"`
-	Author    string             `json:"author"`
-	Title     string             `json:"title"`
-	Content   string             `json:"content"`
-	Tags      []string           `json:"tags"`
-	Comments  []*CommentResponse `json:"comments,omitempty"`
-	PostLikes int64              `json:"likes,omitempty"`
-	CreatedAt string             `json:"created_at"`
-	UpdatedAt string             `json:"updated_at"`
+	ID           int64    `json:"id"`
+	AuthorId     int64    `json:"author_id"`
+	Author       string   `json:"author"`
+	Title        string   `json:"title"`
+	Content      string   `json:"content"`
+	Tags         []string `json:"tags"`
+	CommentCount int64    `json:"comments_count"`
+	LikeCount    int64    `json:"likes_count"`
+	CreatedAt    string   `json:"created_at"`
+	UpdatedAt    string   `json:"updated_at"`
 }
 
 // createPostHandler handles creating a new post.
@@ -51,14 +51,16 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	resp := PostResponse{
-		ID:        post.ID,
-		AuthorId:  post.UserID,
-		Author:    post.User.Username,
-		Title:     post.Title,
-		Content:   post.Content,
-		Tags:      post.Tags,
-		CreatedAt: post.CreatedAt,
-		UpdatedAt: post.UpdatedAt,
+		ID:           post.ID,
+		AuthorId:     post.UserID,
+		Author:       post.User.Username,
+		Title:        post.Title,
+		Content:      post.Content,
+		Tags:         post.Tags,
+		CommentCount: post.CommentCount,
+		LikeCount:    post.LikeCount,
+		CreatedAt:    post.CreatedAt,
+		UpdatedAt:    post.UpdatedAt,
 	}
 
 	if err := app.JSONResponse(w, http.StatusCreated, resp); err != nil {
@@ -71,42 +73,42 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromCtx(r)
 
-	comments, err := app.store.Comments.GetByPostId(r.Context(), post.ID)
-	if err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
+	// comments, err := app.store.Comments.GetByPostId(r.Context(), post.ID)
+	// if err != nil {
+	// 	app.internalServerError(w, r, err)
+	// 	return
+	// }
 
 	// comments
-	var responseComments []*CommentResponse
-	for _, c := range comments {
-		rc := CommentResponse{
-			ID:        c.ID,
-			Username:  c.User.Username,
-			Content:   c.Content,
-			CreatedAt: c.CreatedAt,
-		}
-		responseComments = append(responseComments, &rc)
-	}
+	// var responseComments []*CommentResponse
+	// for _, c := range comments {
+	// 	rc := CommentResponse{
+	// 		ID:        c.ID,
+	// 		Username:  c.User.Username,
+	// 		Content:   c.Content,
+	// 		CreatedAt: c.CreatedAt,
+	// 	}
+	// 	responseComments = append(responseComments, &rc)
+	// }
 
 	// likes
-	postLikes, err := app.store.PostLikes.GetPostLikes(r.Context(), post.ID)
-	if err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
+	// postLikes, err := app.store.PostLikes.GetPostLikes(r.Context(), post.ID)
+	// if err != nil {
+	// 	app.internalServerError(w, r, err)
+	// 	return
+	// }
 
 	resp := PostResponse{
-		ID:        post.ID,
-		AuthorId:  post.UserID,
-		Author:    post.User.Username,
-		Title:     post.Title,
-		Content:   post.Content,
-		Tags:      post.Tags,
-		Comments:  responseComments,
-		PostLikes: postLikes,
-		CreatedAt: post.CreatedAt,
-		UpdatedAt: post.UpdatedAt,
+		ID:           post.ID,
+		AuthorId:     post.UserID,
+		Author:       post.User.Username,
+		Title:        post.Title,
+		Content:      post.Content,
+		Tags:         post.Tags,
+		CommentCount: post.CommentCount,
+		LikeCount:    post.LikeCount,
+		CreatedAt:    post.CreatedAt,
+		UpdatedAt:    post.UpdatedAt,
 	}
 
 	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {

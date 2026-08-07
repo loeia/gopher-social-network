@@ -9,14 +9,15 @@ import (
 )
 
 type Post struct {
-	ID       int64      `json:"id"`
-	Title    string     `json:"title"`
-	Content  string     `json:"content"`
-	UserID   int64      `json:"user_id"`
-	Tags     []string   `json:"tags"`
-	Comments []*Comment `json:"comments"`
-	Version  int64      `json:"version"`
-	User     User       `json:"user"`
+	ID           int64    `json:"id"`
+	Title        string   `json:"title"`
+	Content      string   `json:"content"`
+	UserID       int64    `json:"user_id"`
+	Tags         []string `json:"tags"`
+	CommentCount int64    `json:"comment_count"`
+	LikeCount    int64    `json:"like_count"`
+	Version      int64    `json:"version"`
+	User         User     `json:"user"`
 
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
@@ -57,8 +58,13 @@ func (s *PostStore) Create(c context.Context, post *Post) error {
 }
 
 func (s *PostStore) GetById(c context.Context, id int64) (*Post, error) {
-	query := `SELECT p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,u.username
-	FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = $1`
+	query := `
+	SELECT
+		p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,u.username,
+		p.comment_count,p.like_count
+	FROM posts p
+	JOIN users u ON p.user_id = u.id WHERE p.id = $1
+	`
 
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
@@ -76,6 +82,8 @@ func (s *PostStore) GetById(c context.Context, id int64) (*Post, error) {
 		&post.CreatedAt,
 		&post.UpdatedAt,
 		&post.User.Username,
+		&post.CommentCount,
+		&post.LikeCount,
 	)
 	if err != nil {
 		switch {
@@ -147,10 +155,9 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 		    p.version,
 		    p.tags,
 		    u.username,
-		    COUNT(c.id) AS comments_count,
-			(SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) AS likes_count
+		    p.comment_count,
+		    p.like_count
 		FROM posts p
-		LEFT JOIN comments c ON c.post_id = p.id
 		LEFT JOIN users u ON p.user_id = u.id
 		LEFT JOIN followers f ON f.user_id = p.user_id
 		WHERE f.follower_id = $1
@@ -158,7 +165,6 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 		AND (p.tags @> $5 OR $5 = '{}')
 		AND (p.created_at >= $6 OR $6 IS NULL)
 		AND (p.created_at <= $7 OR $7 IS NULL)
-		GROUP BY p.id, u.username
 		ORDER BY p.created_at ` + pfq.Sort + `
 		LIMIT $2 OFFSET $3
 	`

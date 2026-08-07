@@ -71,31 +71,45 @@ func (s *CommentStore) Create(ctx context.Context, comment *Comment) (*Comment, 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
 	query := `INSERT INTO comments (user_id,post_id,content) VALUES ($1,$2,$3) RETURNING id,created_at`
-	if err := s.db.QueryRowContext(
-		ctx,
-		query,
-		comment.UserID,
-		comment.PostID,
-		comment.Content,
-	).Scan(&comment.ID, &comment.CreatedAt); err != nil {
+	if err := tx.QueryRowContext(ctx, query, comment.UserID, comment.PostID, comment.Content).Scan(&comment.ID, &comment.CreatedAt); err != nil {
 		return nil, err
 	}
 
+	if _, err := tx.ExecContext(ctx, `UPDATE posts SET comment_count = comment_count + 1 WHERE id = $1`, comment.PostID); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
 	return comment, nil
 }
 
-func (s *CommentStore) Delete(c context.Context, commentId int64) error {
+func (s *CommentStore) Delete(c context.Context, comment *Comment) error {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	query := `DELETE FROM comments WHERE id = $1`
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
 
-	if _, err := s.db.ExecContext(ctx, query, commentId); err != nil {
+	if _, err := tx.ExecContext(ctx, `DELETE FROM comments WHERE id = $1`, comment.ID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE posts SET comment_count = GREATEST(comment_count - 1, 0) WHERE id = $1`, comment.PostID); err != nil {
 		return err
 	}
 
-	return nil
+	return tx.Commit()
 }
 
 func (s *CommentStore) GetById(c context.Context, commentId int64) (*Comment, error) {
