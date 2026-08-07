@@ -42,7 +42,7 @@ type UserStorage interface {
 type CommentStorage interface {
 	Create(context.Context, *Comment) (*Comment, error)
 	GetById(context.Context, int64) (*Comment, error)
-	Delete(context.Context, *Comment) error
+	Delete(context.Context, int64) error
 	GetByPostId(context.Context, int64) ([]*Comment, error)
 }
 type FollowerStorage interface {

@@ -2,48 +2,11 @@
   <div class="comments" v-loading="loading">
     <h3 class="comments-title" v-if="comments.length">Comments ({{ comments.length }})</h3>
 
-    <div v-for="comment in comments" :key="comment.id" class="comment">
-      <div class="comment-avatar">{{ (comment.username || 'G').charAt(0).toUpperCase() }}</div>
-      <div class="comment-body">
-        <div class="comment-meta">
-          <span class="comment-username">{{ comment.username }}</span>
-          <span class="comment-date">{{ formatDate(comment.created_at) }}</span>
-        </div>
-        <div class="comment-content">{{ comment.content }}</div>
-        <div class="comment-footer">
-          <el-button
-            v-if="comment.username === currentUser"
-            text
-            class="reply-btn"
-            :loading="deletingId === comment.id"
-            @click="deleteComment(comment.id)"
-          >
-            Delete
-          </el-button>
-          <el-button
-            v-if="isLoggedIn"
-            text
-            class="reply-btn"
-            @click="toggleReply(comment.id)"
-          >
-            Reply
-          </el-button>
-        </div>
-        <div v-if="replyingTo === comment.id" class="comment-box reply-box">
-          <el-input
-            v-model="replyContent"
-            type="textarea"
-            :rows="2"
-            placeholder="Write a reply..."
-            class="comment-input"
-          />
-          <div class="comment-actions">
-            <el-button class="bw-btn" size="small" @click="submitReply">Reply</el-button>
-            <el-button class="bw-btn" size="small" @click="replyingTo = null">Cancel</el-button>
-          </div>
-        </div>
-      </div>
-    </div>
+    <CommentThread
+      v-for="root in commentTree"
+      :key="root.comment.id"
+      :node="root"
+    />
 
     <div class="add-comment" v-if="isLoggedIn">
       <el-button v-if="!showCommentBox" text class="add-comment-link" @click="showCommentBox = true">
@@ -51,6 +14,7 @@
       </el-button>
       <div v-else class="comment-box">
         <el-input
+          ref="commentInputRef"
           v-model="newComment"
           type="textarea"
           :rows="3"
@@ -69,19 +33,28 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, provide, ref, watch } from 'vue'
 import { apiFetch, getToken } from '@/api'
 import { notify } from '@/utils/message'
+import type { ElInput } from 'element-plus'
+import CommentThread, { type CommentNode } from '@/components/CommentThread.vue'
 
 interface Comment {
   id: number
   username: string
   content: string
   created_at: string
+  parent_id?: number | null
+  reply_to_user_id?: number | null
+  reply_to_username?: string
 }
 
 const props = defineProps<{
   postId: number
+}>()
+
+const emit = defineEmits<{
+  count: [value: number]
 }>()
 
 const comments = ref<Comment[]>([])
@@ -91,10 +64,59 @@ const isLoggedIn = computed(() => !!getToken())
 const showCommentBox = ref(false)
 const newComment = ref('')
 const commenting = ref(false)
+const commentInputRef = ref<InstanceType<typeof ElInput> | null>(null)
 const replyingTo = ref<number | null>(null)
 const replyContent = ref('')
+const replying = ref(false)
 const deletingId = ref<number | null>(null)
 const currentUser = ref<string | null>(null)
+
+const replyShown = ref<Record<number, number>>({})
+function shownFor(parentId: number): number {
+  return replyShown.value[parentId] ?? 0
+}
+function moreReplies(parentId: number, total: number) {
+  const cur = shownFor(parentId)
+  if (cur <= 0) {
+    replyShown.value = { ...replyShown.value, [parentId]: Math.min(3, total) }
+  } else if (cur >= total) {
+    replyShown.value = { ...replyShown.value, [parentId]: 0 }
+  } else {
+    replyShown.value = { ...replyShown.value, [parentId]: Math.min(cur + 5, total) }
+  }
+}
+
+function buildTree(list: Comment[]): CommentNode[] {
+  const map = new Map<number, CommentNode>()
+  for (const c of list) map.set(c.id, { comment: c, children: [] })
+  const roots: CommentNode[] = []
+  for (const c of list) {
+    const node = map.get(c.id)!
+    if (c.parent_id != null && map.has(c.parent_id)) {
+      map.get(c.parent_id)!.children.push(node)
+    } else {
+      roots.push(node)
+    }
+  }
+  return roots
+}
+
+const commentTree = computed(() => buildTree(comments.value))
+
+provide('commentThread', {
+  formatDate,
+  toggleReply,
+  deleteComment,
+  submitReply,
+  shownFor,
+  moreReplies,
+  currentUser,
+  isLoggedIn,
+  deletingId,
+  replyingTo,
+  replyContent,
+  replying,
+})
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
@@ -137,7 +159,7 @@ async function deleteComment(commentId: number) {
     const response = await apiFetch(`/comments/${commentId}`, { method: 'DELETE' })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     notify('success', 'Comment deleted')
-    comments.value = comments.value.filter((c) => c.id !== commentId)
+    await loadComments()
   } catch (error) {
     console.error('Delete comment error:', error)
     notify('error', 'Failed to delete comment')
@@ -151,14 +173,40 @@ function cancelComment() {
   newComment.value = ''
 }
 
+watch(showCommentBox, (open) => {
+  if (open) {
+    nextTick(() => commentInputRef.value?.focus())
+  }
+})
+
 function toggleReply(commentId: number) {
   replyingTo.value = replyingTo.value === commentId ? null : commentId
   replyContent.value = ''
 }
 
-function submitReply() {
-  replyingTo.value = null
-  replyContent.value = ''
+async function submitReply(commentId: number) {
+  const content = replyContent.value.trim()
+  if (!content) {
+    notify('warning', 'Please enter a reply')
+    return
+  }
+  replying.value = true
+  try {
+    const response = await apiFetch(`/posts/${props.postId}/comments/${commentId}/reply`, {
+      method: 'POST',
+      body: JSON.stringify({ content }),
+    })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    replyContent.value = ''
+    replyingTo.value = null
+    notify('success', 'Reply added')
+    await loadComments()
+  } catch (error) {
+    console.error('Reply comment error:', error)
+    notify('error', 'Failed to add reply')
+  } finally {
+    replying.value = false
+  }
 }
 
 async function submitComment() {
@@ -200,6 +248,7 @@ async function loadComments() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
     comments.value = json.data ?? []
+    emit('count', comments.value.length)
   } catch (error) {
     console.error('Load comments error:', error)
     notify('error', 'Failed to load comments')
@@ -232,81 +281,6 @@ watch(() => props.postId, () => {
   color: #ffffff;
 }
 
-.comment {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 0;
-  border-bottom: 1px solid #313335;
-}
-
-.comment-avatar {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #3d4043;
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.comment-body {
-  flex: 1;
-  min-width: 0;
-}
-
-.comment-meta {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 2px;
-}
-
-.comment-username {
-  font-weight: 600;
-  font-size: 13px;
-  color: #6cbbf7;
-}
-
-.comment-date {
-  font-size: 12px;
-  color: #6a737c;
-}
-
-.comment-content {
-  font-size: 13px;
-  line-height: 1.5;
-  color: #c4c9cc;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.comment-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 4px;
-}
-
-.reply-btn {
-  padding: 0;
-  font-size: 12px;
-  color: #6a737c;
-  background: transparent !important;
-}
-
-.reply-btn:hover,
-.reply-btn:focus-visible {
-  color: #6a737c;
-  background: transparent !important;
-  text-decoration: underline;
-  text-decoration-color: #6a737c;
-  text-underline-offset: 4px;
-}
-
 .add-comment {
   margin-top: 16px;
 }
@@ -335,10 +309,6 @@ watch(() => props.postId, () => {
   border-radius: 8px;
   padding: 12px;
   background: #0f1010;
-}
-
-.reply-box {
-  margin-top: 8px;
 }
 
 .bw-btn,

@@ -27,58 +27,26 @@ func (s *PostLikeStore) Like(c context.Context, postId, userId int64) error {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	query := "INSERT INTO post_likes (post_id,user_id) VALUES($1,$2) ON CONFLICT (post_id,user_id) DO NOTHING"
 
-	res, err := tx.ExecContext(ctx,
-		"INSERT INTO post_likes (post_id,user_id) VALUES($1,$2) ON CONFLICT (post_id,user_id) DO NOTHING",
-		postId, userId)
-	if err != nil {
+	if _, err := s.db.ExecContext(ctx, query, postId, userId); err != nil {
 		return err
 	}
 
-	affected, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected == 1 {
-		if _, err := tx.ExecContext(ctx, `UPDATE posts SET like_count = like_count + 1 WHERE id = $1`, postId); err != nil {
-			return err
-		}
-	}
-
-	return tx.Commit()
+	return nil
 }
 
 func (s *PostLikeStore) Dislike(c context.Context, postId, userId int64) error {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	query := "DELETE FROM post_likes WHERE post_id = $1 AND user_id = $2"
 
-	res, err := tx.ExecContext(ctx, `DELETE FROM post_likes WHERE post_id = $1 AND user_id = $2`, postId, userId)
-	if err != nil {
+	if _, err := s.db.ExecContext(ctx, query, postId, userId); err != nil {
 		return err
 	}
 
-	affected, err := res.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if affected == 1 {
-		if _, err := tx.ExecContext(ctx, `UPDATE posts SET like_count = GREATEST(like_count - 1, 0) WHERE id = $1`, postId); err != nil {
-			return err
-		}
-	}
-
-	return tx.Commit()
+	return nil
 }
 
 func (s *PostLikeStore) GetPostLikes(c context.Context, postId int64) (int64, error) {

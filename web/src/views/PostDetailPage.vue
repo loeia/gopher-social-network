@@ -40,7 +40,7 @@
 
         <div class="markdown-body" v-html="renderedContent" />
 
-        <Comments :post-id="post.id" />
+        <Comments :post-id="post.id" @count="onCommentCount" />
       </template>
     </div>
   </div>
@@ -116,6 +116,10 @@ function formatDate(value?: string) {
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return value
   return date.toLocaleString()
+}
+
+function onCommentCount(value: number) {
+  commentsCount.value = value
 }
 
 function loadPost() {

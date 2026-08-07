@@ -53,7 +53,6 @@ function restoreScroll() {
 }
 
 async function loadLikedPosts() {
-  if (store.likedPostsLoaded) return
   loading.value = true
   try {
     await store.fetchLikedPosts()
@@ -65,9 +64,14 @@ async function loadLikedPosts() {
   }
 }
 
-onMounted(loadLikedPosts)
-onMounted(restoreScroll)
-onActivated(restoreScroll)
+onMounted(() => {
+  restoreScroll()
+  loadLikedPosts()
+})
+onActivated(() => {
+  restoreScroll()
+  loadLikedPosts()
+})
 onDeactivated(saveScroll)
 onBeforeUnmount(saveScroll)
 </script>

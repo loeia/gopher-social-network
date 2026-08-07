@@ -1,7 +1,7 @@
 <template>
   <div class="confirm-container">
     <h1>Confirmation</h1>
-    <el-button type="primary" size="large" :loading="loading" @click="handleConfirm">
+    <el-button size="large" class="confirm-btn" :loading="loading" @click="handleConfirm">
       Click to confirm
     </el-button>
   </div>
@@ -49,5 +49,24 @@ const handleConfirm = async () => {
   justify-content: center;
   gap: 24px;
   min-height: 100vh;
+}
+
+.confirm-btn {
+  background: #ffffff;
+  color: #141414;
+  border: 1px solid #ffffff;
+  font-weight: 600;
+}
+
+.confirm-btn:hover {
+  background: #e4e6e8;
+  color: #141414;
+  border-color: #e4e6e8;
+}
+
+.confirm-btn.is-loading {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #141414;
 }
 </style>

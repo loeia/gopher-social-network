@@ -4,6 +4,7 @@ import ConfirmationPage from '@/views/ConfirmationPage.vue'
 import PostDetailPage from '@/views/PostDetailPage.vue'
 import CreatePostPage from '@/views/CreatePostPage.vue'
 import LoginPage from '@/views/LoginPage.vue'
+import SignUpPage from '@/views/SignUpPage.vue'
 
 const router = createRouter({
 history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,6 +29,11 @@ history: createWebHistory(import.meta.env.BASE_URL),
       path: '/login',
       name: 'Login',
       component: LoginPage,
+    },
+    {
+      path: '/signup',
+      name: 'SignUp',
+      component: SignUpPage,
     },
     {
       path: '/posts/:postId',

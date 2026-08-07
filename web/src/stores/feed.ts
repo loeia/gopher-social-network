@@ -76,7 +76,6 @@ export const useFeedStore = defineStore('feed', {
       this.feedScrollTop = 0
     },
     async fetchLikedPosts() {
-      if (this.likedPostsLoaded) return
       const response = await apiFetch('/users/likes')
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const json = await response.json()

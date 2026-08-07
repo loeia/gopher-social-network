@@ -38,5 +38,6 @@ type ResetPassword struct {
 }
 
 type CommentReq struct {
-	Content string `json:"content" validate:"required,max=500"`
+	Content  string `json:"content" validate:"required,max=500"`
+	ParentID *int64 `json:"parent_id" validate:"omitempty,gt=0"`
 }

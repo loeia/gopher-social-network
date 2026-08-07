@@ -125,6 +125,7 @@ func (app *application) mount() http.Handler {
 				r.Group(func(r chi.Router) {
 					r.Use(app.AuthTokenMiddleware)
 					r.Post("/", app.createCommentHandler)
+					r.Post("/{commentId}/reply", app.createCommentHandler)
 				})
 			})
 		})

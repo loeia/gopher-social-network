@@ -57,8 +57,8 @@ function goToLogin() {
 }
 
 function goToSignUp() {
-  // Register page not built yet.
-  notify('info', 'Sign up page is not ready yet')
+  if (route.path === '/signup') return
+  router.push({ path: '/signup', query: { redirect: route.fullPath } })
 }
 
 async function handleLogout() {

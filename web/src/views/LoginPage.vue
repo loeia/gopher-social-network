@@ -46,7 +46,7 @@
         </el-button>
 
         <div class="login-footer">
-          New to Gopher? <a href="#" class="footer-link creator">Create an account</a>
+          New to Gopher? <router-link to="/signup" class="footer-link">Create an account</router-link>
         </div>
       </div>
     </div>

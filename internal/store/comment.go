@@ -7,12 +7,15 @@ import (
 )
 
 type Comment struct {
-	ID        int64  `json:"id"`
-	PostID    int64  `json:"post_id"`
-	UserID    int64  `json:"user_id"`
-	Content   string `json:"content"`
-	CreatedAt string `json:"created_at"`
-	User      User   `json:"user"`
+	ID              int64  `json:"id"`
+	PostID          int64  `json:"post_id"`
+	UserID          int64  `json:"user_id"`
+	Content         string `json:"content"`
+	ParentID        *int64 `json:"parent_id"`
+	ReplyToUserID   *int64 `json:"reply_to_user_id"`
+	ReplyToUsername string `json:"reply_to_username"`
+	CreatedAt       string `json:"created_at"`
+	User            User   `json:"user"`
 }
 
 type CommentStore struct {
@@ -30,8 +33,9 @@ func (s *CommentStore) GetByPostId(c context.Context, postId int64) ([]*Comment,
 	defer cancel()
 
 	query := `
-		SELECT c.id,c.post_id,c.user_id,c.content,c.created_at,u.username FROM comments c
+		SELECT c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username FROM comments c
 		JOIN users u on u.id = c.user_id
+		LEFT JOIN users ru ON ru.id = c.reply_to_user_id
 		WHERE c.post_id = $1
 		ORDER BY c.created_at DESC;
 	`
@@ -45,6 +49,7 @@ func (s *CommentStore) GetByPostId(c context.Context, postId int64) ([]*Comment,
 	var comments []*Comment
 	for rows.Next() {
 		var comment Comment
+		var replyToUsername sql.NullString
 
 		if err := rows.Scan(
 			&comment.ID,
@@ -52,10 +57,14 @@ func (s *CommentStore) GetByPostId(c context.Context, postId int64) ([]*Comment,
 			&comment.UserID,
 			&comment.Content,
 			&comment.CreatedAt,
+			&comment.ParentID,
+			&comment.ReplyToUserID,
+			&replyToUsername,
 			&comment.User.Username,
 		); err != nil {
 			return nil, err
 		}
+		comment.ReplyToUsername = replyToUsername.String
 
 		comments = append(comments, &comment)
 	}
@@ -71,45 +80,34 @@ func (s *CommentStore) Create(ctx context.Context, comment *Comment) (*Comment, 
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeoutDuration)
 	defer cancel()
 
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
+	query := `INSERT INTO comments (user_id,post_id,content,parent_id,reply_to_user_id)
+		VALUES ($1,$2,$3,$4,$5) RETURNING id,created_at`
+	if err := s.db.QueryRowContext(
+		ctx,
+		query,
+		comment.UserID,
+		comment.PostID,
+		comment.Content,
+		comment.ParentID,
+		comment.ReplyToUserID,
+	).Scan(&comment.ID, &comment.CreatedAt); err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
 
-	query := `INSERT INTO comments (user_id,post_id,content) VALUES ($1,$2,$3) RETURNING id,created_at`
-	if err := tx.QueryRowContext(ctx, query, comment.UserID, comment.PostID, comment.Content).Scan(&comment.ID, &comment.CreatedAt); err != nil {
-		return nil, err
-	}
-
-	if _, err := tx.ExecContext(ctx, `UPDATE posts SET comment_count = comment_count + 1 WHERE id = $1`, comment.PostID); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
 	return comment, nil
 }
 
-func (s *CommentStore) Delete(c context.Context, comment *Comment) error {
+func (s *CommentStore) Delete(c context.Context, commentId int64) error {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
+	query := `DELETE FROM comments WHERE id = $1`
 
-	if _, err := tx.ExecContext(ctx, `DELETE FROM comments WHERE id = $1`, comment.ID); err != nil {
-		return err
-	}
-	if _, err := tx.ExecContext(ctx, `UPDATE posts SET comment_count = GREATEST(comment_count - 1, 0) WHERE id = $1`, comment.PostID); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, commentId); err != nil {
 		return err
 	}
 
-	return tx.Commit()
+	return nil
 }
 
 func (s *CommentStore) GetById(c context.Context, commentId int64) (*Comment, error) {
@@ -117,18 +115,23 @@ func (s *CommentStore) GetById(c context.Context, commentId int64) (*Comment, er
 	defer cancel()
 
 	query := `
-		SELECT c.id,c.post_id,c.user_id,c.content,c.created_at,u.username FROM comments c
+		SELECT c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username FROM comments c
 		JOIN users u on u.id = c.user_id
+		LEFT JOIN users ru ON ru.id = c.reply_to_user_id
 		WHERE c.id = $1
 	`
 
 	var comment Comment
+	var replyToUsername sql.NullString
 	if err := s.db.QueryRowContext(ctx, query, commentId).Scan(
 		&comment.ID,
 		&comment.PostID,
 		&comment.UserID,
 		&comment.Content,
 		&comment.CreatedAt,
+		&comment.ParentID,
+		&comment.ReplyToUserID,
+		&replyToUsername,
 		&comment.User.Username,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -136,6 +139,7 @@ func (s *CommentStore) GetById(c context.Context, commentId int64) (*Comment, er
 		}
 		return nil, err
 	}
+	comment.ReplyToUsername = replyToUsername.String
 
 	return &comment, nil
 }
