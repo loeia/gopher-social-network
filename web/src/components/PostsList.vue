@@ -18,8 +18,8 @@
 import { nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { ElMessage } from 'element-plus'
 import { useFeedStore } from '@/stores/feed'
+import { notify } from '@/utils/message'
 
 const store = useFeedStore()
 const { posts } = storeToRefs(store)
@@ -55,7 +55,7 @@ async function loadPosts() {
     await store.fetchPosts()
   } catch (error) {
     console.error('Load posts error:', error)
-    ElMessage.error('Failed to load posts')
+    notify('error', 'Failed to load posts')
   } finally {
     loading.value = false
   }
@@ -68,7 +68,7 @@ async function loadNewPosts() {
     window.scrollTo({ top: 0 })
   } catch (error) {
     console.error('Refresh posts error:', error)
-    ElMessage.error('Failed to refresh posts')
+    notify('error', 'Failed to refresh posts')
   } finally {
     loading.value = false
   }

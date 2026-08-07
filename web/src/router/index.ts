@@ -9,7 +9,9 @@ const router = createRouter({
 history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior(to, from, savedPosition) {
     // Restore position on back/forward, otherwise always scroll to top.
-    return savedPosition || { top: 0 }
+    if (savedPosition) return savedPosition
+    if (to.name === 'Home') return false
+    return { top: 0 }
   },
   routes: [
     {
