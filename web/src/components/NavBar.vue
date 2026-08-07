@@ -25,8 +25,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { getToken, clearToken } from '@/api'
+import { notify } from '@/utils/message'
 
 const router = useRouter()
 const route = useRoute()
@@ -44,7 +44,7 @@ watch(
 function searchPost() {
   const id = Number(searchId.value.trim())
   if (!searchId.value.trim() || !Number.isInteger(id) || id <= 0) {
-    ElMessage.warning('Please enter a valid post ID')
+    notify('warning', 'Please enter a valid post ID')
     return
   }
   router.push(`/posts/${id}`)
@@ -52,12 +52,13 @@ function searchPost() {
 }
 
 function goToLogin() {
+  if (route.path === '/login') return
   router.push({ path: '/login', query: { redirect: route.fullPath } })
 }
 
 function goToSignUp() {
   // Register page not built yet.
-  ElMessage.info('Sign up page is not ready yet')
+  notify('info', 'Sign up page is not ready yet')
 }
 
 async function handleLogout() {
@@ -65,7 +66,7 @@ async function handleLogout() {
   // The backend endpoint is not implemented yet, so for now we only clear the local token.
   clearToken()
   isLoggedIn.value = false
-  ElMessage.success('Logged out')
+  notify('success', 'Logged out')
   router.push('/')
 }
 </script>
@@ -120,5 +121,18 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.navbar-right :deep(.el-button) {
+  background: #ffffff;
+  color: #141414;
+  border: 1px solid #ffffff;
+  font-weight: 600;
+}
+
+.navbar-right :deep(.el-button:hover) {
+  background: #e4e6e8;
+  color: #141414;
+  border-color: #e4e6e8;
 }
 </style>

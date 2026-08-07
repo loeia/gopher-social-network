@@ -19,11 +19,11 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { ElMessage } from 'element-plus'
 import { useFeedStore } from '@/stores/feed'
+import { notify } from '@/utils/message'
 
 const store = useFeedStore()
 const { likedPosts: posts } = storeToRefs(store)
@@ -42,6 +42,16 @@ function formatDate(value?: string) {
   return date.toLocaleString()
 }
 
+function saveScroll() {
+  store.feedScrollTop = window.scrollY
+}
+
+function restoreScroll() {
+  if (store.feedScrollTop > 0) {
+    nextTick(() => window.scrollTo({ top: store.feedScrollTop }))
+  }
+}
+
 async function loadLikedPosts() {
   if (store.likedPostsLoaded) return
   loading.value = true
@@ -49,13 +59,17 @@ async function loadLikedPosts() {
     await store.fetchLikedPosts()
   } catch (error) {
     console.error('Load liked posts error:', error)
-    ElMessage.error('Failed to load liked posts')
+    notify('error', 'Failed to load liked posts')
   } finally {
     loading.value = false
   }
 }
 
 onMounted(loadLikedPosts)
+onMounted(restoreScroll)
+onActivated(restoreScroll)
+onDeactivated(saveScroll)
+onBeforeUnmount(saveScroll)
 </script>
 
 <style scoped>

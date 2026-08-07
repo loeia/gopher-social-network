@@ -103,8 +103,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { apiFetch } from '@/api'
+import { notify } from '@/utils/message'
 import { renderMarkdown } from '@/utils/markdown'
 
 const router = useRouter()
@@ -134,7 +134,7 @@ function addTag() {
     return
   }
   if (tags.value.length >= MAX_TAGS) {
-    ElMessage.warning(`You can add at most ${MAX_TAGS} tags`)
+    notify('warning', `You can add at most ${MAX_TAGS} tags`)
     return
   }
   tags.value.push(tag)
@@ -147,15 +147,15 @@ function removeTag(index: number) {
 
 async function handleSubmit() {
   if (isTitleOver.value || isContentOver.value || isTagsOver.value) {
-    ElMessage.warning('Please fix the fields exceeding the limit')
+    notify('warning', 'Please fix the fields exceeding the limit')
     return
   }
   if (!title.value.trim()) {
-    ElMessage.warning('Please enter a title')
+    notify('warning', 'Please enter a title')
     return
   }
   if (!content.value.trim()) {
-    ElMessage.warning('Please enter content')
+    notify('warning', 'Please enter content')
     return
   }
 
@@ -170,11 +170,11 @@ async function handleSubmit() {
       }),
     })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    ElMessage.success('Post created')
+    notify('success', 'Post created')
     router.push('/')
   } catch (error) {
     console.error('Create post error:', error)
-    ElMessage.error('Failed to create post')
+    notify('error', 'Failed to create post')
   } finally {
     submitting.value = false
   }
@@ -195,6 +195,28 @@ async function handleSubmit() {
 
 .back-nav {
   margin-bottom: 12px;
+}
+
+.back-nav :deep(.el-button) {
+  color: #6a737c;
+  background: transparent;
+}
+
+.back-nav :deep(.el-button:hover),
+.back-nav :deep(.el-button:focus),
+.back-nav :deep(.el-button:focus-visible) {
+  color: #6a737c;
+  background: transparent;
+  text-decoration: underline;
+  text-decoration-color: #6a737c;
+  text-underline-offset: 4px;
+}
+
+.back-nav :deep(.el-button.is-disabled) {
+  color: #3d4043;
+  background: transparent;
+  text-decoration: none;
+  cursor: not-allowed;
 }
 
 .page-title {
@@ -431,6 +453,21 @@ async function handleSubmit() {
   gap: 8px;
 }
 
+.tags-list :deep(.el-tag) {
+  background: #ffffff;
+  color: #141414;
+  border: 1px solid #ffffff;
+}
+
+.tags-list :deep(.el-tag .el-tag__close) {
+  color: #595959;
+}
+
+.tags-list :deep(.el-tag .el-tag__close:hover) {
+  background: #141414;
+  color: #ffffff;
+}
+
 .form-error {
   margin: 0;
   font-size: 13px;
@@ -438,6 +475,7 @@ async function handleSubmit() {
 }
 
 .add-btn {
+  min-width: 88px;
   background: #ffffff;
   color: #141414;
   border: 1px solid #ffffff;
@@ -465,7 +503,6 @@ async function handleSubmit() {
   color: #141414;
   border: 1px solid #ffffff;
   font-weight: 600;
-  min-width: 160px;
 }
 
 .publish-btn:hover {

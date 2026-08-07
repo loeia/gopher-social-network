@@ -38,7 +38,7 @@ export const useFeedStore = defineStore('feed', {
     },
     visitPost(id: number) {
       if (this.postHistory[this.postHistoryIndex] === id) return
-      this.postHistory = this.postHistory.slice(0, this.postHistoryIndex + 1)
+      this.postHistory = this.postHistory.filter((pid) => pid !== id)
       this.postHistory.push(id)
       if (this.postHistory.length > MAX_POST_HISTORY) {
         this.postHistory.shift()

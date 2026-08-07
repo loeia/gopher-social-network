@@ -10,8 +10,8 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { apiFetch } from '@/api'
+import { notify } from '@/utils/message'
 
 const route = useRoute()
 const router = useRouter()
@@ -27,14 +27,14 @@ const handleConfirm = async () => {
     })
 
     if (response.ok) {
-      ElMessage.success('Confirmed successfully')
+      notify('success', 'Confirmed successfully')
       router.push('/')
     } else {
-      ElMessage.error('Failed to confirm token')
+      notify('error', 'Failed to confirm token')
     }
   } catch (error) {
     console.error('Confirm error:', error)
-    ElMessage.error('Network error, please try again')
+    notify('error', 'Network error, please try again')
   } finally {
     loading.value = false
   }
