@@ -21,9 +21,21 @@
           <span class="meta-sep">·</span>
           <span class="meta-item">{{ formatDate(post.created_at) }}</span>
           <span class="meta-sep">·</span>
-          <span class="meta-item">{{ post.likes_count }} likes</span>
+          <span class="meta-item">{{ likesCount }} likes</span>
           <span class="meta-sep">·</span>
-          <span class="meta-item">{{ post.comments_count }} comments</span>
+          <span class="meta-item">{{ commentsCount }} comments</span>
+          <span class="meta-sep">·</span>
+          <button
+            class="like-btn"
+            :class="likeBtnClass"
+            :disabled="!isLoggedIn || liking"
+            :title="likeTitle"
+            @click="toggleLike"
+          >
+            <svg class="like-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+            </svg>
+          </button>
         </div>
 
         <div class="markdown-body" v-html="renderedContent" />
@@ -37,7 +49,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { apiFetch } from '@/api'
+import { apiFetch, getToken } from '@/api'
 import { useFeedStore } from '@/stores/feed'
 import { renderMarkdown } from '@/utils/markdown'
 import { notify } from '@/utils/message'
@@ -49,8 +61,10 @@ interface PostDetail {
   title: string
   content: string
   tags: string[]
-  likes_count: number
-  comments_count: number
+  likes_count?: number
+  likes?: number
+  comments_count?: number
+  comment_count?: number
   created_at: string
   updated_at: string
 }
@@ -62,6 +76,18 @@ const store = useFeedStore()
 
 const post = ref<PostDetail | null>(null)
 const loading = ref(false)
+
+const isLoggedIn = computed(() => !!getToken())
+const liked = ref(false)
+const liking = ref(false)
+const likesCount = ref(0)
+const commentsCount = ref(0)
+
+const likeTitle = computed(() => {
+  if (!isLoggedIn.value) return 'Log in to like'
+  return liked.value ? 'Unlike' : 'Like'
+})
+const likeBtnClass = computed(() => ({ liked: isLoggedIn.value && liked.value }))
 
 const hasPrevPost = computed(() => store.postHistoryIndex > 0)
 const hasNextPost = computed(() => store.postHistoryIndex < store.postHistory.length - 1)
@@ -100,12 +126,50 @@ function loadPost() {
   startLoad(id)
 }
 
+async function toggleLike() {
+  if (!isLoggedIn.value || !post.value) return
+  liking.value = true
+  try {
+    const action = liked.value ? 'dislike' : 'like'
+    const response = await apiFetch(`/posts/${post.value.id}/${action}`, { method: 'PUT' })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    liked.value = !liked.value
+    likesCount.value += liked.value ? 1 : -1
+  } catch (error) {
+    console.error('Toggle like error:', error)
+    notify('error', 'Failed to update like')
+  } finally {
+    liking.value = false
+  }
+}
+
+async function loadLikedState(id: number) {
+  if (!getToken()) {
+    liked.value = false
+    return
+  }
+  try {
+    const response = await apiFetch('/users/likes')
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const list = json.data ?? json
+    liked.value = Array.isArray(list) && list.some((p) => p?.post_id === id)
+  } catch (error) {
+    console.error('Load liked state error:', error)
+    liked.value = false
+  }
+}
+
 async function startLoad(id: number) {
   try {
     const response = await apiFetch(`/posts/${id}`)
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
-    post.value = json.data ?? json
+    const data = json.data ?? json
+    post.value = data
+    likesCount.value = Number(data.likes_count ?? data.likes ?? 0)
+    commentsCount.value = Number(data.comments_count ?? data.comment_count ?? 0)
+    loadLikedState(id)
   } catch (error) {
     console.error('Load post error:', error)
     notify('error', 'Failed to load post')
@@ -205,6 +269,51 @@ watch(() => route.params.postId, loadPost)
 
 .meta-sep {
   color: #6a737c;
+}
+
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: #6a737c;
+}
+
+.like-btn:disabled {
+  cursor: not-allowed;
+  color: #6a737c;
+}
+
+.like-btn:not(:disabled) {
+  color: #ffffff;
+}
+
+.like-btn .like-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.like-btn .like-icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.like-btn:not(:disabled):hover:not(.liked) .like-icon path {
+  fill: currentColor;
+}
+
+.like-btn.liked {
+  color: #e05c5c;
+}
+
+.like-btn.liked .like-icon path {
+  fill: currentColor;
+  stroke: currentColor;
 }
 
 /* Markdown-rendered content, StackOverflow-style */
