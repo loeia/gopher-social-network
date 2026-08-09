@@ -33,7 +33,9 @@
             @click="toggleLike"
           >
             <svg class="like-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+              <path
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              />
             </svg>
           </button>
         </div>
@@ -98,7 +100,12 @@ const renderedContent = computed(() => {
 
 function backHome() {
   store.clearPostHistory()
-  router.push('/')
+  const state = window.history.state as { back?: unknown } | null
+  if (state && state.back != null) {
+    router.back()
+  } else {
+    router.push('/')
+  }
 }
 
 function goToPrevious() {
@@ -191,12 +198,7 @@ watch(() => route.params.postId, loadPost)
   min-height: 100vh;
   padding: 32px 0 80px;
   font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    'Liberation Sans',
-    'Helvetica Neue',
-    Arial,
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Liberation Sans', 'Helvetica Neue', Arial,
     sans-serif;
 }
 
@@ -465,6 +467,4 @@ watch(() => route.params.postId, loadPost)
   color: #9faccc;
   font-size: 12px;
 }
-
-
 </style>

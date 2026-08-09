@@ -18,6 +18,8 @@
               placeholder="Choose a username"
               autocomplete="username"
               class="field"
+              :class="{ 'is-error': usernameError }"
+              @input="usernameError = ''"
             />
           </div>
 
@@ -30,6 +32,8 @@
               placeholder="you@example.com"
               autocomplete="new-password"
               class="field"
+              :class="{ 'is-error': emailError }"
+              @input="emailError = ''"
             />
           </div>
 
@@ -88,6 +92,8 @@ const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const registered = ref(false)
+const usernameError = ref('')
+const emailError = ref('')
 
 function goBack() {
   router.push('/')
@@ -96,6 +102,9 @@ function goBack() {
 async function handleRegister() {
   const name = username.value.trim()
   const mail = email.value.trim()
+
+  usernameError.value = ''
+  emailError.value = ''
 
   if (!name) {
     notify('warning', 'Please enter a username')
@@ -120,6 +129,19 @@ async function handleRegister() {
         password: password.value,
       }),
     })
+
+    if (response.status === 409) {
+      const data = await response.json()
+      const message: string = data?.error || 'Conflict detected, please try again'
+      if (message.includes('username')) {
+        usernameError.value = message
+      } else if (message.includes('email')) {
+        emailError.value = message
+      }
+      notify('error', message)
+      return
+    }
+
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
     registered.value = true
@@ -226,6 +248,13 @@ async function handleRegister() {
 
 .field :deep(.el-input__suffix) {
   color: #57606a;
+}
+
+.field.is-error :deep(.el-input__wrapper),
+.field.is-error :deep(.el-input__wrapper.is-focus) {
+  box-shadow:
+    0 0 0 1px #cf222e inset,
+    0 0 0 3px rgba(207, 34, 46, 0.3);
 }
 
 .submit-btn {

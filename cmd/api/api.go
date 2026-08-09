@@ -107,6 +107,7 @@ func (app *application) mount() http.Handler {
 	})
 
 	r.Route("/posts", func(r chi.Router) {
+
 		r.Route("/{postId}", func(r chi.Router) {
 			r.Use(app.postsContextMiddleware)
 			r.Get("/", app.getPostHandler)
@@ -134,6 +135,9 @@ func (app *application) mount() http.Handler {
 			r.Use(app.AuthTokenMiddleware)
 			r.Post("/", app.createPostHandler)
 		})
+
+		r.Get("/search", app.getSearchPostHandler)
+		r.Get("/free", app.getFreePostsHandler)
 	})
 
 	r.Route("/users", func(r chi.Router) {
@@ -168,9 +172,6 @@ func (app *application) mount() http.Handler {
 	r.Route("/authentication", func(r chi.Router) {
 		r.Post("/users", app.registerUserHandler)
 		r.Post("/token", app.createTokenHandler)
-	})
-	r.Route("/free", func(r chi.Router) {
-		r.Get("/", app.getRandomPosts)
 	})
 
 	return r

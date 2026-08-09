@@ -5,9 +5,10 @@ import PostDetailPage from '@/views/PostDetailPage.vue'
 import CreatePostPage from '@/views/CreatePostPage.vue'
 import LoginPage from '@/views/LoginPage.vue'
 import SignUpPage from '@/views/SignUpPage.vue'
+import SearchResults from '@/views/SearchResults.vue'
 
 const router = createRouter({
-history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior(to, from, savedPosition) {
     // Restore position on back/forward, otherwise always scroll to top.
     if (savedPosition) return savedPosition
@@ -31,6 +32,11 @@ history: createWebHistory(import.meta.env.BASE_URL),
       component: LoginPage,
     },
     {
+      path: '/search',
+      name: 'SearchResults',
+      component: SearchResults,
+    },
+    {
       path: '/signup',
       name: 'SignUp',
       component: SignUpPage,
@@ -45,7 +51,7 @@ history: createWebHistory(import.meta.env.BASE_URL),
       name: 'Confirmation',
       component: ConfirmationPage,
     },
-    ]
+  ],
 })
 
 export default router

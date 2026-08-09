@@ -175,15 +175,59 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-// getRandomPosts returns random posts for unauthenticated users.
-func (app *application) getRandomPosts(w http.ResponseWriter, r *http.Request) {
-	posts, err := app.store.Posts.GetRandomPosts(r.Context(), 20)
+// getFreePostsHandler returns random posts for unauthenticated users.
+func (app *application) getFreePostsHandler(w http.ResponseWriter, r *http.Request) {
+	posts, err := app.store.Posts.GetFree(r.Context(), 20)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 
 	if err := app.JSONResponse(w, http.StatusOK, posts); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *application) getSearchPostHandler(w http.ResponseWriter, r *http.Request) {
+	pfq := store.PaginatedFeedQuery{
+		Limit:  20,
+		Offset: 0,
+	}
+
+	p, err := pfq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(p); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	posts, err := app.store.Posts.Search(r.Context(), p)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	resp := make([]*FeedPostResponse, len(posts))
+	for i, post := range posts {
+		resp[i] = &FeedPostResponse{
+			ID:           post.Post.ID,
+			AuthorId:     post.Post.UserID,
+			Author:       post.Post.User.Username,
+			Title:        post.Post.Title,
+			Content:      post.Post.Content,
+			Tags:         post.Post.Tags,
+			PostLikes:    post.LikeCount,
+			CommentCount: post.CommentCount,
+			CreatedAt:    post.Post.CreatedAt,
+		}
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

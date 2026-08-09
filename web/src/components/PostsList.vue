@@ -10,20 +10,44 @@
         <span>{{ post.user.username }}</span>
       </div>
     </div>
-    <button class="new-btn" :disabled="loading" @click="loadNewPosts">New</button>
+    <button v-if="!isStandalone" class="new-btn" :disabled="loading" @click="loadNewPosts">
+      New
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
+import {
+  computed,
+  nextTick,
+  onActivated,
+  onBeforeUnmount,
+  onDeactivated,
+  onMounted,
+  ref,
+} from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { useFeedStore } from '@/stores/feed'
+import { useFeedStore, type FeedPost } from '@/stores/feed'
 import { notify } from '@/utils/message'
 
+const props = withDefaults(
+  defineProps<{
+    posts?: FeedPost[]
+    loading?: boolean
+  }>(),
+  {
+    posts: undefined,
+    loading: false,
+  },
+)
+
 const store = useFeedStore()
-const { posts } = storeToRefs(store)
-const loading = ref(false)
+const { posts: storePosts } = storeToRefs(store)
+const fetching = ref(false)
+const isStandalone = computed(() => !!props.posts)
+const posts = computed(() => props.posts ?? storePosts.value)
+const loading = computed(() => props.loading || fetching.value)
 
 const router = useRouter()
 
@@ -49,20 +73,20 @@ function restoreScroll() {
 }
 
 async function loadPosts() {
-  if (store.postsLoaded) return
-  loading.value = true
+  if (store.postsLoaded || isStandalone.value) return
+  fetching.value = true
   try {
     await store.fetchPosts()
   } catch (error) {
     console.error('Load posts error:', error)
     notify('error', 'Failed to load posts')
   } finally {
-    loading.value = false
+    fetching.value = false
   }
 }
 
 async function loadNewPosts() {
-  loading.value = true
+  fetching.value = true
   try {
     await store.refreshPosts()
     window.scrollTo({ top: 0 })
@@ -70,13 +94,14 @@ async function loadNewPosts() {
     console.error('Refresh posts error:', error)
     notify('error', 'Failed to refresh posts')
   } finally {
-    loading.value = false
+    fetching.value = false
   }
 }
 
 onMounted(loadPosts)
-onMounted(restoreScroll)
-onActivated(restoreScroll)
+onActivated(() => {
+  if (!isStandalone.value) restoreScroll()
+})
 onDeactivated(saveScroll)
 onBeforeUnmount(saveScroll)
 </script>

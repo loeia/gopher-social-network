@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,9 +11,10 @@ import (
 type PaginatedFeedQuery struct {
 	Limit  int      `json:"limit" validate:"gte=1,lte=20"`
 	Offset int      `json:"offset" validate:"gte=0"`
-	Sort   string   `json:"sort" validate:"oneof=asc desc"`
+	Sort   string   `json:"sort" validate:"omitempty,oneof=asc desc"`
 	Tags   []string `json:"tags" validate:"max=5"`
 	Search string   `json:"search" validate:"max=100"`
+	Author string   `json:"author" validate:"max=100"`
 	Since  string   `json:"since"`
 	Until  string   `json:"until"`
 }
@@ -55,25 +57,39 @@ func (p *PaginatedFeedQuery) Parse(r *http.Request) (*PaginatedFeedQuery, error)
 		p.Search = search
 	}
 
-	// TODO:
-	// The format sent must be "2006-01-02 15:04:05"
+	author := qs.Get("author")
+	if author != "" {
+		p.Author = author
+	}
+
 	since := qs.Get("since")
 	if since != "" {
-		p.Since = parseTime(since)
+		s, err := parseTime(since)
+		if err != nil {
+			return nil, err
+		}
+		p.Since = s
 	}
 
 	until := qs.Get("until")
 	if until != "" {
-		p.Until = parseTime(until)
+		u, err := parseTime(until)
+		if err != nil {
+			return nil, err
+		}
+		p.Until = u
 	}
 
 	return p, nil
 }
 
-func parseTime(s string) string {
-	t, err := time.Parse(time.DateTime, s)
+// parseTime parses an RFC 3339 / ISO 8601 absolute time, e.g.
+// "2026-08-01T02:00:00Z" or "2026-08-01T10:00:00+08:00", and normalizes it to UTC.
+// Offsets/zone are required;
+func parseTime(s string) (string, error) {
+	t, err := time.Parse(time.RFC3339Nano, s)
 	if err != nil {
-		return ""
+		return "", fmt.Errorf("invalid time %q: expected RFC 3339 (ISO 8601), e.g. 2026-08-01T02:00:00Z", s)
 	}
-	return t.UTC().Format("2006-01-02 15:04:05-07:00")
+	return t.UTC().Format("2006-01-02 15:04:05-07:00"), nil
 }

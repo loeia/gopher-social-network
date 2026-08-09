@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 
 	"github.com/lib/pq"
 )
@@ -27,6 +28,14 @@ type PostWithMetaData struct {
 	Post         Post
 	CommentCount int64
 	LikeCount    int64
+}
+
+type SearchReq struct {
+	Author string   `json:"author" validate:"max=100"`
+	Tags   []string `json:"tags" validate:"max=5"`
+	Search string   `json:"search" validate:"max=100"`
+	Since  string   `json:"since"`
+	Until  string   `json:"until"`
 }
 
 type PostStore struct {
@@ -163,8 +172,8 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 		WHERE f.follower_id = $1
 		AND (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%')
 		AND (p.tags @> $5 OR $5 = '{}')
-		AND (p.created_at >= $6 OR $6 IS NULL)
-		AND (p.created_at <= $7 OR $7 IS NULL)
+		AND (p.created_at >= $6::timestamptz OR $6 IS NULL)
+		AND (p.created_at <= $7::timestamptz OR $7 IS NULL)
 		ORDER BY p.created_at ` + pfq.Sort + `
 		LIMIT $2 OFFSET $3
 	`
@@ -215,7 +224,7 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 	return feed, nil
 }
 
-func (s *PostStore) GetRandomPosts(c context.Context, count int) ([]*Post, error) {
+func (s *PostStore) GetFree(c context.Context, count int) ([]*Post, error) {
 
 	query := `
 		SELECT p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,u.username
@@ -246,6 +255,91 @@ func (s *PostStore) GetRandomPosts(c context.Context, count int) ([]*Post, error
 			&post.CreatedAt,
 			&post.UpdatedAt,
 			&post.User.Username,
+		); err != nil {
+			return nil, err
+		}
+		posts = append(posts, &post)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
+
+// escapeLike escapes LIKE wildcards so user input matches literally.
+func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
+}
+
+// Search returns posts matching search/tags/author/date-range filters, ordered by relevance.
+func (s *PostStore) Search(c context.Context, pfq *PaginatedFeedQuery) ([]*PostWithMetaData, error) {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	var sinceArg any = nil
+	if pfq.Since != "" {
+		sinceArg = pfq.Since
+	}
+	var untilArg any = nil
+	if pfq.Until != "" {
+		untilArg = pfq.Until
+	}
+
+	order := "similarity(p.title, $8) DESC, p.created_at DESC"
+	switch pfq.Sort {
+	case "asc":
+		order = "p.created_at ASC, similarity(p.title, $8) DESC"
+	case "desc":
+		order = "p.created_at DESC, similarity(p.title, $8) DESC"
+	}
+
+	query := `
+		SELECT p.id, p.user_id, p.title, p.content, p.tags, p.version, p.created_at,
+		       p.comment_count, p.like_count, u.username
+		FROM posts p
+		JOIN users u ON p.user_id = u.id
+		WHERE (p.title ILIKE '%' || $1 || '%' ESCAPE '\')
+		  AND (p.tags @> $2)
+		  AND (u.username ILIKE '%' || $3 || '%' ESCAPE '\')
+		  AND (p.created_at >= $4::timestamptz OR $4 IS NULL)
+		  AND (p.created_at <= $5::timestamptz OR $5 IS NULL)
+		ORDER BY ` + order + `
+		LIMIT $6 OFFSET $7
+	`
+
+	rows, err := s.db.QueryContext(ctx, query,
+		escapeLike(pfq.Search),
+		pq.Array(pfq.Tags),
+		escapeLike(pfq.Author),
+		sinceArg,
+		untilArg,
+		pfq.Limit,
+		pfq.Offset,
+		pfq.Search,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []*PostWithMetaData
+	for rows.Next() {
+		var post PostWithMetaData
+		if err := rows.Scan(
+			&post.Post.ID,
+			&post.Post.UserID,
+			&post.Post.Title,
+			&post.Post.Content,
+			pq.Array(&post.Post.Tags),
+			&post.Post.Version,
+			&post.Post.CreatedAt,
+			&post.CommentCount,
+			&post.LikeCount,
+			&post.Post.User.Username,
 		); err != nil {
 			return nil, err
 		}

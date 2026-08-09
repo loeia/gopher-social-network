@@ -27,7 +27,9 @@
         <div class="form-group">
           <div class="label-row">
             <label class="form-label" for="body">Content</label>
-            <span class="char-count" :class="{ over: isContentOver }">{{ content.length }}/5000</span>
+            <span class="char-count" :class="{ over: isContentOver }"
+              >{{ content.length }}/5000</span
+            >
           </div>
           <el-tabs v-model="contentTab" class="content-tabs">
             <el-tab-pane label="Edit" name="edit">
@@ -63,12 +65,7 @@
               placeholder="e.g. golang, postgres"
               @keyup.enter.prevent="addTag"
             />
-            <el-button
-              size="large"
-              class="add-btn"
-              :disabled="!canAddTag"
-              @click="addTag"
-            >
+            <el-button size="large" class="add-btn" :disabled="!canAddTag" @click="addTag">
               Add
             </el-button>
           </div>
@@ -86,12 +83,7 @@
         </div>
 
         <div class="form-actions">
-          <el-button
-            size="large"
-            class="publish-btn"
-            :loading="submitting"
-            @click="handleSubmit"
-          >
+          <el-button size="large" class="publish-btn" :loading="submitting" @click="handleSubmit">
             Publish
           </el-button>
         </div>
@@ -161,7 +153,7 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
-    const response = await apiFetch('/posts/', {
+    const response = await apiFetch('/posts', {
       method: 'POST',
       body: JSON.stringify({
         title: title.value.trim(),
