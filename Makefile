@@ -1,4 +1,4 @@
-.PHONY: run db seed build
+.PHONY: run db seed build up down
 
 run:
 	@go run cmd/api/*.go
@@ -11,3 +11,8 @@ db:
 
 seed:
 	@go run cmd/migrate/seed/main.go
+
+up: 
+	@docker compose up -d 
+down: 
+	@docker compose down 
