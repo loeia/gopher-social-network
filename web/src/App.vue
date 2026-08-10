@@ -1,18 +1,46 @@
 <template>
   <el-config-provider :message="{ placement: 'top-right', offset: 64 }">
     <div class="layout">
-      <NavBar />
-      <keep-alive include="HomePage">
-        <router-view />
-      </keep-alive>
+      <NavBar v-if="!route.meta.hideNavBar" />
+      <SideBar v-if="showSidebar" :active-view="view" @view="view = $event" />
+      <div class="main" :class="{ 'with-sidebar': showSidebar }">
+        <keep-alive include="HomePage">
+          <router-view />
+        </keep-alive>
+      </div>
     </div>
   </el-config-provider>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { storeToRefs } from 'pinia'
 import { ElConfigProvider } from 'element-plus'
 import NavBar from '@/components/NavBar.vue'
+import SideBar from '@/components/SideBar.vue'
+import { getToken } from '@/api'
+import { useFeedStore } from '@/stores/feed'
+import { useUIStore } from '@/stores/ui'
+
+const route = useRoute()
+const feedStore = useFeedStore()
+const uiStore = useUIStore()
+const { view } = storeToRefs(feedStore)
+const { sidebarOpen } = storeToRefs(uiStore)
+const isLoggedIn = computed(() => !!getToken())
+const showSidebar = computed(() => isLoggedIn.value && sidebarOpen.value && !route.meta.hideNavBar)
 </script>
+
+<style scoped>
+.main {
+  min-height: 100vh;
+}
+
+.main.with-sidebar {
+  padding-left: 216px;
+}
+</style>
 
 <style>
 body {

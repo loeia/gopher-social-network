@@ -7,6 +7,7 @@ export interface FeedPost {
   id: number
   title: string
   content: string
+  tags: string[]
   user: { username: string }
   created_at: string
 }
@@ -60,6 +61,7 @@ type RawPost = {
   id: number
   title?: string
   content?: string
+  tags?: string[] | null
   created_at?: string
   user?: { username?: string | null } | null
   author?: string | null
@@ -70,6 +72,7 @@ function toFeedPost(p: RawPost): FeedPost {
     id: Number(p.id),
     title: p.title ?? '',
     content: p.content ?? '',
+    tags: p.tags ?? [],
     created_at: p.created_at ?? '',
     user: {
       username: p.user?.username ?? p.author ?? '',

@@ -5,6 +5,9 @@
         <h2 class="card-title">{{ post.title }}</h2>
         <span class="card-date">{{ formatDate(post.created_at) }}</span>
       </div>
+      <div v-if="post.tags && post.tags.length" class="card-tags">
+        <span v-for="tag in post.tags" :key="tag" class="tag-pill">{{ tag }}</span>
+      </div>
       <div class="card-author">
         <span class="avatar">G</span>
         <span>{{ post.user.username }}</span>
@@ -148,6 +151,23 @@ onBeforeUnmount(saveScroll)
   flex-shrink: 0;
   font-size: 13px;
   color: #8c8c8c;
+}
+
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 12px;
+}
+
+.tag-pill {
+  padding: 2px 10px;
+  border: 1px solid #3d444d;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #bfbfbf;
+  background: #1f1f1f;
+  white-space: nowrap;
 }
 
 .card-content {

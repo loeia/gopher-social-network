@@ -1,6 +1,5 @@
 <template>
-  <div class="home" :class="{ 'with-sidebar': isLoggedIn }">
-    <SideBar v-if="isLoggedIn" :active-view="view" @view="view = $event" />
+  <div class="home">
     <PostsList v-if="!isLoggedIn || view === 'all'" />
     <LikedPosts v-else-if="view === 'liked'" />
     <FollowingList v-else-if="view === 'following'" />
@@ -11,7 +10,6 @@
 <script setup lang="ts">
 import { computed, onActivated, ref } from 'vue'
 import { storeToRefs } from 'pinia'
-import SideBar from '@/components/SideBar.vue'
 import PostsList from '@/components/PostsList.vue'
 import LikedPosts from '@/components/LikedPosts.vue'
 import FollowingList from '@/components/FollowingList.vue'
@@ -32,9 +30,5 @@ onActivated(() => store.clearPostHistory())
 .home {
   min-height: 100vh;
   padding: 32px 0 80px;
-}
-
-.home.with-sidebar {
-  padding-left: 216px;
 }
 </style>

@@ -6,6 +6,7 @@ import CreatePostPage from '@/views/CreatePostPage.vue'
 import LoginPage from '@/views/LoginPage.vue'
 import SignUpPage from '@/views/SignUpPage.vue'
 import SearchResults from '@/views/SearchResults.vue'
+import NotFoundPage from '@/views/NotFoundPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,6 +51,13 @@ const router = createRouter({
       path: '/confirm/:token',
       name: 'Confirmation',
       component: ConfirmationPage,
+      meta: { hideNavBar: true },
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'NotFound',
+      component: NotFoundPage,
+      meta: { hideNavBar: true },
     },
   ],
 })

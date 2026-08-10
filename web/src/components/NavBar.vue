@@ -1,6 +1,26 @@
 <template>
   <header class="navbar">
     <div class="navbar-left">
+      <el-button
+        v-if="isLoggedIn"
+        class="menu-btn"
+        @click="toggleSidebar"
+      >
+        <svg
+          class="menu-icon"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <line x1="3" y1="6" x2="21" y2="6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+          <line x1="3" y1="18" x2="21" y2="18" />
+        </svg>
+      </el-button>
       <router-link to="/" class="brand">Gopher</router-link>
     </div>
 
@@ -93,9 +113,11 @@ import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getToken, clearToken } from '@/api'
 import { notify } from '@/utils/message'
+import { useUIStore } from '@/stores/ui'
 
 const router = useRouter()
 const route = useRoute()
+const uiStore = useUIStore()
 
 const searchQuery = ref('')
 const author = ref('')
@@ -104,6 +126,10 @@ const startDate = ref<string | null>(null)
 const endDate = ref<string | null>(null)
 const filterOpen = ref(false)
 const isLoggedIn = ref(!!getToken())
+
+function toggleSidebar() {
+  uiStore.toggleSidebar()
+}
 
 watch(
   () => route.fullPath,
@@ -179,6 +205,41 @@ async function handleLogout() {
   justify-self: start;
   display: flex;
   align-items: center;
+  gap: 8px;
+}
+
+.menu-btn {
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #ffffff;
+  transition: background 0.2s ease;
+  --el-button-bg-color: transparent;
+  --el-button-border-color: transparent;
+  --el-button-text-color: #ffffff;
+  --el-button-hover-bg-color: transparent;
+  --el-button-hover-border-color: transparent;
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-bg-color: transparent;
+  --el-button-active-border-color: transparent;
+  --el-button-active-text-color: #ffffff;
+}
+
+.menu-btn:hover,
+.menu-btn:active,
+.menu-btn.is-active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.menu-btn:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 1px;
+}
+
+.menu-icon {
+  display: block;
 }
 
 .brand {
