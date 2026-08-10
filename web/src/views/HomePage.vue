@@ -2,7 +2,9 @@
   <div class="home" :class="{ 'with-sidebar': isLoggedIn }">
     <SideBar v-if="isLoggedIn" :active-view="view" @view="view = $event" />
     <PostsList v-if="!isLoggedIn || view === 'all'" />
-    <LikedPosts v-else />
+    <LikedPosts v-else-if="view === 'liked'" />
+    <FollowingList v-else-if="view === 'following'" />
+    <FollowersList v-else />
   </div>
 </template>
 
@@ -12,6 +14,8 @@ import { storeToRefs } from 'pinia'
 import SideBar from '@/components/SideBar.vue'
 import PostsList from '@/components/PostsList.vue'
 import LikedPosts from '@/components/LikedPosts.vue'
+import FollowingList from '@/components/FollowingList.vue'
+import FollowersList from '@/components/FollowersList.vue'
 import { getToken } from '@/api'
 import { useFeedStore } from '@/stores/feed'
 

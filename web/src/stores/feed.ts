@@ -18,6 +18,19 @@ export interface LikedPost {
   created_at: string
 }
 
+export interface FollowingUser {
+  follower_id: number
+  username: string
+  created_at: string
+}
+
+export interface FollowerUser {
+  username: string
+  created_at: string
+}
+
+export type ViewType = 'all' | 'liked' | 'following' | 'followers'
+
 export interface SearchParams {
   search?: string
   author?: string
@@ -70,13 +83,17 @@ export const useFeedStore = defineStore('feed', {
     postsLoaded: false,
     likedPosts: [] as LikedPost[],
     likedPostsLoaded: false,
-    view: 'all' as 'all' | 'liked',
+    following: [] as FollowingUser[],
+    followingLoaded: false,
+    followers: [] as FollowerUser[],
+    followersLoaded: false,
+    view: 'all' as ViewType,
     feedScrollTop: 0,
     postHistory: [] as number[],
     postHistoryIndex: -1,
   }),
   actions: {
-    setView(view: 'all' | 'liked') {
+    setView(view: ViewType) {
       this.view = view
     },
     setFeedScrollTop(top: number) {
@@ -144,6 +161,25 @@ export const useFeedStore = defineStore('feed', {
       const json = await response.json()
       this.likedPosts = Array.isArray(json) ? json : (json.data ?? [])
       this.likedPostsLoaded = true
+    },
+    async fetchFollowing() {
+      const response = await apiFetch('/users/following')
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const json = await response.json()
+      this.following = Array.isArray(json) ? json : (json.data ?? [])
+      this.followingLoaded = true
+    },
+    async fetchFollowers() {
+      const response = await apiFetch('/users/followers')
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const json = await response.json()
+      this.followers = Array.isArray(json) ? json : (json.data ?? [])
+      this.followersLoaded = true
+    },
+    async unfollowUser(userId: number) {
+      const response = await apiFetch(`/users/${userId}/unfollow`, { method: 'PUT' })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      this.following = this.following.filter((user) => user.follower_id !== userId)
     },
   },
 })

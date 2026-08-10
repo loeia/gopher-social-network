@@ -25,6 +25,17 @@ type User struct {
 	TokenVer  int      `json:"token_ver"`
 }
 
+type UserFollower struct {
+	Username  string `json:"username"`
+	CreatedAt string `json:"created_at"`
+}
+
+type UserFollowing struct {
+	FollowerID int64  `json:"follower_id"`
+	Username   string `json:"username"`
+	CreatedAt  string `json:"created_at"`
+}
+
 type password struct {
 	text *string
 	hash []byte
@@ -295,4 +306,69 @@ func (s *UserStore) UpdatePassword(c context.Context, newPass string, userId int
 	}
 
 	return nil
+}
+
+func (s *UserStore) GetUserFollowing(c context.Context, userId int64) ([]*UserFollowing, error) {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+				SELECT f.user_id,u.username,f.created_at FROM followers f
+				LEFT JOIN users u ON u.id = f.user_id
+				WHERE f.follower_id = $1
+			`
+
+	rows, err := s.db.QueryContext(ctx, query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var followers []*UserFollowing
+	for rows.Next() {
+		var f UserFollowing
+		if err := rows.Scan(&f.FollowerID, &f.Username, &f.CreatedAt); err != nil {
+			return nil, err
+		}
+		followers = append(followers, &f)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return followers, nil
+
+}
+
+func (s *UserStore) GetUserFollowers(c context.Context, userId int64) ([]*UserFollower, error) {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+			SELECT u.username,f.created_at FROM followers f
+			LEFT JOIN users u ON u.id = f.follower_id
+			WHERE f.user_id = $1
+		`
+
+	rows, err := s.db.QueryContext(ctx, query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var followers []*UserFollower
+	for rows.Next() {
+		var f UserFollower
+		if err := rows.Scan(&f.Username, &f.CreatedAt); err != nil {
+			return nil, err
+		}
+		followers = append(followers, &f)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return followers, nil
 }

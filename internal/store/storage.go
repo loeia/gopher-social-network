@@ -39,6 +39,8 @@ type UserStorage interface {
 	Delete(context.Context, int64) error
 	GetByEmail(context.Context, string) (*User, error)
 	UpdatePassword(context.Context, string, int64) error
+	GetUserFollowing(context.Context, int64) ([]*UserFollowing, error)
+	GetUserFollowers(context.Context, int64) ([]*UserFollower, error)
 }
 type CommentStorage interface {
 	Create(context.Context, *Comment) (*Comment, error)

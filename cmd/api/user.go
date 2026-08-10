@@ -198,3 +198,34 @@ func (app *application) getUserFavoritePosts(w http.ResponseWriter, r *http.Requ
 		return
 	}
 }
+
+func (app *application) getUserFollowersHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	followers, err := app.store.Users.GetUserFollowers(r.Context(), user.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, followers); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *application) getUserFollowingHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	followers, err := app.store.Users.GetUserFollowing(r.Context(), user.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, followers); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+}

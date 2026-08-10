@@ -1,19 +1,40 @@
 <template>
   <aside class="sidebar">
-    <el-button class="btn home-btn" :class="{ active: activeView === 'all' }" @click="goHome">Home</el-button>
+    <el-button class="btn home-btn" :class="{ active: activeView === 'all' }" @click="goHome"
+      >Home</el-button
+    >
     <el-button class="btn create-btn" @click="goToCreate">Create</el-button>
-    <el-button class="btn likes-btn" :class="{ active: activeView === 'liked' }" @click="toggleLikes">
+    <el-button
+      class="btn likes-btn"
+      :class="{ active: activeView === 'liked' }"
+      @click="toggleLikes"
+    >
       Likes
+    </el-button>
+    <el-button
+      class="btn following-btn"
+      :class="{ active: activeView === 'following' }"
+      @click="toggleFollowing"
+    >
+      Following
+    </el-button>
+    <el-button
+      class="btn followers-btn"
+      :class="{ active: activeView === 'followers' }"
+      @click="toggleFollowers"
+    >
+      Followers
     </el-button>
   </aside>
 </template>
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import type { ViewType } from '@/stores/feed'
 
-const props = defineProps<{ activeView: 'all' | 'liked' }>()
+const props = defineProps<{ activeView: ViewType }>()
 
-const emit = defineEmits<{ view: [view: 'all' | 'liked'] }>()
+const emit = defineEmits<{ view: [view: ViewType] }>()
 
 const router = useRouter()
 
@@ -27,6 +48,14 @@ function goHome() {
 
 function toggleLikes() {
   emit('view', props.activeView === 'liked' ? 'all' : 'liked')
+}
+
+function toggleFollowing() {
+  emit('view', props.activeView === 'following' ? 'all' : 'following')
+}
+
+function toggleFollowers() {
+  emit('view', props.activeView === 'followers' ? 'all' : 'followers')
 }
 </script>
 
