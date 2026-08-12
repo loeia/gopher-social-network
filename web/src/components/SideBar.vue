@@ -5,6 +5,13 @@
     >
     <el-button class="btn create-btn" @click="goToCreate">Create</el-button>
     <el-button
+      class="btn my-posts-btn"
+      :class="{ active: activeView === 'myposts' }"
+      @click="goToMyPosts"
+    >
+      My Posts
+    </el-button>
+    <el-button
       class="btn likes-btn"
       :class="{ active: activeView === 'liked' }"
       @click="toggleLikes"
@@ -42,20 +49,28 @@ function goToCreate() {
   router.push('/posts/new')
 }
 
+function goToMyPosts() {
+  router.push('/my-posts')
+}
+
 function goHome() {
   emit('view', 'all')
+  router.push('/')
 }
 
 function toggleLikes() {
   emit('view', props.activeView === 'liked' ? 'all' : 'liked')
+  router.push('/')
 }
 
 function toggleFollowing() {
   emit('view', props.activeView === 'following' ? 'all' : 'following')
+  router.push('/')
 }
 
 function toggleFollowers() {
   emit('view', props.activeView === 'followers' ? 'all' : 'followers')
+  router.push('/')
 }
 </script>
 

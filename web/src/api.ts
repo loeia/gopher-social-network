@@ -19,6 +19,21 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY)
 }
 
+export function getCurrentUserId(): number | null {
+  const t = getToken()
+  if (!t) return null
+  try {
+    const payloadPart = t.split('.')[1]
+    if (!payloadPart) return null
+    const payload = JSON.parse(atob(payloadPart.replace(/-/g, '+').replace(/_/g, '/')))
+    const sub = payload?.sub
+    if (typeof sub === 'number' && Number.isFinite(sub)) return sub
+    return null
+  } catch {
+    return null
+  }
+}
+
 export async function apiFetch(path: string, options: RequestInit = {}): Promise<Response> {
   const headers = new Headers(options.headers)
   headers.set('Content-Type', 'application/json')

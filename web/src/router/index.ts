@@ -3,6 +3,7 @@ import HomePage from '@/views/HomePage.vue'
 import ConfirmationPage from '@/views/ConfirmationPage.vue'
 import PostDetailPage from '@/views/PostDetailPage.vue'
 import CreatePostPage from '@/views/CreatePostPage.vue'
+import MyPostsPage from '@/views/MyPostsPage.vue'
 import LoginPage from '@/views/LoginPage.vue'
 import SignUpPage from '@/views/SignUpPage.vue'
 import SearchResults from '@/views/SearchResults.vue'
@@ -26,6 +27,11 @@ const router = createRouter({
       path: '/posts/new',
       name: 'CreatePost',
       component: CreatePostPage,
+    },
+    {
+      path: '/my-posts',
+      name: 'MyPosts',
+      component: MyPostsPage,
     },
     {
       path: '/login',

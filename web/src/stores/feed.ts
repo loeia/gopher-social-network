@@ -9,6 +9,8 @@ export interface FeedPost {
   content: string
   tags: string[]
   user: { username: string }
+  comment_count: number
+  like_count: number
   created_at: string
 }
 
@@ -30,7 +32,7 @@ export interface FollowerUser {
   created_at: string
 }
 
-export type ViewType = 'all' | 'liked' | 'following' | 'followers'
+export type ViewType = 'all' | 'liked' | 'following' | 'followers' | 'myposts'
 
 export interface SearchParams {
   search?: string
@@ -58,21 +60,26 @@ function localDateToUtc(date: string, endOfDay: boolean): string {
 }
 
 type RawPost = {
-  id: number
+  id?: number
+  post_id?: number
   title?: string
   content?: string
   tags?: string[] | null
   created_at?: string
   user?: { username?: string | null } | null
   author?: string | null
+  comment_count?: number
+  like_count?: number
 }
 
-function toFeedPost(p: RawPost): FeedPost {
+export function toFeedPost(p: RawPost): FeedPost {
   return {
-    id: Number(p.id),
+    id: Number(p.id ?? p.post_id ?? 0),
     title: p.title ?? '',
     content: p.content ?? '',
     tags: p.tags ?? [],
+    comment_count: Number(p.comment_count ?? 0),
+    like_count: Number(p.like_count ?? 0),
     created_at: p.created_at ?? '',
     user: {
       username: p.user?.username ?? p.author ?? '',
@@ -84,6 +91,7 @@ export const useFeedStore = defineStore('feed', {
   state: () => ({
     posts: [] as FeedPost[],
     postsLoaded: false,
+    activeNav: 'all' as ViewType,
     likedPosts: [] as LikedPost[],
     likedPostsLoaded: false,
     following: [] as FollowingUser[],
@@ -130,14 +138,16 @@ export const useFeedStore = defineStore('feed', {
       const response = await apiFetch('/posts/free')
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const json = await response.json()
-      this.posts = Array.isArray(json) ? json : (json.data ?? [])
+      const raw = Array.isArray(json) ? json : (json.data ?? [])
+      this.posts = raw.map(toFeedPost)
       this.postsLoaded = true
     },
     async refreshPosts() {
       const response = await apiFetch('/posts/free')
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const json = await response.json()
-      this.posts = Array.isArray(json) ? json : (json.data ?? [])
+      const raw = Array.isArray(json) ? json : (json.data ?? [])
+      this.posts = raw.map(toFeedPost)
       this.postsLoaded = true
       this.feedScrollTop = 0
     },
@@ -183,6 +193,11 @@ export const useFeedStore = defineStore('feed', {
       const response = await apiFetch(`/users/${userId}/unfollow`, { method: 'PUT' })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       this.following = this.following.filter((user) => user.follower_id !== userId)
+    },
+    async followUser(userId: number, username: string) {
+      const response = await apiFetch(`/users/${userId}/follow`, { method: 'PUT' })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      this.following.push({ follower_id: userId, username, created_at: '' })
     },
   },
 })

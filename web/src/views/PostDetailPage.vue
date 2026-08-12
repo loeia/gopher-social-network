@@ -18,6 +18,14 @@
 
         <div class="meta">
           <span class="meta-item">{{ post.author }}</span>
+          <button
+            v-if="canFollowAuthor"
+            class="follow-btn"
+            :disabled="followBusy"
+            @click="toggleFollowAuthor"
+          >
+            {{ isFollowingAuthor ? 'Unfollow' : 'Follow' }}
+          </button>
           <span class="meta-sep">·</span>
           <span class="meta-item">{{ formatDate(post.created_at) }}</span>
           <span class="meta-sep">·</span>
@@ -51,7 +59,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { apiFetch, getToken } from '@/api'
+import { storeToRefs } from 'pinia'
+import { apiFetch, getCurrentUserId, getToken } from '@/api'
 import { useFeedStore } from '@/stores/feed'
 import { renderMarkdown } from '@/utils/markdown'
 import { notify } from '@/utils/message'
@@ -59,6 +68,7 @@ import Comments from '@/components/Comments.vue'
 
 interface PostDetail {
   id: number
+  author_id?: number
   author: string
   title: string
   content: string
@@ -75,6 +85,7 @@ const route = useRoute()
 const router = useRouter()
 
 const store = useFeedStore()
+const { following } = storeToRefs(store)
 
 const post = ref<PostDetail | null>(null)
 const loading = ref(false)
@@ -90,6 +101,46 @@ const likeTitle = computed(() => {
   return liked.value ? 'Unlike' : 'Like'
 })
 const likeBtnClass = computed(() => ({ liked: isLoggedIn.value && liked.value }))
+
+const followBusy = ref(false)
+const canFollowAuthor = computed(() => {
+  if (!isLoggedIn.value || !post.value?.author_id) return false
+  return getCurrentUserId() !== post.value.author_id
+})
+const isFollowingAuthor = computed(() => {
+  const authorId = post.value?.author_id
+  return !!authorId && following.value.some((f) => f.follower_id === authorId)
+})
+
+async function toggleFollowAuthor() {
+  const current = post.value
+  const authorId = current?.author_id
+  if (!current || !authorId || followBusy.value) return
+  followBusy.value = true
+  try {
+    if (isFollowingAuthor.value) {
+      await store.unfollowUser(authorId)
+      notify('success', 'Unfollowed')
+    } else {
+      await store.followUser(authorId, current.author)
+      notify('success', `Following ${current.author}`)
+    }
+  } catch (error) {
+    console.error('Toggle follow error:', error)
+    notify('error', 'Failed to update follow')
+  } finally {
+    followBusy.value = false
+  }
+}
+
+async function loadFollowState() {
+  if (!getToken()) return
+  try {
+    await store.fetchFollowing()
+  } catch (error) {
+    console.error('Load following error:', error)
+  }
+}
 
 const hasPrevPost = computed(() => store.postHistoryIndex > 0)
 const hasNextPost = computed(() => store.postHistoryIndex < store.postHistory.length - 1)
@@ -189,7 +240,10 @@ async function startLoad(id: number) {
   }
 }
 
-onMounted(loadPost)
+onMounted(() => {
+  loadPost()
+  loadFollowState()
+})
 watch(() => route.params.postId, loadPost)
 </script>
 
@@ -320,6 +374,30 @@ watch(() => route.params.postId, loadPost)
 .like-btn.liked .like-icon path {
   fill: currentColor;
   stroke: currentColor;
+}
+
+.follow-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #141414;
+  background: #ffffff;
+  border: 1px solid #ffffff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.follow-btn:hover:not(:disabled) {
+  background: #e4e6e8;
+  color: #141414;
+  border-color: #e4e6e8;
+}
+
+.follow-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 /* Markdown-rendered content, StackOverflow-style */

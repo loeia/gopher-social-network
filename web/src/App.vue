@@ -2,7 +2,7 @@
   <el-config-provider :message="{ placement: 'top-right', offset: 64 }">
     <div class="layout">
       <NavBar v-if="!route.meta.hideNavBar" />
-      <SideBar v-if="showSidebar" :active-view="view" @view="view = $event" />
+      <SideBar v-if="showSidebar" :active-view="activeView" @view="onSidebarView" />
       <div class="main" :class="{ 'with-sidebar': showSidebar }">
         <keep-alive include="HomePage">
           <router-view />
@@ -13,7 +13,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ElConfigProvider } from 'element-plus'
@@ -22,14 +22,33 @@ import SideBar from '@/components/SideBar.vue'
 import { getToken } from '@/api'
 import { useFeedStore } from '@/stores/feed'
 import { useUIStore } from '@/stores/ui'
+import type { ViewType } from '@/stores/feed'
 
 const route = useRoute()
 const feedStore = useFeedStore()
 const uiStore = useUIStore()
-const { view } = storeToRefs(feedStore)
+const { view, activeNav } = storeToRefs(feedStore)
 const { sidebarOpen } = storeToRefs(uiStore)
 const isLoggedIn = computed(() => !!getToken())
 const showSidebar = computed(() => isLoggedIn.value && sidebarOpen.value && !route.meta.hideNavBar)
+const activeView = computed<ViewType>(() => {
+  if (route.name === 'Home') return view.value
+  if (route.name === 'MyPosts') return 'myposts'
+  return activeNav.value
+})
+
+function onSidebarView(next: ViewType) {
+  view.value = next
+  activeNav.value = next
+}
+
+watch(
+  () => route.name,
+  (name) => {
+    if (name === 'MyPosts') activeNav.value = 'myposts'
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>

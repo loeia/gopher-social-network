@@ -229,3 +229,18 @@ func (app *application) getUserFollowingHandler(w http.ResponseWriter, r *http.R
 	}
 
 }
+
+func (app *application) getUserOwnPostsHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	posts, err := app.store.Users.GetUserOwnPosts(r.Context(), user.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, posts); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}

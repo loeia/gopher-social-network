@@ -41,6 +41,7 @@ type UserStorage interface {
 	UpdatePassword(context.Context, string, int64) error
 	GetUserFollowing(context.Context, int64) ([]*UserFollowing, error)
 	GetUserFollowers(context.Context, int64) ([]*UserFollower, error)
+	GetUserOwnPosts(context.Context, int64) ([]*PostBrief, error)
 }
 type CommentStorage interface {
 	Create(context.Context, *Comment) (*Comment, error)

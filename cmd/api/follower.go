@@ -19,6 +19,11 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if followUserId == user.ID {
+		app.badRequestError(w, r, errors.New("cannot follow yourself"))
+		return
+	}
+
 	if err := app.store.Followers.Follow(r.Context(), followUserId, user.ID); err != nil {
 		if errors.Is(err, store.ErrConflict) {
 			app.conflictError(w, r, err)

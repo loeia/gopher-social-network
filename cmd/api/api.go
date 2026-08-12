@@ -148,6 +148,7 @@ func (app *application) mount() http.Handler {
 			r.Get("/likes", app.getUserFavoritePosts)
 			r.Get("/followers", app.getUserFollowersHandler)
 			r.Get("/following", app.getUserFollowingHandler)
+			r.Get("/posts", app.getUserOwnPostsHandler)
 		})
 
 		r.Put("/activate/{token}", app.activateUserHandler)

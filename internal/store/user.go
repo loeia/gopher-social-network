@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/lib/pq"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,6 +35,16 @@ type UserFollowing struct {
 	FollowerID int64  `json:"follower_id"`
 	Username   string `json:"username"`
 	CreatedAt  string `json:"created_at"`
+}
+
+type PostBrief struct {
+	ID           int64    `json:"post_id"`
+	Author       string   `json:"author"`
+	Title        string   `json:"title"`
+	Tags         []string `json:"tags"`
+	CreatedAt    string   `json:"created_at"`
+	CommentCount int64    `json:"comment_count"`
+	LikeCount    int64    `json:"like_count"`
 }
 
 type password struct {
@@ -371,4 +382,47 @@ func (s *UserStore) GetUserFollowers(c context.Context, userId int64) ([]*UserFo
 	}
 
 	return followers, nil
+}
+
+func (s *UserStore) GetUserOwnPosts(c context.Context, userId int64) ([]*PostBrief, error) {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		SELECT
+			p.id,p.title,p.tags,p.created_at,u.username,p.comment_count,p.like_count
+		FROM posts p
+		JOIN users u ON u.id = p.user_id
+		WHERE p.user_id = $1
+		ORDER BY p.created_at DESC
+	`
+
+	rows, err := s.db.QueryContext(ctx, query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []*PostBrief
+	for rows.Next() {
+		var p PostBrief
+		if err := rows.Scan(
+			&p.ID,
+			&p.Title,
+			pq.Array(&p.Tags),
+			&p.CreatedAt,
+			&p.Author,
+			&p.CommentCount,
+			&p.LikeCount,
+		); err != nil {
+			return nil, err
+		}
+		posts = append(posts, &p)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return posts, nil
 }

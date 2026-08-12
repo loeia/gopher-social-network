@@ -3,7 +3,23 @@
     <div v-for="post in posts" :key="post.id" class="card" @click="openPost(post.id)">
       <div class="card-header">
         <h2 class="card-title">{{ post.title }}</h2>
-        <span class="card-date">{{ formatDate(post.created_at) }}</span>
+        <div class="card-meta">
+          <span class="stat" :title="`${post.comment_count} comments`">
+            <svg class="stat-icon comment-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
+            </svg>
+            <span>{{ post.comment_count }}</span>
+          </span>
+          <span class="stat" :title="`${post.like_count} likes`">
+            <svg class="stat-icon like-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              />
+            </svg>
+            <span>{{ post.like_count }}</span>
+          </span>
+          <span class="card-date">{{ formatDate(post.created_at) }}</span>
+        </div>
       </div>
       <div v-if="post.tags && post.tags.length" class="card-tags">
         <span v-for="tag in post.tags" :key="tag" class="tag-pill">{{ tag }}</span>
@@ -11,6 +27,10 @@
       <div class="card-author">
         <span class="avatar">G</span>
         <span>{{ post.user.username }}</span>
+        <div v-if="editable" class="card-actions">
+          <button class="back-btn" @click.stop="onEdit(post)">Edit</button>
+          <button class="back-btn" @click.stop="onDelete(post)">Delete</button>
+        </div>
       </div>
     </div>
     <button v-if="!isStandalone" class="new-btn" :disabled="loading" @click="loadNewPosts">
@@ -38,12 +58,16 @@ const props = withDefaults(
   defineProps<{
     posts?: FeedPost[]
     loading?: boolean
+    editable?: boolean
   }>(),
   {
     posts: undefined,
     loading: false,
+    editable: false,
   },
 )
+
+const emit = defineEmits<{ edit: [post: FeedPost]; delete: [post: FeedPost] }>()
 
 const store = useFeedStore()
 const { posts: storePosts } = storeToRefs(store)
@@ -56,6 +80,14 @@ const router = useRouter()
 
 function openPost(id: number) {
   router.push(`/posts/${id}`)
+}
+
+function onEdit(post: FeedPost) {
+  emit('edit', post)
+}
+
+function onDelete(post: FeedPost) {
+  emit('delete', post)
 }
 
 function formatDate(value?: string) {
@@ -135,16 +167,55 @@ onBeforeUnmount(saveScroll)
 
 .card-header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
 }
 
 .card-title {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   font-size: 20px;
   font-weight: 600;
+  line-height: 1.4;
   color: #ffffff;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
+}
+
+.card-meta {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.stat-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.comment-icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.like-icon path {
+  fill: #e05c5c;
+  stroke: #e05c5c;
 }
 
 .card-date {
@@ -170,35 +241,6 @@ onBeforeUnmount(saveScroll)
   white-space: nowrap;
 }
 
-.card-content {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin: 16px 0;
-  line-height: 1.7;
-  color: #bfbfbf;
-  word-break: break-word;
-}
-
-.card-content :deep(p),
-.card-content :deep(ul),
-.card-content :deep(ol),
-.card-content :deep(pre),
-.card-content :deep(blockquote),
-.card-content :deep(h1),
-.card-content :deep(h2),
-.card-content :deep(h3),
-.card-content :deep(h4),
-.card-content :deep(h5),
-.card-content :deep(h6) {
-  margin: 0;
-}
-
-.card-content :deep(pre) {
-  overflow: hidden;
-}
-
 .card-author {
   display: flex;
   align-items: center;
@@ -220,6 +262,33 @@ onBeforeUnmount(saveScroll)
   color: #141414;
   font-size: 13px;
   font-weight: 600;
+}
+
+.card-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-btn {
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: #6a737c;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.back-btn:hover,
+.back-btn:focus,
+.back-btn:focus-visible {
+  color: #6a737c;
+  background: transparent;
+  text-decoration: underline;
+  text-decoration-color: #6a737c;
+  text-underline-offset: 4px;
 }
 
 .new-btn {
