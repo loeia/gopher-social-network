@@ -9,6 +9,7 @@ export interface FeedPost {
   content: string
   tags: string[]
   user: { username: string }
+  user_id?: number
   comment_count: number
   like_count: number
   created_at: string
@@ -18,16 +19,20 @@ export interface LikedPost {
   post_id: number
   author: string
   title: string
+  tags: string[]
+  comment_count?: number
+  like_count?: number
   created_at: string
 }
 
 export interface FollowingUser {
-  follower_id: number
+  following_id: number
   username: string
   created_at: string
 }
 
 export interface FollowerUser {
+  follower_id: number
   username: string
   created_at: string
 }
@@ -62,6 +67,8 @@ function localDateToUtc(date: string, endOfDay: boolean): string {
 type RawPost = {
   id?: number
   post_id?: number
+  user_id?: number
+  author_id?: number
   title?: string
   content?: string
   tags?: string[] | null
@@ -73,11 +80,13 @@ type RawPost = {
 }
 
 export function toFeedPost(p: RawPost): FeedPost {
+  const userId = Number(p.user_id ?? p.author_id)
   return {
     id: Number(p.id ?? p.post_id ?? 0),
     title: p.title ?? '',
     content: p.content ?? '',
     tags: p.tags ?? [],
+    user_id: Number.isFinite(userId) && userId > 0 ? userId : undefined,
     comment_count: Number(p.comment_count ?? 0),
     like_count: Number(p.like_count ?? 0),
     created_at: p.created_at ?? '',
@@ -192,12 +201,12 @@ export const useFeedStore = defineStore('feed', {
     async unfollowUser(userId: number) {
       const response = await apiFetch(`/users/${userId}/unfollow`, { method: 'PUT' })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
-      this.following = this.following.filter((user) => user.follower_id !== userId)
+      this.following = this.following.filter((user) => user.following_id !== userId)
     },
     async followUser(userId: number, username: string) {
       const response = await apiFetch(`/users/${userId}/follow`, { method: 'PUT' })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
-      this.following.push({ follower_id: userId, username, created_at: '' })
+      this.following.push({ following_id: userId, username, created_at: '' })
     },
   },
 })

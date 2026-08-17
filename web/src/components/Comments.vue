@@ -41,6 +41,7 @@ import CommentThread, { type CommentNode } from '@/components/CommentThread.vue'
 
 interface Comment {
   id: number
+  user_id?: number
   username: string
   content: string
   created_at: string

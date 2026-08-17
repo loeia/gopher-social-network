@@ -17,6 +17,7 @@
         </div>
 
         <div class="meta">
+          <UserAvatar :user-id="post.author_id" :username="post.author" :size="20" />
           <span class="meta-item">{{ post.author }}</span>
           <button
             v-if="canFollowAuthor"
@@ -28,10 +29,6 @@
           </button>
           <span class="meta-sep">·</span>
           <span class="meta-item">{{ formatDate(post.created_at) }}</span>
-          <span class="meta-sep">·</span>
-          <span class="meta-item">{{ likesCount }} likes</span>
-          <span class="meta-sep">·</span>
-          <span class="meta-item">{{ commentsCount }} comments</span>
           <span class="meta-sep">·</span>
           <button
             class="like-btn"
@@ -45,7 +42,15 @@
                 d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
               />
             </svg>
+            <span class="meta-count">{{ likesCount }}</span>
           </button>
+          <span class="meta-sep">·</span>
+          <span class="comment-item">
+            <svg class="comment-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
+            </svg>
+            <span class="meta-count">{{ commentsCount }}</span>
+          </span>
         </div>
 
         <div class="markdown-body" v-html="renderedContent" />
@@ -65,6 +70,7 @@ import { useFeedStore } from '@/stores/feed'
 import { renderMarkdown } from '@/utils/markdown'
 import { notify } from '@/utils/message'
 import Comments from '@/components/Comments.vue'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 interface PostDetail {
   id: number
@@ -109,7 +115,7 @@ const canFollowAuthor = computed(() => {
 })
 const isFollowingAuthor = computed(() => {
   const authorId = post.value?.author_id
-  return !!authorId && following.value.some((f) => f.follower_id === authorId)
+  return !!authorId && following.value.some((f) => f.following_id === authorId)
 })
 
 async function toggleFollowAuthor() {
@@ -374,6 +380,28 @@ watch(() => route.params.postId, loadPost)
 .like-btn.liked .like-icon path {
   fill: currentColor;
   stroke: currentColor;
+}
+
+.meta-count {
+  font-size: 13px;
+}
+
+.comment-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #9fa6ad;
+}
+
+.comment-item .comment-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.comment-item .comment-icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
 }
 
 .follow-btn {

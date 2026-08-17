@@ -12,6 +12,7 @@
     "format": "oxfmt src/"
   },
   "dependencies": {
+    "cropperjs": "^1.6.2",
     "dompurify": "^3.4.13",
     "element-plus": "^2.14.3",
     "marked": "^18.0.9",

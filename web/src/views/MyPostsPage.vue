@@ -16,7 +16,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PostsList from '@/components/PostsList.vue'
-import { apiFetch } from '@/api'
+import { apiFetch, getCurrentUserId } from '@/api'
 import { toFeedPost, type FeedPost } from '@/stores/feed'
 import { notify } from '@/utils/message'
 
@@ -25,6 +25,7 @@ defineOptions({ name: 'MyPostsPage' })
 const router = useRouter()
 const posts = ref<FeedPost[]>([])
 const loading = ref(false)
+const currentUserId = getCurrentUserId()
 
 async function loadMyPosts() {
   loading.value = true
@@ -33,7 +34,10 @@ async function loadMyPosts() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
     const raw = Array.isArray(json) ? json : (json.data ?? [])
-    posts.value = raw.map(toFeedPost)
+    posts.value = raw.map((p: any) => ({
+      ...toFeedPost(p),
+      user_id: currentUserId ?? undefined,
+    }))
   } catch (error) {
     console.error('Load my posts error:', error)
     notify('error', 'Failed to load my posts')

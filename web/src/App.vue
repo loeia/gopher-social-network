@@ -13,20 +13,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { ElConfigProvider } from 'element-plus'
 import NavBar from '@/components/NavBar.vue'
 import SideBar from '@/components/SideBar.vue'
-import { getToken } from '@/api'
+import { getToken, handleSessionExpired, isTokenExpired } from '@/api'
 import { useFeedStore } from '@/stores/feed'
 import { useUIStore } from '@/stores/ui'
+import { useUserStore } from '@/stores/user'
 import type { ViewType } from '@/stores/feed'
 
 const route = useRoute()
 const feedStore = useFeedStore()
 const uiStore = useUIStore()
+const userStore = useUserStore()
 const { view, activeNav } = storeToRefs(feedStore)
 const { sidebarOpen } = storeToRefs(uiStore)
 const isLoggedIn = computed(() => !!getToken())
@@ -42,6 +44,22 @@ function onSidebarView(next: ViewType) {
   activeNav.value = next
 }
 
+let sessionTimer: number | null = null
+
+function checkSession() {
+  if (getToken() && isTokenExpired()) {
+    handleSessionExpired()
+  }
+}
+
+onMounted(() => {
+  sessionTimer = window.setInterval(checkSession, 30_000)
+})
+
+onBeforeUnmount(() => {
+  if (sessionTimer !== null) window.clearInterval(sessionTimer)
+})
+
 watch(
   () => route.name,
   (name) => {
@@ -49,6 +67,10 @@ watch(
   },
   { immediate: true },
 )
+
+watch(isLoggedIn, (loggedIn) => {
+  if (!loggedIn) userStore.reset()
+})
 </script>
 
 <style scoped>
@@ -86,7 +108,14 @@ body {
   color: #141414;
 }
 
-.el-message :is(.el-message-icon--success, .el-message-icon--warning, .el-message-icon--error, .el-message-icon--info, .el-message-icon--primary) {
+.el-message
+  :is(
+    .el-message-icon--success,
+    .el-message-icon--warning,
+    .el-message-icon--error,
+    .el-message-icon--info,
+    .el-message-icon--primary
+  ) {
   color: #141414;
 }
 

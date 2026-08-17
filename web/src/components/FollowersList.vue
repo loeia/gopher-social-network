@@ -1,7 +1,7 @@
 <template>
   <div class="list" v-loading="loading">
-    <div v-for="user in users" :key="user.username" class="card">
-      <div class="avatar">{{ avatarLabel(user.username) }}</div>
+    <div v-for="user in users" :key="user.follower_id" class="card">
+      <UserAvatar :user-id="user.follower_id" :username="user.username" :size="48" />
       <div class="user-info">
         <span class="username">{{ user.username }}</span>
       </div>
@@ -18,14 +18,11 @@ import { nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref }
 import { storeToRefs } from 'pinia'
 import { useFeedStore } from '@/stores/feed'
 import { notify } from '@/utils/message'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 const store = useFeedStore()
 const { followers: users } = storeToRefs(store)
 const loading = ref(false)
-
-function avatarLabel(username: string) {
-  return username ? username.charAt(0).toUpperCase() : '?'
-}
 
 function formatDate(value?: string) {
   if (!value) return ''
@@ -89,20 +86,6 @@ onBeforeUnmount(saveScroll)
 
 .card:hover {
   border-color: #3d444d;
-}
-
-.avatar {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #ffffff;
-  color: #141414;
-  font-size: 18px;
-  font-weight: 600;
 }
 
 .user-info {

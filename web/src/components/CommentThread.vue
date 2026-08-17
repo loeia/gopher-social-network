@@ -1,7 +1,9 @@
 <template>
   <div class="thread">
     <div class="comment">
-      <div class="comment-avatar">{{ (comment.username || 'G').charAt(0).toUpperCase() }}</div>
+      <div class="comment-avatar">
+        <UserAvatar :user-id="comment.user_id" :username="comment.username" :size="30" />
+      </div>
       <div class="comment-main">
         <div class="comment-head">
           <span class="comment-author">{{ comment.username }}</span>
@@ -66,9 +68,11 @@
 import { computed, inject, nextTick, ref, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import type { ElInput } from 'element-plus'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 interface Comment {
   id: number
+  user_id?: number
   username: string
   content: string
   created_at: string

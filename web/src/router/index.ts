@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { clearToken, getToken, isTokenExpired } from '@/api'
+import { notify } from '@/utils/message'
 import HomePage from '@/views/HomePage.vue'
 import ConfirmationPage from '@/views/ConfirmationPage.vue'
 import PostDetailPage from '@/views/PostDetailPage.vue'
@@ -66,6 +68,18 @@ const router = createRouter({
       meta: { hideNavBar: true },
     },
   ],
+})
+
+router.beforeEach((to) => {
+  const currentToken = getToken()
+  if (currentToken && isTokenExpired(currentToken)) {
+    clearToken()
+    if (to.name !== 'Login') {
+      notify('warning', 'Session expired, please sign in again')
+      return { name: 'Login' }
+    }
+  }
+  return true
 })
 
 export default router

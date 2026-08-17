@@ -11,7 +11,12 @@
             <span>{{ post.comment_count }}</span>
           </span>
           <span class="stat" :title="`${post.like_count} likes`">
-            <svg class="stat-icon like-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <svg
+              class="stat-icon like-icon"
+              :class="{ liked: isLiked(post) }"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               <path
                 d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
               />
@@ -25,7 +30,7 @@
         <span v-for="tag in post.tags" :key="tag" class="tag-pill">{{ tag }}</span>
       </div>
       <div class="card-author">
-        <span class="avatar">G</span>
+        <UserAvatar :user-id="post.user_id" :username="post.user.username" :size="28" />
         <span>{{ post.user.username }}</span>
         <div v-if="editable" class="card-actions">
           <button class="back-btn" @click.stop="onEdit(post)">Edit</button>
@@ -52,7 +57,9 @@ import {
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useFeedStore, type FeedPost } from '@/stores/feed'
+import { getToken } from '@/api'
 import { notify } from '@/utils/message'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -75,6 +82,12 @@ const fetching = ref(false)
 const isStandalone = computed(() => !!props.posts)
 const posts = computed(() => props.posts ?? storePosts.value)
 const loading = computed(() => props.loading || fetching.value)
+
+const likedIds = computed(() => new Set(store.likedPosts.map((p) => p.post_id)))
+
+function isLiked(post: FeedPost): boolean {
+  return likedIds.value.has(post.id)
+}
 
 const router = useRouter()
 
@@ -133,7 +146,19 @@ async function loadNewPosts() {
   }
 }
 
-onMounted(loadPosts)
+onMounted(() => {
+  loadPosts()
+  loadLikedPosts()
+})
+
+async function loadLikedPosts() {
+  if (!getToken() || store.likedPostsLoaded) return
+  try {
+    await store.fetchLikedPosts()
+  } catch (error) {
+    console.error('Load liked posts error:', error)
+  }
+}
 onActivated(() => {
   if (!isStandalone.value) restoreScroll()
 })
@@ -214,6 +239,12 @@ onBeforeUnmount(saveScroll)
 }
 
 .like-icon path {
+  fill: none;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.like-icon.liked path {
   fill: #e05c5c;
   stroke: #e05c5c;
 }
@@ -249,19 +280,6 @@ onBeforeUnmount(saveScroll)
   border-top: 1px solid #262626;
   font-size: 14px;
   color: #8c8c8c;
-}
-
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #ffffff;
-  color: #141414;
-  font-size: 13px;
-  font-weight: 600;
 }
 
 .card-actions {
