@@ -54,3 +54,17 @@ func (app *application) rateLimitExceededResponse(w http.ResponseWriter, r *http
 
 	app.writeJSONError(w, http.StatusTooManyRequests, "rate limit exceeded, retry after: "+retryAfter)
 }
+
+// requestEntityTooLargeResponse Logs a request too large error and returns a 413 status code.
+func (app *application) requestEntityTooLargeResponse(w http.ResponseWriter, r *http.Request) {
+	app.logger.Warnw("request entity too large", "method", r.Method, "path", r.URL.Path)
+
+	app.writeJSONError(w, http.StatusRequestEntityTooLarge, "request entity too large")
+}
+
+// unsupportedMediaTypeResponse Logs an unsupported media type error and returns a 415 status code.
+func (app *application) unsupportedMediaTypeResponse(w http.ResponseWriter, r *http.Request) {
+	app.logger.Warnw("unsupported media type", "method", r.Method, "path", r.URL.Path)
+
+	app.writeJSONError(w, http.StatusUnsupportedMediaType, "unsupported media type, only jpeg and png are allowed")
+}

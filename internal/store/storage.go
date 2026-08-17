@@ -39,6 +39,8 @@ type UserStorage interface {
 	Delete(context.Context, int64) error
 	GetByEmail(context.Context, string) (*User, error)
 	UpdatePassword(context.Context, string, int64) error
+	UpdateAvatar(context.Context, int64, []byte, string) error
+	GetAvatar(context.Context, int64) ([]byte, string, error)
 	GetUserFollowing(context.Context, int64) ([]*UserFollowing, error)
 	GetUserFollowers(context.Context, int64) ([]*UserFollower, error)
 	GetUserOwnPosts(context.Context, int64) ([]*PostBrief, error)

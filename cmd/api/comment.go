@@ -15,6 +15,7 @@ const CommentCtx CommentKey = "commentId"
 type CommentResponse struct {
 	ID              int64  `json:"id"`
 	Username        string `json:"username"`
+	UserID          int64  `json:"user_id"`
 	Content         string `json:"content"`
 	ParentID        *int64 `json:"parent_id"`
 	ReplyToUserID   *int64 `json:"reply_to_user_id"`
@@ -26,6 +27,7 @@ func commentResponse(c *store.Comment) CommentResponse {
 	return CommentResponse{
 		ID:              c.ID,
 		Username:        c.User.Username,
+		UserID:          c.UserID,
 		Content:         c.Content,
 		ParentID:        c.ParentID,
 		ReplyToUserID:   c.ReplyToUserID,

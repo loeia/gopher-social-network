@@ -1,12 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -17,6 +23,9 @@ import (
 type userKey string
 
 const userCtx userKey = "userId"
+
+const maxAvatarSize = 2 << 20 // 2 MB
+const maxAvatarDim = 2000
 
 type UserWithToken struct {
 	User  *store.User `json:"user"`
@@ -217,13 +226,13 @@ func (app *application) getUserFollowersHandler(w http.ResponseWriter, r *http.R
 func (app *application) getUserFollowingHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 
-	followers, err := app.store.Users.GetUserFollowing(r.Context(), user.ID)
+	following, err := app.store.Users.GetUserFollowing(r.Context(), user.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
 
-	if err := app.JSONResponse(w, http.StatusOK, followers); err != nil {
+	if err := app.JSONResponse(w, http.StatusOK, following); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -243,4 +252,117 @@ func (app *application) getUserOwnPostsHandler(w http.ResponseWriter, r *http.Re
 		app.internalServerError(w, r, err)
 		return
 	}
+}
+
+// uploadAvatarHandler processes an avatar image upload for the authenticated user.
+func (app *application) uploadAvatarHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxAvatarSize+64<<10)
+	if !strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		app.unsupportedMediaTypeResponse(w, r)
+		return
+	}
+	if err := r.ParseMultipartForm(maxAvatarSize >> 2); err != nil {
+		if _, ok := errors.AsType[*http.MaxBytesError](err); ok {
+			app.requestEntityTooLargeResponse(w, r)
+			return
+		}
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	defer r.MultipartForm.RemoveAll()
+
+	file, _, err := r.FormFile("avatar")
+	if err != nil {
+		app.badRequestError(w, r, fmt.Errorf("avatar file is required"))
+		return
+	}
+	defer file.Close()
+
+	data, err := io.ReadAll(io.LimitReader(file, maxAvatarSize+1))
+	if err != nil {
+		app.requestEntityTooLargeResponse(w, r)
+		return
+	}
+	if len(data) > maxAvatarSize {
+		app.requestEntityTooLargeResponse(w, r)
+		return
+	}
+
+	switch http.DetectContentType(data) {
+	case "image/jpeg", "image/png":
+	default:
+		app.unsupportedMediaTypeResponse(w, r)
+		return
+	}
+
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		app.badRequestError(w, r, fmt.Errorf("invalid image"))
+		return
+	}
+	if cfg.Width > maxAvatarDim || cfg.Height > maxAvatarDim {
+		app.requestEntityTooLargeResponse(w, r)
+		return
+	}
+
+	img, format, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		app.badRequestError(w, r, fmt.Errorf("invalid image"))
+		return
+	}
+
+	var buf bytes.Buffer
+	if format == "png" {
+		if err := png.Encode(&buf, img); err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+	} else {
+		if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 85}); err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+		format = "jpeg"
+	}
+
+	if err := app.store.Users.UpdateAvatar(r.Context(), user.ID, buf.Bytes(), "image/"+format); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if app.config.redisCfg.enabled {
+		if err := app.cache.Delete(r.Context(), user.ID); err != nil {
+			app.logger.Errorw("error deleting user from cache", "error", err)
+		}
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// getAvatarHandler returns the avatar image bytes for a user.
+func (app *application) getAvatarHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	data, mime, err := app.store.Users.GetAvatar(r.Context(), userId)
+	if err != nil {
+		switch err {
+		case store.ErrNotFound:
+			app.notFoundError(w, r, err)
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", mime)
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Write(data)
 }

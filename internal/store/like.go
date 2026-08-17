@@ -4,13 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type FavoritePostList struct {
-	PostID    int64     `json:"post_id"`
-	Author    string    `json:"author"`
-	Title     string    `json:"title"`
-	CreatedAt time.Time `json:"created_at"`
+	PostID       int64     `json:"post_id"`
+	Author       string    `json:"author"`
+	Title        string    `json:"title"`
+	Tags         []string  `json:"tags"`
+	CommentCount int64     `json:"comment_count"`
+	LikeCount    int64     `json:"like_count"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 type PostLikeStore struct {
@@ -70,7 +75,7 @@ func (s *PostLikeStore) GetUserFavoritePosts(c context.Context, userId int64) ([
 	defer cancel()
 
 	query := `
-		SELECT p.id,u.username,p.title,p.created_at FROM posts p
+		SELECT p.id,u.username,p.title,p.tags,p.comment_count,p.like_count,p.created_at FROM posts p
 		LEFT JOIN post_likes l ON p.id = l.post_id
 		LEFT JOIN users u ON p.user_id = u.id
 		WHERE l.user_id = $1
@@ -91,6 +96,9 @@ func (s *PostLikeStore) GetUserFavoritePosts(c context.Context, userId int64) ([
 			&post.PostID,
 			&post.Author,
 			&post.Title,
+			pq.Array(&post.Tags),
+			&post.CommentCount,
+			&post.LikeCount,
 			&post.CreatedAt,
 		); err != nil {
 			return nil, err

@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -24,17 +25,19 @@ type User struct {
 	RoleID    int      `json:"role_id"`
 	Role      Role     `json:"role"`
 	TokenVer  int      `json:"token_ver"`
+	AvatarURL string   `json:"avatar_url"`
 }
 
 type UserFollower struct {
-	Username  string `json:"username"`
-	CreatedAt string `json:"created_at"`
-}
-
-type UserFollowing struct {
 	FollowerID int64  `json:"follower_id"`
 	Username   string `json:"username"`
 	CreatedAt  string `json:"created_at"`
+}
+
+type UserFollowing struct {
+	FollowingID int64  `json:"following_id"`
+	Username    string `json:"username"`
+	CreatedAt   string `json:"created_at"`
 }
 
 type PostBrief struct {
@@ -106,6 +109,8 @@ func (s *UserStore) Create(ctx context.Context, user *User, tx *sql.Tx) error {
 		return err
 	}
 
+	user.AvatarURL = fmt.Sprintf("/users/%d/avatar", user.ID)
+
 	return nil
 }
 
@@ -140,6 +145,8 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 		}
 		return nil, err
 	}
+
+	user.AvatarURL = fmt.Sprintf("/users/%d/avatar", user.ID)
 
 	return &user, nil
 }
@@ -297,6 +304,8 @@ func (s *UserStore) GetByEmail(c context.Context, email string) (*User, error) {
 		}
 	}
 
+	user.AvatarURL = fmt.Sprintf("/users/%d/avatar", user.ID)
+
 	return &user, nil
 
 }
@@ -319,6 +328,46 @@ func (s *UserStore) UpdatePassword(c context.Context, newPass string, userId int
 	return nil
 }
 
+func (s *UserStore) UpdateAvatar(c context.Context, userId int64, data []byte, mime string) error {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `UPDATE users SET avatar = $1, avatar_mime = $2 WHERE id = $3`
+
+	result, err := s.db.ExecContext(ctx, query, data, mime, userId)
+	if err != nil {
+		return err
+	}
+
+	if _, err := result.RowsAffected(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UserStore) GetAvatar(c context.Context, userId int64) ([]byte, string, error) {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `SELECT avatar, avatar_mime FROM users WHERE id = $1`
+
+	var data []byte
+	var mime sql.NullString
+	if err := s.db.QueryRowContext(ctx, query, userId).Scan(&data, &mime); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, "", ErrNotFound
+		}
+		return nil, "", err
+	}
+
+	if len(data) == 0 {
+		return nil, "", ErrNotFound
+	}
+
+	return data, mime.String, nil
+}
+
 func (s *UserStore) GetUserFollowing(c context.Context, userId int64) ([]*UserFollowing, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
@@ -338,7 +387,7 @@ func (s *UserStore) GetUserFollowing(c context.Context, userId int64) ([]*UserFo
 	var followers []*UserFollowing
 	for rows.Next() {
 		var f UserFollowing
-		if err := rows.Scan(&f.FollowerID, &f.Username, &f.CreatedAt); err != nil {
+		if err := rows.Scan(&f.FollowingID, &f.Username, &f.CreatedAt); err != nil {
 			return nil, err
 		}
 		followers = append(followers, &f)
@@ -357,7 +406,7 @@ func (s *UserStore) GetUserFollowers(c context.Context, userId int64) ([]*UserFo
 	defer cancel()
 
 	query := `
-			SELECT u.username,f.created_at FROM followers f
+			SELECT f.follower_id,u.username,f.created_at FROM followers f
 			LEFT JOIN users u ON u.id = f.follower_id
 			WHERE f.user_id = $1
 		`
@@ -371,7 +420,7 @@ func (s *UserStore) GetUserFollowers(c context.Context, userId int64) ([]*UserFo
 	var followers []*UserFollower
 	for rows.Next() {
 		var f UserFollower
-		if err := rows.Scan(&f.Username, &f.CreatedAt); err != nil {
+		if err := rows.Scan(&f.FollowerID, &f.Username, &f.CreatedAt); err != nil {
 			return nil, err
 		}
 		followers = append(followers, &f)

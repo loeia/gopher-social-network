@@ -149,6 +149,7 @@ func (app *application) mount() http.Handler {
 			r.Get("/followers", app.getUserFollowersHandler)
 			r.Get("/following", app.getUserFollowingHandler)
 			r.Get("/posts", app.getUserOwnPostsHandler)
+			r.Put("/me/avatar", app.uploadAvatarHandler)
 		})
 
 		r.Put("/activate/{token}", app.activateUserHandler)
@@ -159,6 +160,8 @@ func (app *application) mount() http.Handler {
 			r.Put("/follow", app.followUserHandler)
 			r.Put("/unfollow", app.unfollowUserHandler)
 		})
+
+		r.Get("/{userId}/avatar", app.getAvatarHandler)
 	})
 
 	r.Route("/comments", func(r chi.Router) {
