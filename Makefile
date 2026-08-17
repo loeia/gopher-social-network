@@ -12,7 +12,8 @@ db:
 seed:
 	@go run cmd/migrate/seed/main.go
 
-up: 
-	@docker compose up -d 
+up:
+	@docker compose up -d && (air & cd web && npm run dev; wait)
+
 down: 
 	@docker compose down 
