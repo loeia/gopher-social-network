@@ -109,6 +109,7 @@ export const useFeedStore = defineStore('feed', {
     followersLoaded: false,
     view: 'all' as ViewType,
     feedScrollTop: 0,
+    myPostsScrollTop: 0,
     postHistory: [] as number[],
     postHistoryIndex: -1,
   }),

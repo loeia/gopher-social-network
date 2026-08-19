@@ -29,6 +29,10 @@
           </button>
           <span class="meta-sep">·</span>
           <span class="meta-item">{{ formatDate(post.created_at) }}</span>
+          <template v-if="post.updated_at && post.updated_at !== post.created_at">
+            <span class="meta-sep">·</span>
+            <span class="meta-item">Edited {{ formatDate(post.updated_at) }}</span>
+          </template>
           <span class="meta-sep">·</span>
           <button
             class="like-btn"
@@ -320,6 +324,8 @@ watch(() => route.params.postId, loadPost)
   font-weight: 600;
   line-height: 1.2;
   color: #ffffff;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .meta {

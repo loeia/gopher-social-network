@@ -4,9 +4,11 @@
       <NavBar v-if="!route.meta.hideNavBar" />
       <SideBar v-if="showSidebar" :active-view="activeView" @view="onSidebarView" />
       <div class="main" :class="{ 'with-sidebar': showSidebar }">
-        <keep-alive include="HomePage">
-          <router-view />
-        </keep-alive>
+        <router-view v-slot="{ Component }">
+          <keep-alive include="HomePage,MyPostsPage">
+            <component :is="Component" />
+          </keep-alive>
+        </router-view>
       </div>
     </div>
   </el-config-provider>

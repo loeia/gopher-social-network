@@ -15,9 +15,11 @@ import NotFoundPage from '@/views/NotFoundPage.vue'
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   scrollBehavior(to, from, savedPosition) {
-    // Restore position on back/forward, otherwise always scroll to top.
+    // Restore position on back/forward, otherwise never force a scroll on
+    // keep-alive feed pages (they restore their own position). For other pages
+    // scroll to the top.
     if (savedPosition) return savedPosition
-    if (to.name === 'Home') return false
+    if (to.name === 'Home' || to.name === 'MyPosts') return false
     return { top: 0 }
   },
   routes: [
