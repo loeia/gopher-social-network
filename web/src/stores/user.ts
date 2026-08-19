@@ -6,6 +6,9 @@ export const useUserStore = defineStore('user', {
     id: null as number | null,
     username: '',
     avatarUrl: '',
+    createdAt: '',
+    bio: '',
+    links: [] as string[],
     loaded: false,
   }),
   actions: {
@@ -24,6 +27,9 @@ export const useUserStore = defineStore('user', {
         const user = json.data ?? json
         this.username = user?.username ?? ''
         this.avatarUrl = user?.avatar_url ?? `/users/${id}/avatar`
+        this.createdAt = user?.created_at ?? ''
+        this.bio = user?.bio ?? ''
+        this.links = Array.isArray(user?.links) ? user.links : []
         this.loaded = true
       } catch (error) {
         console.error('Load current user error:', error)
@@ -33,6 +39,9 @@ export const useUserStore = defineStore('user', {
       this.id = null
       this.username = ''
       this.avatarUrl = ''
+      this.createdAt = ''
+      this.bio = ''
+      this.links = []
       this.loaded = false
     },
   },

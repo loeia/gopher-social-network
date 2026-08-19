@@ -37,7 +37,7 @@ export interface FollowerUser {
   created_at: string
 }
 
-export type ViewType = 'all' | 'liked' | 'following' | 'followers' | 'myposts'
+export type ViewType = 'all' | 'liked' | 'following' | 'followers' | 'myposts' | 'create' | 'profile'
 
 export interface SearchParams {
   search?: string

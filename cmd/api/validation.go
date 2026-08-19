@@ -41,3 +41,8 @@ type CommentReq struct {
 	Content  string `json:"content" validate:"required,max=500"`
 	ParentID *int64 `json:"parent_id" validate:"omitempty,gt=0"`
 }
+
+type UpdateProfilePayload struct {
+	Bio   string   `json:"bio" validate:"omitempty,max=500"`
+	Links []string `json:"links" validate:"omitempty,max=5,dive,omitempty,http_url,max=255"`
+}

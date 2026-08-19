@@ -32,6 +32,26 @@ type UserWithToken struct {
 	Token string      `json:"token"`
 }
 
+type PublicUser struct {
+	ID        int64    `json:"id"`
+	Username  string   `json:"username"`
+	AvatarURL string   `json:"avatar_url"`
+	Bio       string   `json:"bio"`
+	Links     []string `json:"links"`
+	CreatedAt string   `json:"created_at"`
+}
+
+func userResponse(u *store.User) PublicUser {
+	return PublicUser{
+		ID:        u.ID,
+		Username:  u.Username,
+		AvatarURL: u.AvatarURL,
+		Bio:       u.Bio,
+		Links:     u.Links,
+		CreatedAt: u.CreatedAt,
+	}
+}
+
 // getUserHandler returns a user by ID.
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
@@ -52,7 +72,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := app.JSONResponse(w, http.StatusOK, user); err != nil {
+	if err := app.JSONResponse(w, http.StatusOK, userResponse(user)); err != nil {
 		if errors.Is(err, store.ErrNotFound) {
 			app.notFoundError(w, r, err)
 			return
@@ -354,7 +374,7 @@ func (app *application) getAvatarHandler(w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		switch err {
 		case store.ErrNotFound:
-			app.notFoundError(w, r, err)
+			w.WriteHeader(http.StatusNoContent)
 		default:
 			app.internalServerError(w, r, err)
 		}
@@ -365,4 +385,31 @@ func (app *application) getAvatarHandler(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Write(data)
+}
+
+func (app *application) updateProfileHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	var req UpdateProfilePayload
+	if err := app.readJSON(w, r, &req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(&req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	if err := app.store.Users.UpdateProfile(r.Context(), user.ID, req.Bio, req.Links); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if app.config.redisCfg.enabled {
+		if err := app.cache.Delete(r.Context(), user.ID); err != nil {
+			app.logger.Errorw("error deleting user from cache", "error", err)
+		}
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

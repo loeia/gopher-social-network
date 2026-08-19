@@ -26,6 +26,8 @@ type User struct {
 	Role      Role     `json:"role"`
 	TokenVer  int      `json:"token_ver"`
 	AvatarURL string   `json:"avatar_url"`
+	Bio       string   `json:"bio"`
+	Links     []string `json:"links"`
 }
 
 type UserFollower struct {
@@ -119,8 +121,10 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 	defer cancel()
 
 	query := `
-			SELECT u.id,u.username,u.email,u.password,u.created_at,u.is_active,u.token_ver,
-				   r.id,r.name,r.description,r.level
+			SELECT
+				u.id,u.username,u.email,u.password,u.created_at,u.is_active,u.token_ver,
+				COALESCE(u.bio,''),u.links,
+				r.id,r.name,r.description,r.level
 			FROM users u
 			JOIN roles r ON r.id = u.role_id
 			WHERE u.id = $1 AND u.is_active = true
@@ -135,6 +139,8 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 		&user.CreatedAt,
 		&user.IsActive,
 		&user.TokenVer,
+		&user.Bio,
+		pq.Array(&user.Links),
 		&user.Role.ID,
 		&user.Role.Name,
 		&user.Role.Description,
@@ -474,4 +480,19 @@ func (s *UserStore) GetUserOwnPosts(c context.Context, userId int64) ([]*PostBri
 	}
 
 	return posts, nil
+}
+
+func (s *UserStore) UpdateProfile(c context.Context, userId int64, bio string, links []string) error {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		UPDATE users
+		SET bio = $1, links = $2
+		WHERE id = $3 AND is_active = true
+	`
+	if _, err := s.db.ExecContext(ctx, query, bio, links, userId); err != nil {
+		return err
+	}
+	return nil
 }

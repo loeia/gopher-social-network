@@ -150,15 +150,18 @@ func (app *application) mount() http.Handler {
 			r.Get("/following", app.getUserFollowingHandler)
 			r.Get("/posts", app.getUserOwnPostsHandler)
 			r.Put("/me/avatar", app.uploadAvatarHandler)
+			r.Put("/me/profile", app.updateProfileHandler)
 		})
 
 		r.Put("/activate/{token}", app.activateUserHandler)
 
 		r.Route("/{userId}", func(r chi.Router) {
-			r.Use(app.AuthTokenMiddleware)
 			r.Get("/", app.getUserHandler)
-			r.Put("/follow", app.followUserHandler)
-			r.Put("/unfollow", app.unfollowUserHandler)
+			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
+				r.Put("/follow", app.followUserHandler)
+				r.Put("/unfollow", app.unfollowUserHandler)
+			})
 		})
 
 		r.Get("/{userId}/avatar", app.getAvatarHandler)

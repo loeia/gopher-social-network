@@ -4,8 +4,8 @@
       <button
         type="button"
         class="avatar-btn"
-        :title="'Upload avatar'"
-        :aria-label="'Upload avatar'"
+        :title="'Change avatar'"
+        :aria-label="'Change avatar'"
         @click="pickFile"
       >
         <img
@@ -35,9 +35,13 @@
         </span>
       </button>
       <span class="user-name">{{ userStore.username }}</span>
-      <el-button class="btn upload-btn" :loading="uploading" @click="pickFile">
-        Upload avatar
-      </el-button>
+      <el-button
+      class="btn profile-btn"
+      :class="{ active: activeView === 'profile' }"
+      @click="goToProfile"
+    >
+      Profile
+    </el-button>
       <input
         ref="fileInput"
         type="file"
@@ -52,7 +56,13 @@
     <el-button class="btn home-btn" :class="{ active: activeView === 'all' }" @click="goHome"
       >Home</el-button
     >
-    <el-button class="btn create-btn" @click="goToCreate">Create</el-button>
+    <el-button
+      class="btn create-btn"
+      :class="{ active: activeView === 'create' }"
+      @click="goToCreate"
+    >
+      Create
+    </el-button>
     <el-button
       class="btn my-posts-btn"
       :class="{ active: activeView === 'myposts' }"
@@ -98,7 +108,7 @@ const MAX_AVATAR_SIZE = 2 * 1024 * 1024
 
 const AVATAR_COLORS = ['#5b8def', '#e07b5a', '#57c08a', '#c07bd8', '#d8a24a', '#6ec7c0']
 
-const props = defineProps<{ activeView: ViewType }>()
+const props = defineProps<{ activeView: ViewType | null }>()
 
 const emit = defineEmits<{ view: [view: ViewType] }>()
 
@@ -209,6 +219,16 @@ async function uploadAvatar(blob: Blob) {
 
 function goToCreate() {
   router.push('/posts/new')
+}
+
+function goToProfile() {
+  if (userStore.id) {
+    router.push(`/users/${userStore.id}`)
+    return
+  }
+  userStore.fetchCurrentUser().then(() => {
+    if (userStore.id) router.push(`/users/${userStore.id}`)
+  })
 }
 
 function goToMyPosts() {
@@ -347,20 +367,6 @@ function toggleFollowers() {
   background: #141414;
   color: #ffffff;
   border: 1px solid #ffffff;
-}
-
-.upload-btn {
-  background: transparent;
-  color: #ffffff;
-  border: 1px dashed #595959;
-  font-size: 12px;
-}
-
-.upload-btn:hover,
-.upload-btn.is-loading {
-  background: rgba(255, 255, 255, 0.06);
-  color: #ffffff;
-  border-color: #ffffff;
 }
 
 </style>

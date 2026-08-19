@@ -33,9 +33,13 @@ const { view, activeNav } = storeToRefs(feedStore)
 const { sidebarOpen } = storeToRefs(uiStore)
 const isLoggedIn = computed(() => !!getToken())
 const showSidebar = computed(() => isLoggedIn.value && sidebarOpen.value && !route.meta.hideNavBar)
-const activeView = computed<ViewType>(() => {
+const activeView = computed<ViewType | null>(() => {
   if (route.name === 'Home') return view.value
   if (route.name === 'MyPosts') return 'myposts'
+  if (route.name === 'CreatePost') return 'create'
+  if (route.name === 'UserProfile') {
+    return userStore.id === Number(route.params.userId) ? 'profile' : null
+  }
   return activeNav.value
 })
 

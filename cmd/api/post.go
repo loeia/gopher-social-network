@@ -73,31 +73,6 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromCtx(r)
 
-	// comments, err := app.store.Comments.GetByPostId(r.Context(), post.ID)
-	// if err != nil {
-	// 	app.internalServerError(w, r, err)
-	// 	return
-	// }
-
-	// comments
-	// var responseComments []*CommentResponse
-	// for _, c := range comments {
-	// 	rc := CommentResponse{
-	// 		ID:        c.ID,
-	// 		Username:  c.User.Username,
-	// 		Content:   c.Content,
-	// 		CreatedAt: c.CreatedAt,
-	// 	}
-	// 	responseComments = append(responseComments, &rc)
-	// }
-
-	// likes
-	// postLikes, err := app.store.PostLikes.GetPostLikes(r.Context(), post.ID)
-	// if err != nil {
-	// 	app.internalServerError(w, r, err)
-	// 	return
-	// }
-
 	resp := PostResponse{
 		ID:           post.ID,
 		AuthorId:     post.UserID,

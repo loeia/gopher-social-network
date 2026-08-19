@@ -33,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, provide, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { apiFetch, getToken } from '@/api'
 import { notify } from '@/utils/message'
 import type { ElInput } from 'element-plus'
@@ -242,8 +242,8 @@ function formatDate(value?: string) {
   return date.toLocaleString()
 }
 
-async function loadComments() {
-  loading.value = true
+async function loadComments(silent = false) {
+  if (!silent) loading.value = true
   try {
     const response = await apiFetch(`/posts/${props.postId}/comments`)
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
@@ -252,20 +252,39 @@ async function loadComments() {
     emit('count', comments.value.length)
   } catch (error) {
     console.error('Load comments error:', error)
-    notify('error', 'Failed to load comments')
+    if (!silent) notify('error', 'Failed to load comments')
   } finally {
-    loading.value = false
+    if (!silent) loading.value = false
+  }
+}
+
+let pollTimer: number | null = null
+
+function startPolling() {
+  stopPolling()
+  pollTimer = window.setInterval(() => {
+    if (!loading.value) loadComments(true)
+  }, 5000)
+}
+
+function stopPolling() {
+  if (pollTimer !== null) {
+    clearInterval(pollTimer)
+    pollTimer = null
   }
 }
 
 onMounted(() => {
   loadCurrentUser()
   loadComments()
+  startPolling()
 })
 watch(() => props.postId, () => {
   loadCurrentUser()
   loadComments()
+  startPolling()
 })
+onBeforeUnmount(stopPolling)
 </script>
 
 <style scoped>

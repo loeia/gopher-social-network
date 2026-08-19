@@ -44,6 +44,7 @@ type UserStorage interface {
 	GetUserFollowing(context.Context, int64) ([]*UserFollowing, error)
 	GetUserFollowers(context.Context, int64) ([]*UserFollower, error)
 	GetUserOwnPosts(context.Context, int64) ([]*PostBrief, error)
+	UpdateProfile(context.Context, int64, string, []string) error
 }
 type CommentStorage interface {
 	Create(context.Context, *Comment) (*Comment, error)
