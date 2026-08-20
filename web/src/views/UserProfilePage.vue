@@ -1,9 +1,5 @@
 <template>
   <div class="user-profile-page">
-    <div class="back-nav">
-      <el-button text @click="router.push('/')">← Back</el-button>
-    </div>
-
     <div class="profile-card" v-loading="loading">
       <template v-if="notFound">
         <h1 class="not-found-title">User not found</h1>
@@ -47,19 +43,12 @@
             <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
           </svg>
-          <a
-            :href="link"
-            class="website"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a :href="link" class="website" target="_blank" rel="noopener noreferrer">
             {{ link }}
           </a>
         </div>
 
-        <el-button v-if="isOwnProfile" class="edit-btn" @click="openEdit">
-          Edit profile
-        </el-button>
+        <el-button v-if="isOwnProfile" class="edit-btn" @click="openEdit"> Edit profile </el-button>
       </template>
     </div>
 
@@ -125,7 +114,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { apiFetch, getApiError, getCurrentUserId } from '@/api'
 import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -141,7 +130,6 @@ interface UserProfile {
 }
 
 const route = useRoute()
-const router = useRouter()
 
 const loading = ref(false)
 const notFound = ref(false)
@@ -266,27 +254,6 @@ watch(() => route.params.userId, load)
 .user-profile-page {
   min-height: 100vh;
   padding: 32px 0 80px;
-}
-
-.back-nav {
-  width: 75%;
-  margin: 0 auto 16px;
-  padding: 0 24px;
-}
-
-.back-nav :deep(.el-button) {
-  color: #6a737c;
-  background: transparent;
-}
-
-.back-nav :deep(.el-button:hover),
-.back-nav :deep(.el-button:focus),
-.back-nav :deep(.el-button:focus-visible) {
-  color: #6a737c;
-  background: transparent;
-  text-decoration: underline;
-  text-decoration-color: #6a737c;
-  text-underline-offset: 4px;
 }
 
 .profile-card {

@@ -1,11 +1,6 @@
 <template>
   <div class="feed" v-loading="loading">
-    <div
-      v-for="post in posts"
-      :key="post.post_id"
-      class="card"
-      @click="openPost(post.post_id)"
-    >
+    <div v-for="post in posts" :key="post.post_id" class="card" @click="openPost(post.post_id)">
       <div class="card-header">
         <h2 class="card-title">{{ post.title }}</h2>
         <div class="card-meta">
@@ -26,7 +21,7 @@
         <span v-for="tag in post.tags" :key="tag" class="tag-pill">{{ tag }}</span>
       </div>
       <div class="card-author">
-        <UserAvatar :username="post.author" :size="28" />
+        <UserAvatar :user-id="post.user_id" :username="post.author" :size="28" />
         <span>{{ post.author }}</span>
       </div>
     </div>
@@ -153,10 +148,14 @@ onBeforeUnmount(saveScroll)
 }
 
 .card-title {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   font-size: 20px;
   font-weight: 600;
   color: #ffffff;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .card-date {

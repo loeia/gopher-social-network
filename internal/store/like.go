@@ -10,6 +10,7 @@ import (
 
 type FavoritePostList struct {
 	PostID       int64     `json:"post_id"`
+	UserID       int64     `json:"user_id"`
 	Author       string    `json:"author"`
 	Title        string    `json:"title"`
 	Tags         []string  `json:"tags"`
@@ -75,7 +76,7 @@ func (s *PostLikeStore) GetUserFavoritePosts(c context.Context, userId int64) ([
 	defer cancel()
 
 	query := `
-		SELECT p.id,u.username,p.title,p.tags,p.comment_count,p.like_count,p.created_at FROM posts p
+		SELECT p.id,u.id,u.username,p.title,p.tags,p.comment_count,p.like_count,p.created_at FROM posts p
 		LEFT JOIN post_likes l ON p.id = l.post_id
 		LEFT JOIN users u ON p.user_id = u.id
 		WHERE l.user_id = $1
@@ -94,6 +95,7 @@ func (s *PostLikeStore) GetUserFavoritePosts(c context.Context, userId int64) ([
 
 		if err := rows.Scan(
 			&post.PostID,
+			&post.UserID,
 			&post.Author,
 			&post.Title,
 			pq.Array(&post.Tags),

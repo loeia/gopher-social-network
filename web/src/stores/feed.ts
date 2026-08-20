@@ -23,6 +23,7 @@ export interface LikedPost {
   comment_count?: number
   like_count?: number
   created_at: string
+  user_id?: number
 }
 
 export interface FollowingUser {
@@ -37,7 +38,14 @@ export interface FollowerUser {
   created_at: string
 }
 
-export type ViewType = 'all' | 'liked' | 'following' | 'followers' | 'myposts' | 'create' | 'profile'
+export type ViewType =
+  | 'all'
+  | 'liked'
+  | 'following'
+  | 'followers'
+  | 'myposts'
+  | 'create'
+  | 'profile'
 
 export interface SearchParams {
   search?: string
@@ -182,7 +190,20 @@ export const useFeedStore = defineStore('feed', {
       const response = await apiFetch('/users/likes')
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const json = await response.json()
-      this.likedPosts = Array.isArray(json) ? json : (json.data ?? [])
+      const raw = Array.isArray(json) ? json : (json.data ?? [])
+      this.likedPosts = raw.map((p: RawPost) => {
+        const userId = Number(p.user_id ?? p.author_id)
+        return {
+          post_id: Number(p.post_id ?? p.id ?? 0),
+          author: p.user?.username ?? p.author ?? '',
+          title: p.title ?? '',
+          tags: p.tags ?? [],
+          comment_count: Number(p.comment_count ?? 0),
+          like_count: Number(p.like_count ?? 0),
+          created_at: p.created_at ?? '',
+          user_id: Number.isFinite(userId) && userId > 0 ? userId : undefined,
+        }
+      })
       this.likedPostsLoaded = true
     },
     async fetchFollowing() {

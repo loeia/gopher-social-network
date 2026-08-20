@@ -1,6 +1,6 @@
 <template>
   <div class="my-posts-page">
-    <div class="back-nav">
+    <div v-if="editingPost" class="back-nav">
       <el-button text @click="goBack">← Back</el-button>
     </div>
 
@@ -28,9 +28,7 @@
       <div class="form-group">
         <div class="label-row">
           <label class="form-label" for="body">Content</label>
-          <span class="char-count" :class="{ over: isContentOver }"
-            >{{ content.length }}/1000</span
-          >
+          <span class="char-count" :class="{ over: isContentOver }">{{ content.length }}/1000</span>
         </div>
         <el-tabs v-model="contentTab" class="content-tabs">
           <el-tab-pane label="Edit" name="edit">
@@ -153,12 +151,8 @@ const tagsChanged = computed(() => {
   if (tags.value.length !== originalTags.value.length) return true
   return tags.value.some((tag, index) => tag !== originalTags.value[index])
 })
-const hasChanges = computed(
-  () => titleChanged.value || contentChanged.value || tagsChanged.value,
-)
-const isContentOver = computed(
-  () => contentChanged.value && content.value.length > MAX_CONTENT,
-)
+const hasChanges = computed(() => titleChanged.value || contentChanged.value || tagsChanged.value)
+const isContentOver = computed(() => contentChanged.value && content.value.length > MAX_CONTENT)
 
 function saveScroll() {
   feedStore.myPostsScrollTop = window.scrollY
@@ -302,16 +296,12 @@ async function handleEdit() {
 
 async function handleDelete(post: FeedPost) {
   try {
-    await ElMessageBox.confirm(
-      'This action cannot be undone. Delete this post?',
-      'Delete post',
-      {
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-        customClass: 'bw-messagebox',
-      },
-    )
+    await ElMessageBox.confirm('This action cannot be undone. Delete this post?', 'Delete post', {
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      type: 'warning',
+      customClass: 'bw-messagebox',
+    })
   } catch {
     return
   }
@@ -326,7 +316,6 @@ async function handleDelete(post: FeedPost) {
     notify('error', 'Failed to delete post')
   }
 }
-
 </script>
 
 <style scoped>
