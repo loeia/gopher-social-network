@@ -1,11 +1,7 @@
 <template>
   <header class="navbar">
     <div class="navbar-left">
-      <el-button
-        v-if="isLoggedIn"
-        class="menu-btn"
-        @click="toggleSidebar"
-      >
+      <el-button v-if="isLoggedIn" class="menu-btn" @click="toggleSidebar">
         <svg
           class="menu-icon"
           width="18"
@@ -25,14 +21,6 @@
     </div>
 
     <div class="navbar-center">
-      <el-input
-        v-model="searchQuery"
-        class="navbar-search"
-        placeholder="Search posts"
-        clearable
-        @keyup.enter="handleSearch"
-      />
-
       <el-popover
         v-model:visible="filterOpen"
         placement="bottom-start"
@@ -41,7 +29,26 @@
         popper-class="search-filters-popper"
       >
         <template #reference>
-          <el-button class="filters-btn">Filters</el-button>
+          <el-button class="filters-btn" aria-label="Filters">
+            <svg
+              class="filter-icon"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+              <circle cx="8" cy="6" r="2.2" fill="currentColor" stroke="none" />
+              <circle cx="16" cy="12" r="2.2" fill="currentColor" stroke="none" />
+              <circle cx="12" cy="18" r="2.2" fill="currentColor" stroke="none" />
+            </svg>
+          </el-button>
         </template>
 
         <div class="filters-panel">
@@ -91,9 +98,32 @@
             clearable
             @keyup.enter="handleSearch"
           />
-          <el-button class="filter-search-btn" @click="handleSearch"> Search </el-button>
         </div>
       </el-popover>
+
+      <el-input
+        v-model="searchQuery"
+        class="navbar-search"
+        placeholder="Search posts"
+        clearable
+        @keyup.enter="handleSearch"
+      />
+
+      <el-button class="navbar-search-btn" aria-label="Search" @click="handleSearch">
+        <svg
+          class="search-icon"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        >
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+      </el-button>
     </div>
 
     <div class="navbar-right">
@@ -263,16 +293,37 @@ async function handleLogout() {
 }
 
 .filters-btn {
-  background: #ffffff;
-  color: #141414;
-  border: 1px solid #ffffff;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 32px;
+  padding: 0;
+  background: #0a0a0a;
+  color: #ffffff;
+  border: 1px solid #262626;
+  box-shadow: 0 0 0 1px #262626 inset;
+  --el-button-bg-color: #0a0a0a;
+  --el-button-border-color: #262626;
+  --el-button-text-color: #ffffff;
+  --el-button-hover-bg-color: #1f1f1f;
+  --el-button-hover-border-color: #ffffff;
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-bg-color: #1f1f1f;
+  --el-button-active-border-color: #ffffff;
+  --el-button-active-text-color: #ffffff;
 }
 
-.filters-btn:hover {
-  background: #e4e6e8;
-  color: #141414;
-  border-color: #e4e6e8;
+.filters-btn:hover,
+.filters-btn:active,
+.filters-btn.is-active {
+  background: #1f1f1f;
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.filter-icon {
+  display: block;
 }
 
 .navbar-search :deep(.el-input__wrapper) {
@@ -298,9 +349,8 @@ async function handleLogout() {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 
-:global(.search-filters-popper .el-popper__arrow::before) {
-  background: #141414;
-  border-color: #262626;
+:global(.search-filters-popper .el-popper__arrow) {
+  display: none;
 }
 
 .filters-panel {
@@ -443,18 +493,37 @@ async function handleLogout() {
   color: #141414;
 }
 
-.filter-search-btn {
-  margin-top: 8px;
-  background: #ffffff;
-  color: #141414;
-  border: 1px solid #ffffff;
-  font-weight: 600;
+.navbar-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 32px;
+  padding: 0;
+  background: #0a0a0a;
+  color: #ffffff;
+  border: 1px solid #262626;
+  box-shadow: 0 0 0 1px #262626 inset;
+  --el-button-bg-color: #0a0a0a;
+  --el-button-border-color: #262626;
+  --el-button-text-color: #ffffff;
+  --el-button-hover-bg-color: #1f1f1f;
+  --el-button-hover-border-color: #ffffff;
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-bg-color: #1f1f1f;
+  --el-button-active-border-color: #ffffff;
+  --el-button-active-text-color: #ffffff;
 }
 
-.filter-search-btn:hover {
-  background: #e4e6e8;
-  color: #141414;
-  border-color: #e4e6e8;
+.navbar-search-btn:hover,
+.navbar-search-btn:active {
+  background: #1f1f1f;
+  color: #ffffff;
+  border-color: #ffffff;
+}
+
+.search-icon {
+  display: block;
 }
 
 .navbar-right {
