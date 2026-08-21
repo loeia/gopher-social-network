@@ -58,6 +58,7 @@
               v-model="tagInput"
               size="large"
               class="field"
+              :class="{ 'over-limit': isTagInputOver }"
               placeholder="e.g. golang, postgres"
               @keyup.enter.prevent="addTag"
             />
@@ -76,6 +77,7 @@
             </el-tag>
           </div>
           <p v-if="isTagsOver" class="form-error">You can add at most 5 tags</p>
+          <p v-if="isTagInputOver" class="form-error">Tag cannot exceed 10 characters</p>
         </div>
 
         <div class="form-actions">
@@ -107,16 +109,19 @@ const submitting = ref(false)
 const MAX_TITLE = 100
 const MAX_CONTENT = 5000
 const MAX_TAGS = 5
+const MAX_TAG_LENGTH = 10
 
 const isTitleOver = computed(() => title.value.length > MAX_TITLE)
 const isContentOver = computed(() => content.value.length > MAX_CONTENT)
 const isTagsOver = computed(() => tags.value.length > MAX_TAGS)
-const canAddTag = computed(() => !!tagInput.value.trim() && tags.value.length < MAX_TAGS)
+const isTagInputOver = computed(() => tagInput.value.trim().length > MAX_TAG_LENGTH)
+const canAddTag = computed(() => !!tagInput.value.trim() && tags.value.length < MAX_TAGS && !isTagInputOver.value)
 const renderedContent = computed(() => renderMarkdown(content.value))
 
 function addTag() {
   const tag = tagInput.value.trim()
   if (!tag) return
+  if (tag.length > MAX_TAG_LENGTH) return
   if (tags.value.includes(tag)) {
     tagInput.value = ''
     return
