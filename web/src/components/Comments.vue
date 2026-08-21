@@ -38,6 +38,9 @@ import { apiFetch, getToken } from '@/api'
 import { notify } from '@/utils/message'
 import type { ElInput } from 'element-plus'
 import CommentThread, { type CommentNode } from '@/components/CommentThread.vue'
+import { useFeedStore } from '@/stores/feed'
+
+const store = useFeedStore()
 
 interface Comment {
   id: number
@@ -161,6 +164,7 @@ async function deleteComment(commentId: number) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     notify('success', 'Comment deleted')
     await loadComments()
+    store.updatePostCommentCount(props.postId, comments.value.length)
   } catch (error) {
     console.error('Delete comment error:', error)
     notify('error', 'Failed to delete comment')
@@ -202,6 +206,7 @@ async function submitReply(commentId: number) {
     replyingTo.value = null
     notify('success', 'Reply added')
     await loadComments()
+    store.updatePostCommentCount(props.postId, comments.value.length)
   } catch (error) {
     console.error('Reply comment error:', error)
     notify('error', 'Failed to add reply')
@@ -227,6 +232,7 @@ async function submitComment() {
     showCommentBox.value = false
     notify('success', 'Comment added')
     await loadComments()
+    store.updatePostCommentCount(props.postId, comments.value.length)
   } catch (error) {
     console.error('Add comment error:', error)
     notify('error', 'Failed to add comment')

@@ -83,9 +83,7 @@ interface PostDetail {
   title: string
   content: string
   tags: string[]
-  likes_count?: number
-  likes?: number
-  comments_count?: number
+  like_count?: number
   comment_count?: number
   created_at: string
   updated_at: string
@@ -207,6 +205,7 @@ async function toggleLike() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     liked.value = !liked.value
     likesCount.value += liked.value ? 1 : -1
+    store.updatePostLike(post.value.id, liked.value, likesCount.value)
   } catch (error) {
     console.error('Toggle like error:', error)
     notify('error', 'Failed to update like')
@@ -239,8 +238,8 @@ async function startLoad(id: number) {
     const json = await response.json()
     const data = json.data ?? json
     post.value = data
-    likesCount.value = Number(data.likes_count ?? data.likes ?? 0)
-    commentsCount.value = Number(data.comments_count ?? data.comment_count ?? 0)
+    likesCount.value = Number(data.like_count ?? 0)
+    commentsCount.value = Number(data.comment_count ?? 0)
     loadLikedState(id)
   } catch (error) {
     console.error('Load post error:', error)

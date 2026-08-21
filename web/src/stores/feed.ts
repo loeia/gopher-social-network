@@ -152,6 +152,45 @@ export const useFeedStore = defineStore('feed', {
       this.postHistory = []
       this.postHistoryIndex = -1
     },
+    updatePostLike(postId: number, liked: boolean, likeCount: number) {
+      const post = this.posts.find((p) => p.id === postId)
+      if (post) {
+        post.like_count = likeCount
+      }
+      const likedPost = this.likedPosts.find((p) => p.post_id === postId)
+      if (likedPost) {
+        likedPost.like_count = likeCount
+      }
+      if (liked) {
+        if (!this.likedPosts.some((p) => p.post_id === postId)) {
+          const post = this.posts.find((p) => p.id === postId)
+          if (post) {
+            this.likedPosts.push({
+              post_id: post.id,
+              author: post.user.username,
+              title: post.title,
+              tags: post.tags,
+              comment_count: post.comment_count,
+              like_count: post.like_count,
+              created_at: post.created_at,
+              user_id: post.user_id,
+            })
+          }
+        }
+      } else {
+        this.likedPosts = this.likedPosts.filter((p) => p.post_id !== postId)
+      }
+    },
+    updatePostCommentCount(postId: number, commentCount: number) {
+      const post = this.posts.find((p) => p.id === postId)
+      if (post) {
+        post.comment_count = commentCount
+      }
+      const likedPost = this.likedPosts.find((p) => p.post_id === postId)
+      if (likedPost) {
+        likedPost.comment_count = commentCount
+      }
+    },
     async fetchPosts() {
       if (this.postsLoaded) return
       const response = await apiFetch('/posts/free')
