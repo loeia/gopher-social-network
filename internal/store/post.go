@@ -227,7 +227,7 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 func (s *PostStore) GetFree(c context.Context, count int) ([]*Post, error) {
 
 	query := `
-		SELECT p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,u.username
+		SELECT p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,p.comment_count,p.like_count,u.username
 		FROM posts p JOIN users u ON p.user_id = u.id
 		ORDER BY random()
 		LIMIT $1
@@ -254,6 +254,8 @@ func (s *PostStore) GetFree(c context.Context, count int) ([]*Post, error) {
 			&post.Version,
 			&post.CreatedAt,
 			&post.UpdatedAt,
+			&post.CommentCount,
+			&post.LikeCount,
 			&post.User.Username,
 		); err != nil {
 			return nil, err
