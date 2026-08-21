@@ -5,7 +5,7 @@
       <SideBar v-if="showSidebar" :active-view="activeView" @view="onSidebarView" />
       <div class="main" :class="{ 'with-sidebar': showSidebar }">
         <router-view v-slot="{ Component }">
-          <keep-alive include="HomePage,MyPostsPage">
+          <keep-alive include="HomePage,MyPostsPage,SearchResults">
             <component :is="Component" />
           </keep-alive>
         </router-view>

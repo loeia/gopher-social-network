@@ -19,7 +19,7 @@ const router = createRouter({
     // keep-alive feed pages (they restore their own position). For other pages
     // scroll to the top.
     if (savedPosition) return savedPosition
-    if (to.name === 'Home' || to.name === 'MyPosts') return false
+    if (to.name === 'Home' || to.name === 'MyPosts' || to.name === 'SearchResults') return false
     return { top: 0 }
   },
   routes: [

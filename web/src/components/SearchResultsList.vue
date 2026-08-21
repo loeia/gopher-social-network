@@ -27,8 +27,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, nextTick, onActivated, onBeforeUnmount, ref, watch } from 'vue'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import {
   useFeedStore,
   type FeedPost,
@@ -62,6 +62,17 @@ function goToPage(page: number) {
   router.push({ path: '/search', query })
 }
 
+function saveScroll() {
+  store.searchScrollTop = window.scrollY
+}
+
+function restoreScroll() {
+  const top = store.searchScrollTop
+  if (top > 0) {
+    nextTick(() => window.scrollTo({ top }))
+  }
+}
+
 let requestId = 0
 
 watch(
@@ -82,6 +93,10 @@ watch(
   },
   { immediate: true },
 )
+
+onBeforeRouteLeave(saveScroll)
+onBeforeUnmount(saveScroll)
+onActivated(restoreScroll)
 </script>
 
 <style scoped>
