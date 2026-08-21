@@ -12,13 +12,13 @@ func init() {
 type CreatePostPayload struct {
 	Title   string   `json:"title" validate:"required,max=100"`
 	Content string   `json:"content" validate:"required,max=5000"`
-	Tags    []string `json:"tags" validate:"required,max=5"`
+	Tags    []string `json:"tags" validate:"required,max=5,dive,min=1,max=10"`
 }
 
 type UpdatePostPayload struct {
 	Title   *string   `json:"title" validate:"omitempty,max=100"`
 	Content *string   `json:"content" validate:"omitempty,max=5000"`
-	Tags    *[]string `json:"tags" validate:"omitempty"`
+	Tags    *[]string `json:"tags" validate:"omitempty,dive,min=1,max=10"`
 }
 
 type RegisterUserPayload struct {
