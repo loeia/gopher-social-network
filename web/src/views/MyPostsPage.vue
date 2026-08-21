@@ -172,7 +172,10 @@ function restoreScroll() {
 onMounted(loadMyPosts)
 onBeforeRouteLeave(saveScroll)
 onBeforeUnmount(saveScroll)
-onActivated(restoreScroll)
+onActivated(() => {
+  restoreScroll()
+  loadMyPosts()
+})
 
 function goBack() {
   if (editingPost.value) {
@@ -191,6 +194,8 @@ async function loadMyPosts() {
     const raw = Array.isArray(json) ? json : (json.data ?? [])
     posts.value = raw.map((p: any) => ({
       ...toFeedPost(p),
+      comment_count: Number(p.comment_count ?? p.comments_count ?? 0),
+      like_count: Number(p.like_count ?? p.likes_count ?? 0),
       user_id: currentUserId ?? undefined,
     }))
   } catch (error) {

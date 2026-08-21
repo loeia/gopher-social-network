@@ -181,6 +181,41 @@ export const useFeedStore = defineStore('feed', {
         this.likedPosts = this.likedPosts.filter((p) => p.post_id !== postId)
       }
     },
+    togglePostLike(postId: number, liked: boolean, likeCount: number) {
+      const post = this.posts.find((p) => p.id === postId)
+      if (post) {
+        post.like_count = likeCount
+      }
+      if (liked) {
+        if (!this.likedPosts.some((p) => p.post_id === postId)) {
+          if (post) {
+            this.likedPosts.push({
+              post_id: post.id,
+              author: post.user.username,
+              title: post.title,
+              tags: post.tags,
+              comment_count: post.comment_count,
+              like_count: post.like_count,
+              created_at: post.created_at,
+              user_id: post.user_id,
+            })
+          } else {
+            this.likedPosts.push({
+              post_id: postId,
+              author: '',
+              title: '',
+              tags: [],
+              comment_count: 0,
+              like_count: likeCount,
+              created_at: '',
+              user_id: undefined,
+            })
+          }
+        }
+      } else {
+        this.likedPosts = this.likedPosts.filter((p) => p.post_id !== postId)
+      }
+    },
     updatePostCommentCount(postId: number, commentCount: number) {
       const post = this.posts.find((p) => p.id === postId)
       if (post) {

@@ -205,7 +205,7 @@ async function toggleLike() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     liked.value = !liked.value
     likesCount.value += liked.value ? 1 : -1
-    store.updatePostLike(post.value.id, liked.value, likesCount.value)
+    store.togglePostLike(post.value.id, liked.value, likesCount.value)
   } catch (error) {
     console.error('Toggle like error:', error)
     notify('error', 'Failed to update like')
