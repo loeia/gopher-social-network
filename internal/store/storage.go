@@ -29,7 +29,7 @@ type PostStorage interface {
 	Update(context.Context, *Post) error
 	GetUserFeed(context.Context, int64, *PaginatedFeedQuery) ([]*PostWithMetaData, error)
 	GetFree(context.Context, int) ([]*Post, error)
-	Search(context.Context, *PaginatedFeedQuery) ([]*PostWithMetaData, error)
+	Search(context.Context, *PaginatedFeedQuery) ([]*Post, error)
 }
 type UserStorage interface {
 	Create(context.Context, *User, *sql.Tx) error

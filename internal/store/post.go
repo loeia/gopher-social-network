@@ -276,7 +276,7 @@ func escapeLike(s string) string {
 }
 
 // Search returns posts matching search/tags/author/date-range filters, ordered by relevance.
-func (s *PostStore) Search(c context.Context, pfq *PaginatedFeedQuery) ([]*PostWithMetaData, error) {
+func (s *PostStore) Search(c context.Context, pfq *PaginatedFeedQuery) ([]*Post, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
@@ -326,20 +326,20 @@ func (s *PostStore) Search(c context.Context, pfq *PaginatedFeedQuery) ([]*PostW
 	}
 	defer rows.Close()
 
-	var posts []*PostWithMetaData
+	var posts []*Post
 	for rows.Next() {
-		var post PostWithMetaData
+		var post Post
 		if err := rows.Scan(
-			&post.Post.ID,
-			&post.Post.UserID,
-			&post.Post.Title,
-			&post.Post.Content,
-			pq.Array(&post.Post.Tags),
-			&post.Post.Version,
-			&post.Post.CreatedAt,
+			&post.ID,
+			&post.UserID,
+			&post.Title,
+			&post.Content,
+			pq.Array(&post.Tags),
+			&post.Version,
+			&post.CreatedAt,
 			&post.CommentCount,
 			&post.LikeCount,
-			&post.Post.User.Username,
+			&post.User.Username,
 		); err != nil {
 			return nil, err
 		}

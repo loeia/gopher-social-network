@@ -18,10 +18,25 @@ type PostResponse struct {
 	Title        string   `json:"title"`
 	Content      string   `json:"content"`
 	Tags         []string `json:"tags"`
-	CommentCount int64    `json:"comments_count"`
-	LikeCount    int64    `json:"likes_count"`
+	CommentCount int64    `json:"comment_count"`
+	LikeCount    int64    `json:"like_count"`
 	CreatedAt    string   `json:"created_at"`
 	UpdatedAt    string   `json:"updated_at"`
+}
+
+func postResponse(p *store.Post) *PostResponse {
+	return &PostResponse{
+		ID:           p.ID,
+		AuthorId:     p.UserID,
+		Author:       p.User.Username,
+		Title:        p.Title,
+		Content:      p.Content,
+		Tags:         p.Tags,
+		CommentCount: p.CommentCount,
+		LikeCount:    p.LikeCount,
+		CreatedAt:    p.CreatedAt,
+		UpdatedAt:    p.UpdatedAt,
+	}
 }
 
 // createPostHandler handles creating a new post.
@@ -50,20 +65,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	resp := PostResponse{
-		ID:           post.ID,
-		AuthorId:     post.UserID,
-		Author:       post.User.Username,
-		Title:        post.Title,
-		Content:      post.Content,
-		Tags:         post.Tags,
-		CommentCount: post.CommentCount,
-		LikeCount:    post.LikeCount,
-		CreatedAt:    post.CreatedAt,
-		UpdatedAt:    post.UpdatedAt,
-	}
-
-	if err := app.JSONResponse(w, http.StatusCreated, resp); err != nil {
+	if err := app.JSONResponse(w, http.StatusCreated, postResponse(&post)); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -73,20 +75,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromCtx(r)
 
-	resp := PostResponse{
-		ID:           post.ID,
-		AuthorId:     post.UserID,
-		Author:       post.User.Username,
-		Title:        post.Title,
-		Content:      post.Content,
-		Tags:         post.Tags,
-		CommentCount: post.CommentCount,
-		LikeCount:    post.LikeCount,
-		CreatedAt:    post.CreatedAt,
-		UpdatedAt:    post.UpdatedAt,
-	}
-
-	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
+	if err := app.JSONResponse(w, http.StatusOK, postResponse(post)); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -144,7 +133,7 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := app.JSONResponse(w, http.StatusOK, post); err != nil {
+	if err := app.JSONResponse(w, http.StatusOK, postResponse(post)); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -158,7 +147,12 @@ func (app *application) getFreePostsHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := app.JSONResponse(w, http.StatusOK, posts); err != nil {
+	resp := make([]*PostResponse, len(posts))
+	for i, post := range posts {
+		resp[i] = postResponse(post)
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}
@@ -187,19 +181,9 @@ func (app *application) getSearchPostHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	resp := make([]*FeedPostResponse, len(posts))
+	resp := make([]*PostResponse, len(posts))
 	for i, post := range posts {
-		resp[i] = &FeedPostResponse{
-			ID:           post.Post.ID,
-			AuthorId:     post.Post.UserID,
-			Author:       post.Post.User.Username,
-			Title:        post.Post.Title,
-			Content:      post.Post.Content,
-			Tags:         post.Post.Tags,
-			PostLikes:    post.LikeCount,
-			CommentCount: post.CommentCount,
-			CreatedAt:    post.Post.CreatedAt,
-		}
+		resp[i] = postResponse(post)
 	}
 
 	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
