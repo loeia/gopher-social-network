@@ -46,3 +46,12 @@ type UpdateProfilePayload struct {
 	Bio   string   `json:"bio" validate:"omitempty,max=500"`
 	Links []string `json:"links" validate:"omitempty,max=5,dive,omitempty,http_url,max=255"`
 }
+
+type ForgetPasswordPayload struct {
+	Email string `json:"email" validate:"required,email,max=255"`
+}
+
+type ResetPasswordPayload struct {
+	Token       string `json:"token" validate:"required"`
+	NewPassword string `json:"new_password" validate:"required,min=3,max=72"`
+}

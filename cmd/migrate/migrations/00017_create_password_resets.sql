@@ -1,0 +1,10 @@
+-- +goose Up
+CREATE TABLE IF NOT EXISTS password_resets (
+  token BYTEA PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expiry TIMESTAMP(0) WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- +goose Down
+DROP TABLE IF EXISTS password_resets;

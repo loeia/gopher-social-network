@@ -29,6 +29,7 @@ func main() {
 		},
 		mail: mailConfig{
 			exp:       time.Hour * 24 * 2, // 2 days
+			resetExp:  time.Minute * 15,
 			fromEmail: env.GetString("FROM_EMAIL", ""),
 			mailTrap: mailTrapConfig{
 				apiKey:      env.GetString("MAILTRAP_API_KEY", ""),

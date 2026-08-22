@@ -496,3 +496,53 @@ func (s *UserStore) UpdateProfile(c context.Context, userId int64, bio string, l
 	}
 	return nil
 }
+
+func (s *UserStore) CreatePasswordReset(c context.Context, token string, userId int64, expiry time.Duration) error {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := "INSERT INTO password_resets (token,user_id,expiry) VALUES ($1,$2,$3)"
+
+	_, err := s.db.ExecContext(ctx, query, token, userId, time.Now().Add(expiry))
+
+	return err
+}
+
+func (s *UserStore) ResetPassword(c context.Context, token string, newPassword string) error {
+	return withTx(s.db, c, func(tx *sql.Tx) error {
+		ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+		defer cancel()
+
+		hash := sha256.Sum256([]byte(token))
+		hashToken := hex.EncodeToString(hash[:])
+
+		query := `SELECT user_id FROM password_resets WHERE token = $1 AND expiry >= $2`
+
+		var userId int64
+		if err := tx.QueryRowContext(ctx, query, hashToken, time.Now()).Scan(&userId); err != nil {
+			switch err {
+			case sql.ErrNoRows:
+				return ErrNotFound
+			default:
+				return err
+			}
+		}
+
+		var p password
+		if err := p.Set(newPassword); err != nil {
+			return err
+		}
+
+		updateQuery := `UPDATE users SET password = $1, token_ver = token_ver + 1 WHERE id = $2`
+		if _, err := tx.ExecContext(ctx, updateQuery, p.hash, userId); err != nil {
+			return err
+		}
+
+		deleteQuery := `DELETE FROM password_resets WHERE user_id = $1`
+		if _, err := tx.ExecContext(ctx, deleteQuery, userId); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}

@@ -413,3 +413,83 @@ func (app *application) updateProfileHandler(w http.ResponseWriter, r *http.Requ
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// forgetPassHandler handles the forgot password request and sends a reset email.
+func (app *application) forgetPassHandler(w http.ResponseWriter, r *http.Request) {
+	var req ForgetPasswordPayload
+	if err := app.readJSON(w, r, &req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	user, err := app.store.Users.GetByEmail(r.Context(), req.Email)
+	if err != nil {
+		switch err {
+		case store.ErrNotFound:
+			app.JSONResponse(w, http.StatusOK, map[string]string{"message": "if that email exists, a reset link has been sent"})
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
+
+	plainToken := uuid.New().String()
+	hash := sha256.Sum256([]byte(plainToken))
+	hashToken := hex.EncodeToString(hash[:])
+
+	if err := app.store.Users.CreatePasswordReset(r.Context(), hashToken, user.ID, app.config.mail.resetExp); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	isProdEnv := app.config.env == "production"
+
+	resetURL := fmt.Sprintf("%s/reset-password/%s", app.config.frontendURL, plainToken)
+	vars := struct {
+		Username string
+		ResetURL string
+	}{
+		Username: user.Username,
+		ResetURL: resetURL,
+	}
+
+	status, err := app.mailer.Send(mailer.PasswordResetTemplate, user.Username, user.Email, vars, !isProdEnv)
+	if err != nil {
+		app.logger.Errorw("error sending password reset email", "error", err)
+		app.internalServerError(w, r, err)
+		return
+	}
+	app.logger.Infow("Password reset email sent", "status code", status)
+
+	app.JSONResponse(w, http.StatusOK, map[string]string{"message": "if that email exists, a reset link has been sent"})
+}
+
+// resetPasswordFromTokenHandler handles the password reset using a token (no auth required).
+func (app *application) resetPasswordFromTokenHandler(w http.ResponseWriter, r *http.Request) {
+	var req ResetPasswordPayload
+	if err := app.readJSON(w, r, &req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	if err := app.store.Users.ResetPassword(r.Context(), req.Token, req.NewPassword); err != nil {
+		switch err {
+		case store.ErrNotFound:
+			app.badRequestError(w, r, fmt.Errorf("invalid or expired token"))
+		default:
+			app.internalServerError(w, r, err)
+		}
+		return
+	}
+
+	app.JSONResponse(w, http.StatusOK, map[string]string{"message": "password has been reset successfully"})
+}

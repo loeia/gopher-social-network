@@ -6,7 +6,8 @@ const (
 	FromName   = "GopherSocialNetwork"
 	maxRetries = 3
 
-	UserWelcomeTemplate = "user_invitation.tmpl"
+	UserWelcomeTemplate   = "user_invitation.tmpl"
+	PasswordResetTemplate = "password_reset.tmpl"
 )
 
 //go:embed "templates"
