@@ -1,0 +1,271 @@
+<template>
+  <div class="settings-page">
+    <div class="settings-container">
+      <div class="settings-sidebar">
+        <h1 class="settings-title">Settings</h1>
+        <el-button
+          class="menu-btn"
+          :class="{ active: activeTab === 'password' }"
+          @click="activeTab = 'password'"
+        >
+          Password
+        </el-button>
+      </div>
+
+      <div class="settings-main">
+        <div v-if="activeTab === 'password'" class="reset-section">
+          <h2 class="section-title">Reset Password</h2>
+
+            <div class="field-group">
+              <label class="field-label" for="old-password">Old Password</label>
+              <el-input
+                id="old-password"
+                v-model="oldPassword"
+                type="password"
+                size="large"
+                placeholder="Enter old password"
+                show-password
+                class="field"
+                :class="{ 'is-error': oldPasswordError }"
+                @input="oldPasswordError = ''"
+                @keyup.enter="handleSubmit"
+              />
+              <p v-if="oldPasswordError" class="field-error">{{ oldPasswordError }}</p>
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="new-password">New Password</label>
+              <el-input
+                id="new-password"
+                v-model="newPassword"
+                type="password"
+                size="large"
+                placeholder="Enter new password"
+                show-password
+                class="field"
+                @keyup.enter="handleSubmit"
+              />
+            </div>
+
+            <div class="field-group">
+              <label class="field-label" for="confirm-password">Confirm New Password</label>
+              <el-input
+                id="confirm-password"
+                v-model="confirmPassword"
+                type="password"
+                size="large"
+                placeholder="Confirm new password"
+                show-password
+                class="field"
+                @keyup.enter="handleSubmit"
+              />
+            </div>
+
+            <el-button
+              size="large"
+              class="submit-btn"
+              :loading="loading"
+              @click="handleSubmit"
+            >
+              Reset
+            </el-button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { apiFetch, clearToken } from '@/api'
+import { notify } from '@/utils/message'
+
+const router = useRouter()
+
+const activeTab = ref<'password'>('password')
+const oldPassword = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const loading = ref(false)
+const oldPasswordError = ref('')
+
+async function handleSubmit() {
+  oldPasswordError.value = ''
+  if (!oldPassword.value) {
+    notify('warning', 'Please enter your old password')
+    return
+  }
+  if (!newPassword.value) {
+    notify('warning', 'Please enter a new password')
+    return
+  }
+  if (newPassword.value !== confirmPassword.value) {
+    notify('warning', 'New passwords do not match')
+    return
+  }
+
+  loading.value = true
+  try {
+    const response = await apiFetch('/users/reset', {
+      method: 'PATCH',
+      body: JSON.stringify({
+        old_password: oldPassword.value,
+        new_password: newPassword.value,
+      }),
+    })
+    if (!response.ok) {
+      if (response.status === 401) {
+        oldPasswordError.value = 'Incorrect old password'
+        return
+      }
+      const json = await response.json().catch(() => null)
+      const msg = json?.error || 'Failed to update password'
+      notify('error', msg)
+      return
+    }
+
+    notify('success', 'Password updated')
+    clearToken()
+    router.push('/login')
+  } catch (error) {
+    console.error('Reset password error:', error)
+    notify('error', 'Failed to update password')
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<style scoped>
+.settings-page {
+  min-height: 100vh;
+  padding: 32px 0 80px;
+}
+
+.settings-container {
+  width: 75%;
+  margin: 0 auto;
+  display: flex;
+  gap: 32px;
+  padding: 0 24px;
+}
+
+.settings-sidebar {
+  width: 180px;
+  flex-shrink: 0;
+}
+
+.settings-title {
+  margin: 0 0 24px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.menu-btn {
+  width: 100%;
+  text-align: left;
+  justify-content: flex-start;
+  background: transparent;
+  color: #8c8c8c;
+  border: 1px solid transparent;
+  font-weight: 500;
+}
+
+.menu-btn:hover {
+  color: #ffffff;
+  background: transparent;
+  border-color: transparent;
+}
+
+.menu-btn.active {
+  color: #ffffff;
+  background: #262626;
+  border-color: #3d444d;
+}
+
+.settings-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.reset-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 420px;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #e4e6e8;
+}
+
+.field :deep(.el-input__wrapper) {
+  background: transparent;
+  box-shadow: 0 0 0 1px #262626 inset;
+  border-radius: 6px;
+}
+
+.field :deep(.el-input__wrapper.is-focus) {
+  box-shadow:
+    0 0 0 1px #ffffff inset,
+    0 0 0 3px rgba(255, 255, 255, 0.15);
+}
+
+.field :deep(.el-input__inner) {
+  color: #ffffff;
+}
+
+.field :deep(.el-input__inner::placeholder) {
+  color: #595959;
+}
+
+.field.is-error :deep(.el-input__wrapper),
+.field.is-error :deep(.el-input__wrapper.is-focus) {
+  box-shadow:
+    0 0 0 1px #cf222e inset,
+    0 0 0 3px rgba(207, 34, 46, 0.2);
+}
+
+.field-error {
+  margin: 0;
+  font-size: 13px;
+  color: #cf222e;
+}
+
+.submit-btn {
+  width: 100%;
+  background: #ffffff;
+  color: #141414;
+  border: 1px solid #ffffff;
+  font-weight: 600;
+}
+
+.submit-btn:hover {
+  background: #e4e6e8;
+  color: #141414;
+  border-color: #e4e6e8;
+}
+
+.submit-btn.is-loading {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #141414;
+}
+</style>

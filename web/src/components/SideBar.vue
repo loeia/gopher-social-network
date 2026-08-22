@@ -91,6 +91,9 @@
     >
       Followers
     </el-button>
+    <el-button class="btn settings-btn" :class="{ active: activeView === 'settings' }" @click="goToSettings">
+      Settings
+    </el-button>
   </aside>
 </template>
 
@@ -233,6 +236,10 @@ function goToProfile() {
 
 function goToMyPosts() {
   router.push('/my-posts')
+}
+
+function goToSettings() {
+  router.push('/settings')
 }
 
 function goHome() {

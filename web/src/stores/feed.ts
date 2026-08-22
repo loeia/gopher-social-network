@@ -45,7 +45,8 @@ export type ViewType =
     | "followers"
     | "myposts"
     | "create"
-    | "profile";
+    | "profile"
+    | "settings";
 
 export interface SearchParams {
     search?: string;

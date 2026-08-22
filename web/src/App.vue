@@ -39,6 +39,7 @@ const activeView = computed<ViewType | null>(() => {
   if (route.name === 'Home') return view.value
   if (route.name === 'MyPosts') return 'myposts'
   if (route.name === 'CreatePost') return 'create'
+  if (route.name === 'Settings') return 'settings'
   if (route.name === 'UserProfile') {
     return userStore.id === Number(route.params.userId) ? 'profile' : null
   }
