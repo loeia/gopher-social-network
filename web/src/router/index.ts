@@ -11,6 +11,8 @@ import LoginPage from "@/views/LoginPage.vue";
 import SignUpPage from "@/views/SignUpPage.vue";
 import SearchResults from "@/views/SearchResults.vue";
 import NotFoundPage from "@/views/NotFoundPage.vue";
+import ForgetPasswordPage from "@/views/ForgetPasswordPage.vue";
+import ResetPasswordPage from "@/views/ResetPasswordPage.vue";
 
 const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
@@ -61,6 +63,17 @@ const router = createRouter({
             path: "/signup",
             name: "SignUp",
             component: SignUpPage,
+        },
+        {
+            path: "/forgot-password",
+            name: "ForgotPassword",
+            component: ForgetPasswordPage,
+        },
+        {
+            path: "/reset-password/:token",
+            name: "ResetPassword",
+            component: ResetPasswordPage,
+            meta: { hideNavBar: true },
         },
         {
             path: "/posts/:postId",

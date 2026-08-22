@@ -1,52 +1,51 @@
 <template>
-  <div class="login-page">
-    <div class="login-wrap">
+  <div class="forgot-page">
+    <div class="forgot-wrap">
       <div class="back-nav">
         <el-button text @click="goBack">← Back</el-button>
       </div>
 
-      <div class="login-card">
-        <h1 class="login-title">Sign in to Gopher</h1>
+      <div class="forgot-card">
+        <template v-if="!sent">
+          <h1 class="forgot-title">Reset your password</h1>
 
-        <div class="field-group">
-          <label class="field-label" for="login-email">Email</label>
-          <el-input
-            id="login-email"
-            v-model="email"
-            size="large"
-            placeholder="you@example.com"
-            class="field"
-          />
-        </div>
+          <p class="forgot-desc">
+            Enter your email and we'll send you a reset link.
+          </p>
 
-        <div class="field-group">
-          <div class="label-row">
-            <label class="field-label" for="login-password">Password</label>
-            <router-link to="/forgot-password" class="forgot-link">Forgot password?</router-link>
+          <div class="field-group">
+            <label class="field-label" for="forgot-email">Email</label>
+            <el-input
+              id="forgot-email"
+              v-model="email"
+              size="large"
+              placeholder="you@example.com"
+              class="field"
+              @keyup.enter="handleSubmit"
+            />
           </div>
-          <el-input
-            id="login-password"
-            v-model="password"
-            type="password"
+
+          <el-button
             size="large"
-            placeholder="Password"
-            show-password
-            class="field"
-            @keyup.enter="handleLogin"
-          />
+            class="submit-btn"
+            :loading="loading"
+            @click="handleSubmit"
+          >
+            Send reset link
+          </el-button>
+        </template>
+
+        <div v-else class="success">
+          <div class="success-icon">✓</div>
+          <p class="success-title">Check your email</p>
+          <p class="success-text">{{ successMessage }}</p>
+          <el-button size="large" class="submit-btn" @click="router.push('/login')">
+            Go to Sign in
+          </el-button>
         </div>
 
-        <el-button
-          size="large"
-          class="submit-btn"
-          :loading="loading"
-          @click="handleLogin"
-        >
-          Sign in
-        </el-button>
-
-        <div class="login-footer">
-          New to Gopher? <router-link to="/signup" class="footer-link">Create an account</router-link>
+        <div class="forgot-footer">
+          Remember your password? <router-link to="/login" class="footer-link">Sign in</router-link>
         </div>
       </div>
     </div>
@@ -55,54 +54,43 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { apiFetch, setToken } from '@/api'
+import { useRouter } from 'vue-router'
+import { apiFetch } from '@/api'
 import { notify } from '@/utils/message'
 
-const route = useRoute()
 const router = useRouter()
 
 const email = ref('')
-const password = ref('')
 const loading = ref(false)
+const sent = ref(false)
+const successMessage = ref('')
 
 function goBack() {
   router.push('/')
 }
 
-async function handleLogin() {
-  if (!email.value.trim() || !password.value) {
-    notify('warning', 'Please enter email and password')
+async function handleSubmit() {
+  const mail = email.value.trim()
+  if (!mail) {
+    notify('warning', 'Please enter your email')
     return
   }
 
   loading.value = true
   try {
-    const response = await apiFetch('/authentication/token', {
+    const response = await apiFetch('/users/forgot-password', {
       method: 'POST',
-      body: JSON.stringify({
-        email: email.value.trim(),
-        password: password.value,
-      }),
+      body: JSON.stringify({ email: mail }),
     })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
     const json = await response.json()
-    setToken(json.data)
-    notify('success', 'Logged in')
-    const redirect = route.query.redirect
-    if (
-      typeof redirect === 'string' &&
-      redirect.startsWith('/') &&
-      !redirect.startsWith('//')
-    ) {
-      router.push(redirect)
-    } else {
-      router.push('/')
-    }
+    const data = json.data ?? json
+    successMessage.value = data?.message || 'If that email exists, a reset link has been sent.'
+    sent.value = true
   } catch (error) {
-    console.error('Login error:', error)
-    notify('error', 'Login failed')
+    console.error('Forgot password error:', error)
+    notify('error', 'Failed to send reset link, please try again')
   } finally {
     loading.value = false
   }
@@ -110,7 +98,7 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.login-page {
+.forgot-page {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -118,7 +106,7 @@ async function handleLogin() {
   padding: 48px 16px;
 }
 
-.login-wrap {
+.forgot-wrap {
   width: 100%;
   max-width: 348px;
 }
@@ -149,7 +137,7 @@ async function handleLogin() {
   cursor: not-allowed;
 }
 
-.login-card {
+.forgot-card {
   background: #ffffff;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -159,11 +147,18 @@ async function handleLogin() {
   gap: 16px;
 }
 
-.login-title {
+.forgot-title {
   margin: 0 0 8px;
   font-size: 20px;
   font-weight: 500;
   color: #1f2328;
+  text-align: center;
+}
+
+.forgot-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #57606a;
   text-align: center;
 }
 
@@ -173,26 +168,10 @@ async function handleLogin() {
   gap: 6px;
 }
 
-.label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .field-label {
   font-size: 14px;
   font-weight: 600;
   color: #1f2328;
-}
-
-.forgot-link {
-  font-size: 12px;
-  color: #0969da;
-  text-decoration: none;
-}
-
-.forgot-link:hover {
-  text-decoration: underline;
 }
 
 .field :deep(.el-input__wrapper) {
@@ -241,12 +220,47 @@ async function handleLogin() {
   color: #ffffff;
 }
 
-.login-footer {
+.forgot-footer {
   padding-top: 16px;
   border-top: 1px solid #d1d5db;
   text-align: center;
   font-size: 14px;
   color: #1f2328;
+}
+
+.success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  text-align: center;
+}
+
+.success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #2da44e;
+  color: #ffffff;
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.success-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #1f2328;
+}
+
+.success-text {
+  margin: 0;
+  font-size: 14px;
+  color: #57606a;
 }
 
 .footer-link {
