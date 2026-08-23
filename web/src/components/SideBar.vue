@@ -255,22 +255,22 @@ function goHome() {
 }
 
 function toggleLikes() {
-  emit('view', props.activeView === 'liked' ? 'all' : 'liked')
+  emit('view', 'liked')
   router.push('/')
 }
 
 function toggleLikedComments() {
-  emit('view', props.activeView === 'likedcomments' ? 'all' : 'likedcomments')
+  emit('view', 'likedcomments')
   router.push('/')
 }
 
 function toggleFollowing() {
-  emit('view', props.activeView === 'following' ? 'all' : 'following')
+  emit('view', 'following')
   router.push('/')
 }
 
 function toggleFollowers() {
-  emit('view', props.activeView === 'followers' ? 'all' : 'followers')
+  emit('view', 'followers')
   router.push('/')
 }
 </script>
