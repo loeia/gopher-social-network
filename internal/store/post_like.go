@@ -62,7 +62,7 @@ func (s *PostLikeStore) GetUserFavoritePosts(c context.Context, userId int64) ([
 
 	query := `
 		SELECT p.id,u.id,u.username,p.title,p.tags,p.comment_count,p.like_count,p.created_at FROM posts p
-		LEFT JOIN post_likes l ON p.id = l.post_id
+		INNER JOIN post_likes l ON p.id = l.post_id
 		LEFT JOIN users u ON p.user_id = u.id
 		WHERE l.user_id = $1
 		ORDER BY l.created_at DESC

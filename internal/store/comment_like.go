@@ -61,7 +61,7 @@ func (s *CommentLikeStore) GetUserFavoriteComments(c context.Context, userId int
 				c.post_id,c.id,c.like_count,u.id,u.username,l.created_at,c.content,
 			(SELECT COUNT(*) FROM comments r WHERE r.parent_id = c.id) AS reply_count
 			FROM comments c
-			LEFT JOIN comment_likes l ON c.id = l.comment_id
+			INNER JOIN comment_likes l ON c.id = l.comment_id
 			LEFT JOIN users u ON c.user_id = u.id
 			WHERE l.user_id = $1
 			ORDER BY l.created_at DESC
