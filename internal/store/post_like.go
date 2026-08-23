@@ -55,21 +55,6 @@ func (s *PostLikeStore) Dislike(c context.Context, postId, userId int64) error {
 	return nil
 }
 
-func (s *PostLikeStore) GetPostLikes(c context.Context, postId int64) (int64, error) {
-	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
-	defer cancel()
-
-	query := "SELECT COUNT(*) FROM post_likes WHERE post_id = $1"
-
-	var count int64
-
-	if err := s.db.QueryRowContext(ctx, query, postId).Scan(&count); err != nil {
-		return -1, err
-	}
-
-	return count, nil
-}
-
 func (s *PostLikeStore) GetUserFavoritePosts(c context.Context, userId int64) ([]*FavoritePostList, error) {
 
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
