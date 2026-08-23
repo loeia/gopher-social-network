@@ -16,6 +16,7 @@ type Comment struct {
 	ReplyToUsername string `json:"reply_to_username"`
 	CreatedAt       string `json:"created_at"`
 	User            User   `json:"user"`
+	LikeCount int64 `json:"like_count"`
 }
 
 type CommentStore struct {
@@ -33,7 +34,9 @@ func (s *CommentStore) GetByPostId(c context.Context, postId int64) ([]*Comment,
 	defer cancel()
 
 	query := `
-		SELECT c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username FROM comments c
+		SELECT 
+			c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username,c.like_count 
+		FROM comments c
 		JOIN users u on u.id = c.user_id
 		LEFT JOIN users ru ON ru.id = c.reply_to_user_id
 		WHERE c.post_id = $1
@@ -61,6 +64,7 @@ func (s *CommentStore) GetByPostId(c context.Context, postId int64) ([]*Comment,
 			&comment.ReplyToUserID,
 			&replyToUsername,
 			&comment.User.Username,
+			&comment.LikeCount,
 		); err != nil {
 			return nil, err
 		}
@@ -115,7 +119,10 @@ func (s *CommentStore) GetById(c context.Context, commentId int64) (*Comment, er
 	defer cancel()
 
 	query := `
-		SELECT c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username FROM comments c
+		SELECT 
+			c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username,
+			c.like_count 
+		FROM comments c
 		JOIN users u on u.id = c.user_id
 		LEFT JOIN users ru ON ru.id = c.reply_to_user_id
 		WHERE c.id = $1
@@ -133,6 +140,7 @@ func (s *CommentStore) GetById(c context.Context, commentId int64) (*Comment, er
 		&comment.ReplyToUserID,
 		&replyToUsername,
 		&comment.User.Username,
+		&comment.LikeCount,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound

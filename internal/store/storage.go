@@ -61,30 +61,36 @@ type FollowerStorage interface {
 type RoleStorage interface {
 	GetByName(context.Context, string) (*Role, error)
 }
-type LikeStorage interface {
+type PostLikeStorage interface {
 	Like(context.Context, int64, int64) error
 	Dislike(context.Context, int64, int64) error
-	GetPostLikes(context.Context, int64) (int64, error)
 	GetUserFavoritePosts(context.Context, int64) ([]*FavoritePostList, error)
+}
+type CommentLikeStorage interface {
+	Like(context.Context, int64, int64) error
+	Dislike(context.Context, int64, int64) error
+	GetUserFavoriteComments(context.Context, int64) ([]*FavoriteCommentList, error)
 }
 
 type Storage struct {
-	Posts     PostStorage
-	Users     UserStorage
-	Comments  CommentStorage
-	Followers FollowerStorage
-	Roles     RoleStorage
-	PostLikes LikeStorage
+	Posts       PostStorage
+	Users       UserStorage
+	Comments    CommentStorage
+	Followers   FollowerStorage
+	Roles       RoleStorage
+	PostLikes   PostLikeStorage
+	CommentLike CommentLikeStorage
 }
 
 func NewStorage(db *sql.DB) *Storage {
 	return &Storage{
-		Posts:     NewPostStore(db),
-		Users:     NewUserStore(db),
-		Comments:  NewCommentStore(db),
-		Followers: NewFollowerStore(db),
-		Roles:     NewRoleStore(db),
-		PostLikes: NewPostLikeStore(db),
+		Posts:       NewPostStore(db),
+		Users:       NewUserStore(db),
+		Comments:    NewCommentStore(db),
+		Followers:   NewFollowerStore(db),
+		Roles:       NewRoleStore(db),
+		PostLikes:   NewPostLikeStore(db),
+		CommentLike: NewCommentLikeStore(db),
 	}
 }
 

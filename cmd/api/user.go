@@ -493,3 +493,18 @@ func (app *application) resetPasswordFromTokenHandler(w http.ResponseWriter, r *
 
 	app.JSONResponse(w, http.StatusOK, map[string]string{"message": "password has been reset successfully"})
 }
+
+func (app *application) getUserCommentLikesHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	comments, err := app.store.CommentLike.GetUserFavoriteComments(r.Context(), user.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, comments); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}

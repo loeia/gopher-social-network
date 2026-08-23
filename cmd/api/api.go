@@ -149,12 +149,13 @@ func (app *application) mount() http.Handler {
 			r.Use(app.AuthTokenMiddleware)
 			r.Get("/feed", app.getUserFeedHandler)
 			r.Patch("/reset", app.resetPasswordHandler)
-			r.Get("/likes", app.getUserFavoritePosts)
+			r.Get("/post-likes", app.getUserFavoritePosts)
 			r.Get("/followers", app.getUserFollowersHandler)
 			r.Get("/following", app.getUserFollowingHandler)
 			r.Get("/posts", app.getUserOwnPostsHandler)
 			r.Put("/me/avatar", app.uploadAvatarHandler)
 			r.Put("/me/profile", app.updateProfileHandler)
+			r.Get("/comment-likes", app.getUserCommentLikesHandler)
 		})
 
 		r.Put("/activate/{token}", app.activateUserHandler)
@@ -178,6 +179,8 @@ func (app *application) mount() http.Handler {
 			r.Group(func(r chi.Router) {
 				r.Use(app.AuthTokenMiddleware)
 				r.Delete("/", app.checkCommentOwnerShip("moderator", app.deleteCommentHandler))
+				r.Put("/like", app.likeCommentHandler)
+				r.Put("/dislike", app.dislikeCommentHandler)
 			})
 		})
 	})

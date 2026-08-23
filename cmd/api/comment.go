@@ -20,6 +20,7 @@ type CommentResponse struct {
 	ParentID        *int64 `json:"parent_id"`
 	ReplyToUserID   *int64 `json:"reply_to_user_id"`
 	ReplyToUsername string `json:"reply_to_username"`
+	LikeCount int64 `json:"like_count"`
 	CreatedAt       string `json:"created_at"`
 }
 
@@ -32,6 +33,7 @@ func commentResponse(c *store.Comment) CommentResponse {
 		ParentID:        c.ParentID,
 		ReplyToUserID:   c.ReplyToUserID,
 		ReplyToUsername: c.ReplyToUsername,
+		LikeCount: c.LikeCount,
 		CreatedAt:       c.CreatedAt,
 	}
 }
