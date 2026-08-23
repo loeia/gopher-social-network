@@ -75,7 +75,14 @@
       :class="{ active: activeView === 'liked' }"
       @click="toggleLikes"
     >
-      Likes
+      Post Likes
+    </el-button>
+    <el-button
+      class="btn comment-likes-btn"
+      :class="{ active: activeView === 'likedcomments' }"
+      @click="toggleLikedComments"
+    >
+      Comment Likes
     </el-button>
     <el-button
       class="btn following-btn"
@@ -249,6 +256,11 @@ function goHome() {
 
 function toggleLikes() {
   emit('view', props.activeView === 'liked' ? 'all' : 'liked')
+  router.push('/')
+}
+
+function toggleLikedComments() {
+  emit('view', props.activeView === 'likedcomments' ? 'all' : 'likedcomments')
   router.push('/')
 }
 

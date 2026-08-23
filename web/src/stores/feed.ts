@@ -38,9 +38,21 @@ export interface FollowerUser {
     created_at: string;
 }
 
+export interface LikedComment {
+    comment_id: number;
+    post_id: number;
+    content: string;
+    username: string;
+    user_id: number;
+    like_count?: number;
+    reply_count?: number;
+    created_at: string;
+}
+
 export type ViewType =
     | "all"
     | "liked"
+    | "likedcomments"
     | "following"
     | "followers"
     | "myposts"
@@ -116,9 +128,12 @@ export const useFeedStore = defineStore("feed", {
         followingLoaded: false,
         followers: [] as FollowerUser[],
         followersLoaded: false,
+        likedComments: [] as LikedComment[],
+        likedCommentsLoaded: false,
         view: "all" as ViewType,
         feedScrollTop: 0,
         likedScrollTop: 0,
+        likedCommentsScrollTop: 0,
         followingScrollTop: 0,
         followersScrollTop: 0,
         myPostsScrollTop: 0,
@@ -278,7 +293,7 @@ export const useFeedStore = defineStore("feed", {
             return raw.map(toFeedPost);
         },
         async fetchLikedPosts() {
-            const response = await apiFetch("/users/likes");
+            const response = await apiFetch("/users/post-likes");
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const json = await response.json();
             const raw = Array.isArray(json) ? json : (json.data ?? []);
@@ -299,6 +314,23 @@ export const useFeedStore = defineStore("feed", {
                 };
             });
             this.likedPostsLoaded = true;
+        },
+        async fetchLikedComments() {
+            const response = await apiFetch("/users/comment-likes");
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const json = await response.json();
+            const raw = Array.isArray(json) ? json : (json.data ?? []);
+            this.likedComments = raw.map((c: Record<string, unknown>) => ({
+                comment_id: Number(c.comment_id ?? c.id ?? 0),
+                post_id: Number(c.post_id ?? 0),
+                content: String(c.content ?? ""),
+                username: String(c.username ?? ""),
+                user_id: Number(c.user_id ?? 0),
+                like_count: Number(c.like_count ?? 0),
+                reply_count: Number(c.reply_count ?? 0),
+                created_at: String(c.created_at ?? ""),
+            }));
+            this.likedCommentsLoaded = true;
         },
         async fetchFollowing() {
             const response = await apiFetch("/users/following");

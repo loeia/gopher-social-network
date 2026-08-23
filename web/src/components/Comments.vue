@@ -51,6 +51,7 @@ interface Comment {
   parent_id?: number | null
   reply_to_user_id?: number | null
   reply_to_username?: string
+  like_count?: number
 }
 
 const props = defineProps<{
@@ -74,6 +75,8 @@ const replyContent = ref('')
 const replying = ref(false)
 const deletingId = ref<number | null>(null)
 const currentUser = ref<string | null>(null)
+const likedComments = ref<Set<number>>(new Set())
+const likingId = ref<number | null>(null)
 
 const replyShown = ref<Record<number, number>>({})
 function shownFor(parentId: number): number {
@@ -120,6 +123,9 @@ provide('commentThread', {
   replyingTo,
   replyContent,
   replying,
+  toggleLike,
+  likedComments,
+  likingId,
 })
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
@@ -154,6 +160,24 @@ async function loadCurrentUser() {
   } catch (error) {
     console.error('Load current user error:', error)
     currentUser.value = null
+  }
+}
+
+async function fetchLikedComments() {
+  if (!isLoggedIn.value) {
+    likedComments.value = new Set()
+    return
+  }
+  try {
+    const response = await apiFetch('/users/comment-likes')
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const data = json.data ?? json
+    const ids = Array.isArray(data) ? data.map((item: { comment_id: number }) => item.comment_id) : []
+    likedComments.value = new Set(ids)
+  } catch (error) {
+    console.error('Fetch liked comments error:', error)
+    likedComments.value = new Set()
   }
 }
 
@@ -248,6 +272,35 @@ function formatDate(value?: string) {
   return date.toLocaleString()
 }
 
+async function toggleLike(comment: Comment) {
+  if (!isLoggedIn.value) {
+    notify('warning', 'Please sign in to like comments')
+    return
+  }
+  if (likingId.value === comment.id) return
+
+  likingId.value = comment.id
+  const isLiked = likedComments.value.has(comment.id)
+  try {
+    const endpoint = isLiked ? `/comments/${comment.id}/dislike` : `/comments/${comment.id}/like`
+    const response = await apiFetch(endpoint, { method: 'PUT' })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    if (isLiked) {
+      likedComments.value.delete(comment.id)
+      comment.like_count = Math.max(0, (comment.like_count || 1) - 1)
+    } else {
+      likedComments.value.add(comment.id)
+      comment.like_count = (comment.like_count || 0) + 1
+    }
+    likedComments.value = new Set(likedComments.value)
+  } catch (error) {
+    console.error('Toggle like error:', error)
+    notify('error', 'Failed to like comment')
+  } finally {
+    likingId.value = null
+  }
+}
+
 async function loadComments(silent = false) {
   if (!silent) loading.value = true
   try {
@@ -283,11 +336,13 @@ function stopPolling() {
 onMounted(() => {
   loadCurrentUser()
   loadComments()
+  fetchLikedComments()
   startPolling()
 })
 watch(() => props.postId, () => {
   loadCurrentUser()
   loadComments()
+  fetchLikedComments()
   startPolling()
 })
 onBeforeUnmount(stopPolling)
