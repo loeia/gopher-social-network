@@ -309,11 +309,24 @@ async function loadComments(silent = false) {
     const json = await response.json()
     comments.value = json.data ?? []
     emit('count', comments.value.length)
+    if (!silent) nextTick(scrollToComment)
   } catch (error) {
     console.error('Load comments error:', error)
     if (!silent) notify('error', 'Failed to load comments')
   } finally {
     if (!silent) loading.value = false
+  }
+}
+
+function scrollToComment() {
+  const hash = window.location.hash
+  if (!hash || !hash.startsWith('#comment-')) return
+  const id = hash.slice(9)
+  const el = document.getElementById(`comment-${id}`)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('highlight')
+    setTimeout(() => el.classList.remove('highlight'), 2000)
   }
 }
 

@@ -1,5 +1,5 @@
 <template>
-  <div class="thread">
+  <div class="thread" :id="`comment-${comment.id}`">
     <div class="comment">
       <div class="comment-avatar">
         <UserAvatar :user-id="comment.user_id" :username="comment.username" :size="30" />
@@ -363,5 +363,11 @@ const isLiking = computed(() => likingId.value === comment.value.id)
 .more-btn:hover {
   color: #6cbbf7;
   text-decoration-color: #6cbbf7;
+}
+
+.thread.highlight {
+  background: rgba(108, 187, 247, 0.1);
+  border-radius: 8px;
+  transition: background 0.3s ease;
 }
 </style>

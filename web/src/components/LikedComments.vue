@@ -4,7 +4,7 @@
       v-for="comment in comments"
       :key="comment.comment_id"
       class="card"
-      @click="openPost(comment.post_id)"
+      @click="openPost(comment.post_id, comment.comment_id)"
     >
       <div class="card-header">
         <div class="card-content">
@@ -72,8 +72,8 @@ const loading = ref(false);
 
 const router = useRouter();
 
-function openPost(postId: number) {
-  router.push(`/posts/${postId}`);
+function openPost(postId: number, commentId: number) {
+  router.push(`/posts/${postId}#comment-${commentId}`);
 }
 
 function truncateContent(content: string): string {
