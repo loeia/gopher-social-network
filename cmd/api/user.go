@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -33,12 +34,12 @@ type UserWithToken struct {
 }
 
 type PublicUser struct {
-	ID        int64    `json:"id"`
-	Username  string   `json:"username"`
-	AvatarURL string   `json:"avatar_url"`
-	Bio       string   `json:"bio"`
-	Links     []string `json:"links"`
-	CreatedAt string   `json:"created_at"`
+	ID        int64     `json:"id"`
+	Username  string    `json:"username"`
+	AvatarURL string    `json:"avatar_url"`
+	Bio       string    `json:"bio"`
+	Links     []string  `json:"links"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 func userResponse(u *store.User) PublicUser {

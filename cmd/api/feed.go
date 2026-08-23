@@ -2,20 +2,21 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 )
 
 type FeedPostResponse struct {
-	ID           int64    `json:"id"`
-	AuthorId     int64    `json:"author_id"`
-	Author       string   `json:"author"`
-	Title        string   `json:"title"`
-	Content      string   `json:"content"`
-	Tags         []string `json:"tags"`
-	PostLikes    int64    `json:"like_count"`
-	CommentCount int64    `json:"comment_count"`
-	CreatedAt    string   `json:"created_at"`
+	ID           int64     `json:"id"`
+	AuthorId     int64     `json:"author_id"`
+	Author       string    `json:"author"`
+	Title        string    `json:"title"`
+	Content      string    `json:"content"`
+	Tags         []string  `json:"tags"`
+	PostLikes    int64     `json:"like_count"`
+	CommentCount int64     `json:"comment_count"`
+	CreatedAt    time.Time `json:"created_at"`
 }
 
 // getUserFeedHandler returns the paginated feed for the authenticated user.

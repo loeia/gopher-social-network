@@ -4,19 +4,20 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"time"
 )
 
 type Comment struct {
-	ID              int64  `json:"id"`
-	PostID          int64  `json:"post_id"`
-	UserID          int64  `json:"user_id"`
-	Content         string `json:"content"`
-	ParentID        *int64 `json:"parent_id"`
-	ReplyToUserID   *int64 `json:"reply_to_user_id"`
-	ReplyToUsername string `json:"reply_to_username"`
-	CreatedAt       string `json:"created_at"`
-	User            User   `json:"user"`
-	LikeCount int64 `json:"like_count"`
+	ID              int64     `json:"id"`
+	PostID          int64     `json:"post_id"`
+	UserID          int64     `json:"user_id"`
+	Content         string    `json:"content"`
+	ParentID        *int64    `json:"parent_id"`
+	ReplyToUserID   *int64    `json:"reply_to_user_id"`
+	ReplyToUsername string    `json:"reply_to_username"`
+	CreatedAt       time.Time `json:"created_at"`
+	User            User      `json:"user"`
+	LikeCount       int64     `json:"like_count"`
 }
 
 type CommentStore struct {

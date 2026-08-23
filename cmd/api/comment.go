@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
@@ -13,15 +14,15 @@ type CommentKey string
 const CommentCtx CommentKey = "commentId"
 
 type CommentResponse struct {
-	ID              int64  `json:"id"`
-	Username        string `json:"username"`
-	UserID          int64  `json:"user_id"`
-	Content         string `json:"content"`
-	ParentID        *int64 `json:"parent_id"`
-	ReplyToUserID   *int64 `json:"reply_to_user_id"`
-	ReplyToUsername string `json:"reply_to_username"`
-	LikeCount int64 `json:"like_count"`
-	CreatedAt       string `json:"created_at"`
+	ID              int64     `json:"id"`
+	Username        string    `json:"username"`
+	UserID          int64     `json:"user_id"`
+	Content         string    `json:"content"`
+	ParentID        *int64    `json:"parent_id"`
+	ReplyToUserID   *int64    `json:"reply_to_user_id"`
+	ReplyToUsername string    `json:"reply_to_username"`
+	LikeCount       int64     `json:"like_count"`
+	CreatedAt       time.Time `json:"created_at"`
 }
 
 func commentResponse(c *store.Comment) CommentResponse {

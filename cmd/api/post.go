@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 )
@@ -12,16 +13,16 @@ type postKey string
 const postCtx postKey = "postId"
 
 type PostResponse struct {
-	ID           int64    `json:"id"`
-	AuthorId     int64    `json:"author_id"`
-	Author       string   `json:"author"`
-	Title        string   `json:"title"`
-	Content      string   `json:"content"`
-	Tags         []string `json:"tags"`
-	CommentCount int64    `json:"comment_count"`
-	LikeCount    int64    `json:"like_count"`
-	CreatedAt    string   `json:"created_at"`
-	UpdatedAt    string   `json:"updated_at"`
+	ID           int64     `json:"id"`
+	AuthorId     int64     `json:"author_id"`
+	Author       string    `json:"author"`
+	Title        string    `json:"title"`
+	Content      string    `json:"content"`
+	Tags         []string  `json:"tags"`
+	CommentCount int64     `json:"comment_count"`
+	LikeCount    int64     `json:"like_count"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 func postResponse(p *store.Post) *PostResponse {

@@ -16,40 +16,40 @@ import (
 )
 
 type User struct {
-	ID        int64    `json:"id"`
-	Username  string   `json:"username"`
-	Email     string   `json:"email"`
-	Password  password `json:"-"`
-	CreatedAt string   `json:"created_at"`
-	IsActive  bool     `json:"is_active"`
-	RoleID    int      `json:"role_id"`
-	Role      Role     `json:"role"`
-	TokenVer  int      `json:"token_ver"`
-	AvatarURL string   `json:"avatar_url"`
-	Bio       string   `json:"bio"`
-	Links     []string `json:"links"`
+	ID        int64     `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Password  password  `json:"-"`
+	CreatedAt time.Time `json:"created_at"`
+	IsActive  bool      `json:"is_active"`
+	RoleID    int       `json:"role_id"`
+	Role      Role      `json:"role"`
+	TokenVer  int       `json:"token_ver"`
+	AvatarURL string    `json:"avatar_url"`
+	Bio       string    `json:"bio"`
+	Links     []string  `json:"links"`
 }
 
 type UserFollower struct {
-	FollowerID int64  `json:"follower_id"`
-	Username   string `json:"username"`
-	CreatedAt  string `json:"created_at"`
+	FollowerID int64     `json:"follower_id"`
+	Username   string    `json:"username"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 type UserFollowing struct {
-	FollowingID int64  `json:"following_id"`
-	Username    string `json:"username"`
-	CreatedAt   string `json:"created_at"`
+	FollowingID int64     `json:"following_id"`
+	Username    string    `json:"username"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type PostBrief struct {
-	ID           int64    `json:"post_id"`
-	Author       string   `json:"author"`
-	Title        string   `json:"title"`
-	Tags         []string `json:"tags"`
-	CreatedAt    string   `json:"created_at"`
-	CommentCount int64    `json:"comment_count"`
-	LikeCount    int64    `json:"like_count"`
+	ID           int64     `json:"post_id"`
+	Author       string    `json:"author"`
+	Title        string    `json:"title"`
+	Tags         []string  `json:"tags"`
+	CreatedAt    time.Time `json:"created_at"`
+	CommentCount int64     `json:"comment_count"`
+	LikeCount    int64     `json:"like_count"`
 }
 
 type password struct {
