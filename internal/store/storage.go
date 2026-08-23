@@ -73,24 +73,24 @@ type CommentLikeStorage interface {
 }
 
 type Storage struct {
-	Posts       PostStorage
-	Users       UserStorage
-	Comments    CommentStorage
-	Followers   FollowerStorage
-	Roles       RoleStorage
-	PostLikes   PostLikeStorage
-	CommentLike CommentLikeStorage
+	Posts        PostStorage
+	Users        UserStorage
+	Comments     CommentStorage
+	Followers    FollowerStorage
+	Roles        RoleStorage
+	PostLikes    PostLikeStorage
+	CommentLikes CommentLikeStorage
 }
 
 func NewStorage(db *sql.DB) *Storage {
 	return &Storage{
-		Posts:       NewPostStore(db),
-		Users:       NewUserStore(db),
-		Comments:    NewCommentStore(db),
-		Followers:   NewFollowerStore(db),
-		Roles:       NewRoleStore(db),
-		PostLikes:   NewPostLikeStore(db),
-		CommentLike: NewCommentLikeStore(db),
+		Posts:        NewPostStore(db),
+		Users:        NewUserStore(db),
+		Comments:     NewCommentStore(db),
+		Followers:    NewFollowerStore(db),
+		Roles:        NewRoleStore(db),
+		PostLikes:    NewPostLikeStore(db),
+		CommentLikes: NewCommentLikeStore(db),
 	}
 }
 

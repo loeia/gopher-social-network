@@ -497,7 +497,7 @@ func (app *application) resetPasswordFromTokenHandler(w http.ResponseWriter, r *
 func (app *application) getUserCommentLikesHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 
-	comments, err := app.store.CommentLike.GetUserFavoriteComments(r.Context(), user.ID)
+	comments, err := app.store.CommentLikes.GetUserFavoriteComments(r.Context(), user.ID)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
