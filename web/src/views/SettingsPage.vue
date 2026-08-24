@@ -91,10 +91,13 @@
               placeholder="Enter new username"
               maxlength="25"
               class="field"
-              @input="onRenameInput"
+              :class="{ 'is-error': renameError || isUsernameTooShort }"
+              @input="renameError = ''"
               @keyup.enter="handleRename"
             />
             <p class="field-hint">{{ newUsername.length }}/25</p>
+            <p v-if="renameError" class="field-error">{{ renameError }}</p>
+            <p v-else-if="isUsernameTooShort" class="field-error">Username must be at least 4 characters</p>
           </div>
 
           <el-button
@@ -112,7 +115,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch, clearToken, getApiError } from '@/api'
 import { notify } from '@/utils/message'
@@ -130,6 +133,9 @@ const oldPasswordError = ref('')
 
 const newUsername = ref('')
 const renameLoading = ref(false)
+const renameError = ref('')
+
+const isUsernameTooShort = computed(() => newUsername.value.length > 0 && newUsername.value.length < 4)
 
 async function handleSubmit() {
   oldPasswordError.value = ''
@@ -177,13 +183,14 @@ async function handleSubmit() {
   }
 }
 
-function onRenameInput() {
-}
-
 async function handleRename() {
   const name = newUsername.value.trim()
   if (!name) {
     notify('warning', 'Please enter a new username')
+    return
+  }
+  if (name.length < 4) {
+    renameError.value = 'Username must be at least 4 characters'
     return
   }
   if (name === userStore.username) {
@@ -191,6 +198,7 @@ async function handleRename() {
     return
   }
   renameLoading.value = true
+  renameError.value = ''
   try {
     const response = await apiFetch('/users/rename', {
       method: 'PATCH',
