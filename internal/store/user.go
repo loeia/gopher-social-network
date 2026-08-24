@@ -546,3 +546,30 @@ func (s *UserStore) ResetPassword(c context.Context, token string, newPassword s
 		return nil
 	})
 }
+
+func (s *UserStore) Rename(c context.Context, userId int64, newName string) error {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `UPDATE users SET username = $1 WHERE id = $2 `
+
+	result, err := s.db.ExecContext(ctx, query, newName, userId)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			if strings.Contains(pgErr.Message, "users_username_key") {
+				return ErrDuplicateUsername
+			}
+		}
+		return err
+	}
+
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return ErrNotFound
+	}
+	return nil
+}

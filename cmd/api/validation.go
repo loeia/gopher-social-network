@@ -55,3 +55,7 @@ type ResetPasswordPayload struct {
 	Token       string `json:"token" validate:"required"`
 	NewPassword string `json:"new_password" validate:"required,min=3,max=72"`
 }
+
+type RenamePayload struct {
+	NewName string `json:"new_name" validate:"required,max=100"`
+}

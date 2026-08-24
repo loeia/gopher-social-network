@@ -156,6 +156,7 @@ func (app *application) mount() http.Handler {
 			r.Put("/me/avatar", app.uploadAvatarHandler)
 			r.Put("/me/profile", app.updateProfileHandler)
 			r.Get("/comment-likes", app.getUserCommentLikesHandler)
+			r.Patch("/rename", app.userRenameHandler)
 		})
 
 		r.Put("/activate/{token}", app.activateUserHandler)

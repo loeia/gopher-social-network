@@ -509,3 +509,46 @@ func (app *application) getUserCommentLikesHandler(w http.ResponseWriter, r *htt
 		return
 	}
 }
+
+// userRenameHandler user rename interface requires authentication
+func (app *application) userRenameHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	var req RenamePayload
+	if err := app.readJSON(w, r, &req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(&req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	if user.Username == req.NewName {
+		app.badRequestError(w, r, fmt.Errorf("new username is the same as the current username"))
+		return
+	}
+
+	if err := app.store.Users.Rename(r.Context(), user.ID, req.NewName); err != nil {
+		switch err {
+		case store.ErrNotFound:
+			app.notFoundError(w, r, err)
+			return
+		case store.ErrDuplicateUsername:
+			app.conflictError(w, r, err)
+			return
+		default:
+			app.internalServerError(w, r, err)
+			return
+		}
+	}
+
+	if app.config.redisCfg.enabled {
+		if err := app.cache.Delete(r.Context(), user.ID); err != nil {
+			app.logger.Errorw("error deleting user from cache", "error", err)
+		}
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
