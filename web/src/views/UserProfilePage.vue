@@ -10,6 +10,22 @@
 
         <h1 class="username">{{ user.username }}</h1>
 
+        <div class="follow-stats">
+          <span
+            class="follow-stat"
+            :class="{ clickable: isOwnProfile }"
+            @click="isOwnProfile && goToFollowers()"
+            ><strong>{{ user.followers_count }}</strong> followers</span
+          >
+          <span class="follow-dot">·</span>
+          <span
+            class="follow-stat"
+            :class="{ clickable: isOwnProfile }"
+            @click="isOwnProfile && goToFollowing()"
+            ><strong>{{ user.following_count }}</strong> following</span
+          >
+        </div>
+
         <p v-if="user.bio" class="bio">{{ user.bio }}</p>
 
         <div class="info-row">
@@ -109,15 +125,17 @@
         </div>
       </template>
     </el-dialog>
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { apiFetch, getApiError, getCurrentUserId } from '@/api'
 import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { useFeedStore } from '@/stores/feed'
 
 defineOptions({ name: 'UserProfilePage' })
 
@@ -127,13 +145,17 @@ interface UserProfile {
   created_at: string
   bio: string
   links: string[]
+  followers_count: number
+  following_count: number
 }
 
 const route = useRoute()
+const router = useRouter()
+const feedStore = useFeedStore()
 
 const loading = ref(false)
 const notFound = ref(false)
-const user = ref<UserProfile>({ id: 0, username: '', created_at: '', bio: '', links: [] })
+const user = ref<UserProfile>({ id: 0, username: '', created_at: '', bio: '', links: [], followers_count: 0, following_count: 0 })
 
 const editVisible = ref(false)
 const saving = ref(false)
@@ -214,12 +236,22 @@ async function saveProfile() {
   }
 }
 
+function goToFollowers() {
+  feedStore.setView('followers')
+  router.push({ name: 'Home' })
+}
+
+function goToFollowing() {
+  feedStore.setView('following')
+  router.push({ name: 'Home' })
+}
+
 async function load() {
   const id = userId.value
   if (!id) return
   loading.value = true
   notFound.value = false
-  user.value = { id, username: '', created_at: '', bio: '', links: [] }
+  user.value = { id, username: '', created_at: '', bio: '', links: [], followers_count: 0, following_count: 0 }
   try {
     const response = await apiFetch(`/users/${id}`)
     if (!response.ok) {
@@ -237,6 +269,8 @@ async function load() {
       created_at: data.created_at ?? '',
       bio: data.bio ?? '',
       links: Array.isArray(data.links) ? data.links : [],
+      followers_count: Number(data.followers_count ?? 0),
+      following_count: Number(data.following_count ?? 0),
     }
   } catch (error) {
     console.error('Load user profile error:', error)
@@ -275,6 +309,31 @@ watch(() => route.params.userId, load)
   font-size: 24px;
   font-weight: 700;
   color: #ffffff;
+}
+
+.follow-stats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+.follow-stat strong {
+  font-weight: 700;
+  color: #e4e6e8;
+}
+
+.follow-stat.clickable {
+  cursor: pointer;
+}
+
+.follow-stat.clickable:hover strong {
+  color: #6cbbf7;
+}
+
+.follow-dot {
+  color: #8c8c8c;
 }
 
 .bio {

@@ -92,20 +92,6 @@
       Comment Likes
     </el-button>
     <el-button
-      class="btn following-btn"
-      :class="{ active: activeView === 'following' }"
-      @click="toggleFollowing"
-    >
-      Following
-    </el-button>
-    <el-button
-      class="btn followers-btn"
-      :class="{ active: activeView === 'followers' }"
-      @click="toggleFollowers"
-    >
-      Followers
-    </el-button>
-    <el-button
       class="btn settings-btn"
       :class="{ active: activeView === 'settings' }"
       @click="goToSettings"
@@ -273,16 +259,6 @@ function toggleLikes() {
 
 function toggleLikedComments() {
   emit('view', 'likedcomments')
-  router.push('/')
-}
-
-function toggleFollowing() {
-  emit('view', 'following')
-  router.push('/')
-}
-
-function toggleFollowers() {
-  emit('view', 'followers')
   router.push('/')
 }
 </script>
