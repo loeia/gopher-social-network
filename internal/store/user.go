@@ -16,18 +16,20 @@ import (
 )
 
 type User struct {
-	ID        int64     `json:"id"`
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	Password  password  `json:"-"`
-	CreatedAt time.Time `json:"created_at"`
-	IsActive  bool      `json:"is_active"`
-	RoleID    int       `json:"role_id"`
-	Role      Role      `json:"role"`
-	TokenVer  int       `json:"token_ver"`
-	AvatarURL string    `json:"avatar_url"`
-	Bio       string    `json:"bio"`
-	Links     []string  `json:"links"`
+	ID              int64     `json:"id"`
+	Username        string    `json:"username"`
+	Email           string    `json:"email"`
+	Password        password  `json:"-"`
+	CreatedAt       time.Time `json:"created_at"`
+	IsActive        bool      `json:"is_active"`
+	RoleID          int       `json:"role_id"`
+	Role            Role      `json:"role"`
+	TokenVer        int       `json:"token_ver"`
+	AvatarURL       string    `json:"avatar_url"`
+	Bio             string    `json:"bio"`
+	Links           []string  `json:"links"`
+	FollowersCount  int64     `json:"followers_count"`
+	FollowingCount  int64     `json:"following_count"`
 }
 
 type UserFollower struct {
@@ -124,6 +126,7 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 			SELECT
 				u.id,u.username,u.email,u.password,u.created_at,u.is_active,u.token_ver,
 				COALESCE(u.bio,''),u.links,
+				u.followers_count,u.following_count,
 				r.id,r.name,r.description,r.level
 			FROM users u
 			JOIN roles r ON r.id = u.role_id
@@ -141,6 +144,8 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 		&user.TokenVer,
 		&user.Bio,
 		pq.Array(&user.Links),
+		&user.FollowersCount,
+		&user.FollowingCount,
 		&user.Role.ID,
 		&user.Role.Name,
 		&user.Role.Description,

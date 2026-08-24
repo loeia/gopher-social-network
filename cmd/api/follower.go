@@ -33,6 +33,15 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if app.config.redisCfg.enabled {
+		if err := app.cache.Delete(r.Context(), followUserId); err != nil {
+			app.logger.Errorw("error deleting user from cache", "error", err)
+		}
+		if err := app.cache.Delete(r.Context(), user.ID); err != nil {
+			app.logger.Errorw("error deleting user from cache", "error", err)
+		}
+	}
+
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -49,6 +58,15 @@ func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Reque
 	if err := app.store.Followers.Unfollow(r.Context(), unfollowUserId, user.ID); err != nil {
 		app.internalServerError(w, r, err)
 		return
+	}
+
+	if app.config.redisCfg.enabled {
+		if err := app.cache.Delete(r.Context(), unfollowUserId); err != nil {
+			app.logger.Errorw("error deleting user from cache", "error", err)
+		}
+		if err := app.cache.Delete(r.Context(), user.ID); err != nil {
+			app.logger.Errorw("error deleting user from cache", "error", err)
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)

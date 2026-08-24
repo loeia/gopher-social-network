@@ -34,22 +34,26 @@ type UserWithToken struct {
 }
 
 type PublicUser struct {
-	ID        int64     `json:"id"`
-	Username  string    `json:"username"`
-	AvatarURL string    `json:"avatar_url"`
-	Bio       string    `json:"bio"`
-	Links     []string  `json:"links"`
-	CreatedAt time.Time `json:"created_at"`
+	ID             int64     `json:"id"`
+	Username       string    `json:"username"`
+	AvatarURL      string    `json:"avatar_url"`
+	Bio            string    `json:"bio"`
+	Links          []string  `json:"links"`
+	CreatedAt      time.Time `json:"created_at"`
+	FollowersCount int64     `json:"followers_count"`
+	FollowingCount int64     `json:"following_count"`
 }
 
 func userResponse(u *store.User) PublicUser {
 	return PublicUser{
-		ID:        u.ID,
-		Username:  u.Username,
-		AvatarURL: u.AvatarURL,
-		Bio:       u.Bio,
-		Links:     u.Links,
-		CreatedAt: u.CreatedAt,
+		ID:             u.ID,
+		Username:       u.Username,
+		AvatarURL:      u.AvatarURL,
+		Bio:            u.Bio,
+		Links:          u.Links,
+		CreatedAt:      u.CreatedAt,
+		FollowersCount: u.FollowersCount,
+		FollowingCount: u.FollowingCount,
 	}
 }
 
