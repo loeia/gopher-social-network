@@ -23,7 +23,7 @@ type UpdatePostPayload struct {
 
 type RegisterUserPayload struct {
 	Email    string `json:"email" validate:"required,email,max=255"`
-	Username string `json:"username" validate:"required,max=25"`
+	Username string `json:"username" validate:"required,min=4,max=25"`
 	Password string `json:"password" validate:"required,min=3,max=72"`
 }
 
@@ -57,5 +57,5 @@ type ResetPasswordPayload struct {
 }
 
 type RenamePayload struct {
-	NewName string `json:"new_name" validate:"required,max=25"`
+	NewName string `json:"new_name" validate:"required,min=4,max=25"`
 }
