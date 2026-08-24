@@ -2,14 +2,15 @@
   <div class="comments" v-loading="loading">
     <h3 class="comments-title" v-if="comments.length">Comments ({{ comments.length }})</h3>
 
-    <CommentThread
-      v-for="root in commentTree"
-      :key="root.comment.id"
-      :node="root"
-    />
+    <CommentThread v-for="root in commentTree" :key="root.comment.id" :node="root" />
 
     <div class="add-comment" v-if="isLoggedIn">
-      <el-button v-if="!showCommentBox" text class="add-comment-link" @click="showCommentBox = true">
+      <el-button
+        v-if="!showCommentBox"
+        text
+        class="add-comment-link"
+        @click="showCommentBox = true"
+      >
         Add a comment
       </el-button>
       <div v-else class="comment-box">
@@ -173,7 +174,9 @@ async function fetchLikedComments() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
     const data = json.data ?? json
-    const ids = Array.isArray(data) ? data.map((item: { comment_id: number }) => item.comment_id) : []
+    const ids = Array.isArray(data)
+      ? data.map((item: { comment_id: number }) => item.comment_id)
+      : []
     likedComments.value = new Set(ids)
   } catch (error) {
     console.error('Fetch liked comments error:', error)
@@ -352,12 +355,15 @@ onMounted(() => {
   fetchLikedComments()
   startPolling()
 })
-watch(() => props.postId, () => {
-  loadCurrentUser()
-  loadComments()
-  fetchLikedComments()
-  startPolling()
-})
+watch(
+  () => props.postId,
+  () => {
+    loadCurrentUser()
+    loadComments()
+    fetchLikedComments()
+    startPolling()
+  },
+)
 onBeforeUnmount(stopPolling)
 </script>
 

@@ -29,19 +29,21 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+            <path
+              d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"
+            />
             <circle cx="12" cy="13" r="4" />
           </svg>
         </span>
       </button>
       <span class="user-name">{{ userStore.username }}</span>
       <el-button
-      class="btn profile-btn"
-      :class="{ active: activeView === 'profile' }"
-      @click="goToProfile"
-    >
-      Profile
-    </el-button>
+        class="btn profile-btn"
+        :class="{ active: activeView === 'profile' }"
+        @click="goToProfile"
+      >
+        Profile
+      </el-button>
       <input
         ref="fileInput"
         type="file"
@@ -51,7 +53,12 @@
       />
     </div>
 
-    <AvatarCropDialog :visible="cropVisible" :src="cropSrc" @close="cropVisible = false" @confirm="handleCropConfirm" />
+    <AvatarCropDialog
+      :visible="cropVisible"
+      :src="cropSrc"
+      @close="cropVisible = false"
+      @confirm="handleCropConfirm"
+    />
 
     <el-button class="btn home-btn" :class="{ active: activeView === 'all' }" @click="goHome"
       >Home</el-button
@@ -98,7 +105,11 @@
     >
       Followers
     </el-button>
-    <el-button class="btn settings-btn" :class="{ active: activeView === 'settings' }" @click="goToSettings">
+    <el-button
+      class="btn settings-btn"
+      :class="{ active: activeView === 'settings' }"
+      @click="goToSettings"
+    >
       Settings
     </el-button>
   </aside>
@@ -211,7 +222,8 @@ async function uploadAvatar(blob: Blob) {
     const response = await apiFetch('/users/me/avatar', { method: 'PUT', body: form })
     if (!response.ok) {
       if (response.status === 401) return
-      const message = (await getApiError(response)) ?? `Failed to upload avatar (HTTP ${response.status})`
+      const message =
+        (await getApiError(response)) ?? `Failed to upload avatar (HTTP ${response.status})`
       notify('error', message)
       return
     }
@@ -387,5 +399,4 @@ function toggleFollowers() {
   color: #ffffff;
   border: 1px solid #ffffff;
 }
-
 </style>

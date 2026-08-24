@@ -115,7 +115,9 @@ const isTitleOver = computed(() => title.value.length > MAX_TITLE)
 const isContentOver = computed(() => content.value.length > MAX_CONTENT)
 const isTagsOver = computed(() => tags.value.length > MAX_TAGS)
 const isTagInputOver = computed(() => tagInput.value.trim().length > MAX_TAG_LENGTH)
-const canAddTag = computed(() => !!tagInput.value.trim() && tags.value.length < MAX_TAGS && !isTagInputOver.value)
+const canAddTag = computed(
+  () => !!tagInput.value.trim() && tags.value.length < MAX_TAGS && !isTagInputOver.value,
+)
 const renderedContent = computed(() => renderMarkdown(content.value))
 
 function addTag() {

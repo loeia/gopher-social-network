@@ -82,7 +82,12 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
   }
   const response = await fetch(`${API_URL}${path}`, { ...options, headers })
 
-  if (response.status === 401 && currentToken && path !== '/authentication/token' && path !== '/users/reset') {
+  if (
+    response.status === 401 &&
+    currentToken &&
+    path !== '/authentication/token' &&
+    path !== '/users/reset'
+  ) {
     await handleSessionExpired()
   }
 

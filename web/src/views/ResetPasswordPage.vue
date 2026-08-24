@@ -15,12 +15,7 @@
           @keyup.enter="handleReset"
         />
 
-        <el-button
-          size="large"
-          class="reset-btn"
-          :loading="loading"
-          @click="handleReset"
-        >
+        <el-button size="large" class="reset-btn" :loading="loading" @click="handleReset">
           Reset password
         </el-button>
       </template>

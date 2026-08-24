@@ -9,9 +9,7 @@
         <template v-if="!sent">
           <h1 class="forgot-title">Reset your password</h1>
 
-          <p class="forgot-desc">
-            Enter your email and we'll send you a reset link.
-          </p>
+          <p class="forgot-desc">Enter your email and we'll send you a reset link.</p>
 
           <div class="field-group">
             <label class="field-label" for="forgot-email">Email</label>
@@ -25,12 +23,7 @@
             />
           </div>
 
-          <el-button
-            size="large"
-            class="submit-btn"
-            :loading="loading"
-            @click="handleSubmit"
-          >
+          <el-button size="large" class="submit-btn" :loading="loading" @click="handleSubmit">
             Send reset link
           </el-button>
         </template>

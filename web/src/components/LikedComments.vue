@@ -3,210 +3,190 @@
     <div
       v-for="comment in comments"
       :key="comment.comment_id"
-      class="card"
+      class="topic-row"
       @click="openPost(comment.post_id, comment.comment_id)"
     >
-      <div class="card-header">
-        <div class="card-content">
-          <p class="comment-text">{{ truncateContent(comment.content) }}</p>
-        </div>
-        <div class="card-meta">
-          <svg
-            class="stat-icon like-icon"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-            />
-          </svg>
-          <span class="count">{{ comment.like_count ?? 0 }}</span>
-          <svg
-            class="stat-icon comment-icon"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path
-              d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"
-            />
-          </svg>
-          <span class="count">{{ comment.reply_count ?? 0 }}</span>
-          <span class="card-date">{{
-            formatDate(comment.created_at)
-          }}</span>
+      <div class="topic-top">
+        <p class="topic-content">{{ truncateContent(comment.content) }}</p>
+        <div class="topic-stats">
+          <span class="topic-stat">
+            <svg class="stat-icon like-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              />
+            </svg>
+            {{ comment.like_count ?? 0 }}
+          </span>
+          <span class="topic-stat">
+            <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
+            </svg>
+            {{ comment.reply_count ?? 0 }}
+          </span>
         </div>
       </div>
-      <div class="card-author">
-        <UserAvatar
-          :user-id="comment.user_id"
-          :username="comment.username"
-          :size="28"
-        />
-        <span>{{ comment.username }}</span>
+      <div class="topic-bottom">
+        <UserAvatar :user-id="comment.user_id" :username="comment.username" :size="20" />
+        <span class="topic-author">{{ comment.username }}</span>
+        <span class="meta-dot">&middot;</span>
+        <span class="topic-time">{{ formatDate(comment.created_at) }}</span>
       </div>
     </div>
-    <div v-if="!loading && comments.length === 0" class="empty">
-      No liked comments yet
-    </div>
+    <div v-if="!loading && comments.length === 0" class="empty">No liked comments yet</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  nextTick,
-  onActivated,
-  onBeforeUnmount,
-  onDeactivated,
-  onMounted,
-  ref,
-} from "vue";
-import { useRouter } from "vue-router";
-import { storeToRefs } from "pinia";
-import { useFeedStore } from "@/stores/feed";
-import { notify } from "@/utils/message";
-import UserAvatar from "@/components/UserAvatar.vue";
+import { nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
+import { useFeedStore } from '@/stores/feed'
+import { notify } from '@/utils/message'
+import UserAvatar from '@/components/UserAvatar.vue'
 
-const store = useFeedStore();
-const { likedComments: comments } = storeToRefs(store);
-const loading = ref(false);
+const store = useFeedStore()
+const { likedComments: comments } = storeToRefs(store)
+const loading = ref(false)
 
-const router = useRouter();
+const router = useRouter()
 
 function openPost(postId: number, commentId: number) {
-  router.push(`/posts/${postId}#comment-${commentId}`);
+  router.push(`/posts/${postId}#comment-${commentId}`)
 }
 
 function truncateContent(content: string): string {
-  if (!content) return "";
-  return content.length > 40 ? content.slice(0, 40) + "..." : content;
+  if (!content) return ''
+  return content.length > 80 ? content.slice(0, 80) + '...' : content
 }
 
 function formatDate(value?: string) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return date.toLocaleString();
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString()
 }
 
 function saveScroll() {
-  store.likedCommentsScrollTop = window.scrollY;
+  store.likedCommentsScrollTop = window.scrollY
 }
 
 function restoreScroll() {
-  nextTick(() => window.scrollTo({ top: store.likedCommentsScrollTop }));
+  nextTick(() => window.scrollTo({ top: store.likedCommentsScrollTop }))
 }
 
 async function loadLikedComments() {
-  loading.value = true;
+  loading.value = true
   try {
-    await store.fetchLikedComments();
+    await store.fetchLikedComments()
   } catch (error) {
-    console.error("Load liked comments error:", error);
-    notify("error", "Failed to load liked comments");
+    console.error('Load liked comments error:', error)
+    notify('error', 'Failed to load liked comments')
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
 onMounted(() => {
-  restoreScroll();
-  loadLikedComments();
-});
+  restoreScroll()
+  loadLikedComments()
+})
 onActivated(() => {
-  restoreScroll();
-  loadLikedComments();
-});
-onDeactivated(saveScroll);
-onBeforeUnmount(saveScroll);
+  restoreScroll()
+  loadLikedComments()
+})
+onDeactivated(saveScroll)
+onBeforeUnmount(saveScroll)
 </script>
 
 <style scoped>
 .feed {
-  margin: 0 20%;
+  margin: 0 auto;
+  max-width: 1100px;
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
 }
 
-.card {
-  background: #141414;
-  border: 1px solid #262626;
-  border-radius: 12px;
-  padding: 24px;
+.topic-row {
+  padding: 14px 0;
+  border-bottom: 1px solid #1f1f1f;
   cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    transform 0.2s ease;
+  transition: background 0.15s ease;
 }
 
-.card:hover {
-  border-color: #ffffff;
-  transform: translateY(-2px);
+.topic-row:first-child {
+  border-top: 1px solid #1f1f1f;
 }
 
-.card-header {
+.topic-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.topic-top {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 12px;
 }
 
-.card-content {
+.topic-content {
   flex: 1;
   min-width: 0;
-}
-
-.comment-text {
   margin: 0;
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
   color: #e4e6e8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   word-break: break-word;
-  white-space: pre-wrap;
 }
 
-.card-meta {
+.topic-stats {
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 14px;
+}
+
+.topic-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 13px;
   color: #8c8c8c;
+  white-space: nowrap;
 }
 
 .stat-icon {
-  width: 16px;
-  height: 16px;
-}
-
-.like-icon path {
-  fill: #e05c5c;
-  stroke: #e05c5c;
-}
-
-.comment-icon path {
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
 }
 
-.card-meta .card-date {
-  margin-left: 8px;
+.like-icon {
+  fill: #e05c5c;
+  stroke: #e05c5c;
 }
 
-.card-date {
-  flex-shrink: 0;
+.topic-bottom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding-left: 2px;
   font-size: 13px;
   color: #8c8c8c;
 }
 
-.card-author {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-top: 16px;
-  border-top: 1px solid #262626;
-  font-size: 14px;
-  color: #8c8c8c;
+.topic-author {
+  color: #bfbfbf;
+  font-weight: 500;
+}
+
+.meta-dot {
+  color: #555;
 }
 
 .empty {

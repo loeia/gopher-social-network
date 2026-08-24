@@ -52,24 +52,23 @@
             />
           </div>
 
-          <el-button
-            size="large"
-            class="submit-btn"
-            :loading="loading"
-            @click="handleRegister"
-          >
+          <el-button size="large" class="submit-btn" :loading="loading" @click="handleRegister">
             Create account
           </el-button>
 
           <div class="signup-footer">
-            Already have an account? <router-link to="/login" class="footer-link">Sign in</router-link>
+            Already have an account?
+            <router-link to="/login" class="footer-link">Sign in</router-link>
           </div>
         </template>
 
         <div v-else class="success">
           <div class="success-icon">✓</div>
           <p class="success-title">Registration successful</p>
-          <p class="success-text">An activation link has been sent to your email. Please check your inbox to confirm your account.</p>
+          <p class="success-text">
+            An activation link has been sent to your email. Please check your inbox to confirm your
+            account.
+          </p>
           <el-button size="large" class="submit-btn" @click="router.push('/login')">
             Go to Sign in
           </el-button>

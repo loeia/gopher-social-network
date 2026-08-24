@@ -2,8 +2,10 @@
   <div class="not-found">
     <h1 class="nf-title">404</h1>
     <p class="nf-text">Page not found</p>
-    <p class="nf-hint">The page you are looking for doesn't exist or has been moved.<br />
-      Please check the URL and try again.</p>
+    <p class="nf-hint">
+      The page you are looking for doesn't exist or has been moved.<br />
+      Please check the URL and try again.
+    </p>
     <el-button class="nf-btn" @click="router.push('/')">Go to Home</el-button>
   </div>
 </template>

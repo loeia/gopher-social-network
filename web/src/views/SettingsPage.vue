@@ -23,59 +23,54 @@
         <div v-if="activeTab === 'password'" class="reset-section">
           <h2 class="section-title">Reset Password</h2>
 
-            <div class="field-group">
-              <label class="field-label" for="old-password">Old Password</label>
-              <el-input
-                id="old-password"
-                v-model="oldPassword"
-                type="password"
-                size="large"
-                placeholder="Enter old password"
-                show-password
-                class="field"
-                :class="{ 'is-error': oldPasswordError }"
-                @input="oldPasswordError = ''"
-                @keyup.enter="handleSubmit"
-              />
-              <p v-if="oldPasswordError" class="field-error">{{ oldPasswordError }}</p>
-            </div>
-
-            <div class="field-group">
-              <label class="field-label" for="new-password">New Password</label>
-              <el-input
-                id="new-password"
-                v-model="newPassword"
-                type="password"
-                size="large"
-                placeholder="Enter new password"
-                show-password
-                class="field"
-                @keyup.enter="handleSubmit"
-              />
-            </div>
-
-            <div class="field-group">
-              <label class="field-label" for="confirm-password">Confirm New Password</label>
-              <el-input
-                id="confirm-password"
-                v-model="confirmPassword"
-                type="password"
-                size="large"
-                placeholder="Confirm new password"
-                show-password
-                class="field"
-                @keyup.enter="handleSubmit"
-              />
-            </div>
-
-            <el-button
+          <div class="field-group">
+            <label class="field-label" for="old-password">Old Password</label>
+            <el-input
+              id="old-password"
+              v-model="oldPassword"
+              type="password"
               size="large"
-              class="submit-btn"
-              :loading="loading"
-              @click="handleSubmit"
-            >
-              Reset
-            </el-button>
+              placeholder="Enter old password"
+              show-password
+              class="field"
+              :class="{ 'is-error': oldPasswordError }"
+              @input="oldPasswordError = ''"
+              @keyup.enter="handleSubmit"
+            />
+            <p v-if="oldPasswordError" class="field-error">{{ oldPasswordError }}</p>
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="new-password">New Password</label>
+            <el-input
+              id="new-password"
+              v-model="newPassword"
+              type="password"
+              size="large"
+              placeholder="Enter new password"
+              show-password
+              class="field"
+              @keyup.enter="handleSubmit"
+            />
+          </div>
+
+          <div class="field-group">
+            <label class="field-label" for="confirm-password">Confirm New Password</label>
+            <el-input
+              id="confirm-password"
+              v-model="confirmPassword"
+              type="password"
+              size="large"
+              placeholder="Confirm new password"
+              show-password
+              class="field"
+              @keyup.enter="handleSubmit"
+            />
+          </div>
+
+          <el-button size="large" class="submit-btn" :loading="loading" @click="handleSubmit">
+            Reset
+          </el-button>
         </div>
 
         <div v-if="activeTab === 'rename'" class="rename-section">
@@ -97,7 +92,9 @@
             />
             <p class="field-hint">{{ newUsername.length }}/25</p>
             <p v-if="renameError" class="field-error">{{ renameError }}</p>
-            <p v-else-if="isUsernameTooShort" class="field-error">Username must be at least 4 characters</p>
+            <p v-else-if="isUsernameTooShort" class="field-error">
+              Username must be at least 4 characters
+            </p>
           </div>
 
           <el-button
@@ -135,7 +132,9 @@ const newUsername = ref('')
 const renameLoading = ref(false)
 const renameError = ref('')
 
-const isUsernameTooShort = computed(() => newUsername.value.length > 0 && newUsername.value.length < 4)
+const isUsernameTooShort = computed(
+  () => newUsername.value.length > 0 && newUsername.value.length < 4,
+)
 
 async function handleSubmit() {
   oldPasswordError.value = ''

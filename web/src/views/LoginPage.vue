@@ -36,17 +36,13 @@
           />
         </div>
 
-        <el-button
-          size="large"
-          class="submit-btn"
-          :loading="loading"
-          @click="handleLogin"
-        >
+        <el-button size="large" class="submit-btn" :loading="loading" @click="handleLogin">
           Sign in
         </el-button>
 
         <div class="login-footer">
-          New to Gopher? <router-link to="/signup" class="footer-link">Create an account</router-link>
+          New to Gopher?
+          <router-link to="/signup" class="footer-link">Create an account</router-link>
         </div>
       </div>
     </div>
@@ -91,11 +87,7 @@ async function handleLogin() {
     setToken(json.data)
     notify('success', 'Logged in')
     const redirect = route.query.redirect
-    if (
-      typeof redirect === 'string' &&
-      redirect.startsWith('/') &&
-      !redirect.startsWith('//')
-    ) {
+    if (typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')) {
       router.push(redirect)
     } else {
       router.push('/')
