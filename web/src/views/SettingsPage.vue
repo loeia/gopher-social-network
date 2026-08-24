@@ -10,6 +10,13 @@
         >
           Password
         </el-button>
+        <el-button
+          class="menu-btn"
+          :class="{ active: activeTab === 'rename' }"
+          @click="activeTab = 'rename'"
+        >
+          Rename
+        </el-button>
       </div>
 
       <div class="settings-main">
@@ -70,6 +77,35 @@
               Reset
             </el-button>
         </div>
+
+        <div v-if="activeTab === 'rename'" class="rename-section">
+          <h2 class="section-title">Rename</h2>
+
+          <div class="field-group">
+            <label class="field-label" for="new-username">New Username</label>
+            <el-input
+              id="new-username"
+              v-model="newUsername"
+              type="text"
+              size="large"
+              placeholder="Enter new username"
+              maxlength="25"
+              class="field"
+              @input="onRenameInput"
+              @keyup.enter="handleRename"
+            />
+            <p class="field-hint">{{ newUsername.length }}/25</p>
+          </div>
+
+          <el-button
+            size="large"
+            class="submit-btn rename-submit"
+            :loading="renameLoading"
+            @click="handleRename"
+          >
+            Save
+          </el-button>
+        </div>
       </div>
     </div>
   </div>
@@ -78,17 +114,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiFetch, clearToken } from '@/api'
+import { apiFetch, clearToken, getApiError } from '@/api'
 import { notify } from '@/utils/message'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
-const activeTab = ref<'password'>('password')
+const activeTab = ref<'password' | 'rename'>('password')
 const oldPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
 const oldPasswordError = ref('')
+
+const newUsername = ref('')
+const renameLoading = ref(false)
 
 async function handleSubmit() {
   oldPasswordError.value = ''
@@ -135,6 +176,42 @@ async function handleSubmit() {
     loading.value = false
   }
 }
+
+function onRenameInput() {
+}
+
+async function handleRename() {
+  const name = newUsername.value.trim()
+  if (!name) {
+    notify('warning', 'Please enter a new username')
+    return
+  }
+  if (name === userStore.username) {
+    notify('warning', 'New username is the same as the current username')
+    return
+  }
+  renameLoading.value = true
+  try {
+    const response = await apiFetch('/users/rename', {
+      method: 'PATCH',
+      body: JSON.stringify({ new_name: name }),
+    })
+    if (!response.ok) {
+      if (response.status === 401) return
+      const message = (await getApiError(response)) ?? `Failed to rename (HTTP ${response.status})`
+      notify('error', message)
+      return
+    }
+    await userStore.fetchCurrentUser(true)
+    newUsername.value = ''
+    notify('success', 'Username updated')
+  } catch (error) {
+    console.error('Rename error:', error)
+    notify('error', 'Failed to rename')
+  } finally {
+    renameLoading.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -165,6 +242,7 @@ async function handleSubmit() {
 
 .menu-btn {
   width: 100%;
+  margin-left: 0 !important;
   text-align: left;
   justify-content: flex-start;
   background: transparent;
@@ -190,11 +268,16 @@ async function handleSubmit() {
   min-width: 0;
 }
 
-.reset-section {
+.reset-section,
+.rename-section {
   display: flex;
   flex-direction: column;
   gap: 24px;
-  max-width: 420px;
+  max-width: 300px;
+}
+
+.rename-submit {
+  margin-top: 8px;
 }
 
 .section-title {
@@ -247,6 +330,13 @@ async function handleSubmit() {
   margin: 0;
   font-size: 13px;
   color: #cf222e;
+}
+
+.field-hint {
+  margin: 0;
+  font-size: 12px;
+  color: #595959;
+  text-align: right;
 }
 
 .submit-btn {
