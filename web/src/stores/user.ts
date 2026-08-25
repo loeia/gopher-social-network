@@ -6,6 +6,7 @@ export const useUserStore = defineStore('user', {
     id: null as number | null,
     username: '',
     avatarUrl: '',
+    avatarVersion: 0,
     createdAt: '',
     bio: '',
     links: [] as string[],
@@ -35,10 +36,14 @@ export const useUserStore = defineStore('user', {
         console.error('Load current user error:', error)
       }
     },
+    bumpAvatarVersion() {
+      this.avatarVersion += 1
+    },
     reset() {
       this.id = null
       this.username = ''
       this.avatarUrl = ''
+      this.avatarVersion = 0
       this.createdAt = ''
       this.bio = ''
       this.links = []

@@ -27,6 +27,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { API_URL } from '@/main'
+import { useUserStore } from '@/stores/user'
 
 const AVATAR_COLORS = ['#5b8def', '#e07b5a', '#57c08a', '#c07bd8', '#d8a24a', '#6ec7c0']
 
@@ -43,6 +44,7 @@ const props = withDefaults(
   },
 )
 
+const userStore = useUserStore()
 const showImage = ref(true)
 
 watch(
@@ -54,7 +56,7 @@ watch(
 
 const src = computed(() => {
   if (!props.userId) return ''
-  return `${API_URL}/users/${props.userId}/avatar`
+  return `${API_URL}/users/${props.userId}/avatar?v=${userStore.avatarVersion}`
 })
 
 const initials = computed(() => {

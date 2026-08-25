@@ -125,13 +125,12 @@ const userStore = useUserStore()
 const fileInput = ref<HTMLInputElement | null>(null)
 const uploading = ref(false)
 const showAvatar = ref(false)
-const avatarVersion = ref(0)
 const cropVisible = ref(false)
 const cropSrc = ref('')
 
 const avatarSrc = computed(() => {
   if (!userStore.avatarUrl) return ''
-  return `${API_URL}${userStore.avatarUrl}?v=${avatarVersion.value}`
+  return `${API_URL}${userStore.avatarUrl}?v=${userStore.avatarVersion}`
 })
 
 const initials = computed(() => {
@@ -214,7 +213,7 @@ async function uploadAvatar(blob: Blob) {
       return
     }
     showAvatar.value = true
-    avatarVersion.value += 1
+    userStore.bumpAvatarVersion()
     await userStore.fetchCurrentUser(true)
     notify('success', 'Avatar updated')
   } catch (error) {
