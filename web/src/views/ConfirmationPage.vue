@@ -10,7 +10,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { apiFetch } from '@/api'
+import { apiFetch, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 
 const route = useRoute()
@@ -33,8 +33,7 @@ const handleConfirm = async () => {
       notify('error', 'Failed to confirm token')
     }
   } catch (error) {
-    console.error('Confirm error:', error)
-    notify('error', 'Network error, please try again')
+    handleApiError(error, 'Network error, please try again')
   } finally {
     loading.value = false
   }

@@ -40,7 +40,6 @@ const params = computed<SearchParams>(() => ({
     .filter(Boolean),
   since: q(route.query.since) || undefined,
   until: q(route.query.until) || undefined,
-  page: Number(q(route.query.page)) > 1 ? Number(q(route.query.page)) : undefined,
 }))
 
 const summary = computed(() => {
@@ -66,9 +65,9 @@ function goHome() {
 }
 
 .back-nav {
-  width: 75%;
   margin: 0 auto 16px;
-  padding: 0 24px;
+  max-width: 1100px;
+  padding: 0 20px;
 }
 
 .back-nav :deep(.el-button) {
@@ -87,7 +86,9 @@ function goHome() {
 }
 
 .search-header {
-  margin: 0 20% 24px;
+  margin: 0 auto 24px;
+  max-width: 1100px;
+  padding: 0 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;

@@ -17,11 +17,8 @@ import SettingsPage from '@/views/SettingsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  scrollBehavior(to, from, savedPosition) {
-    // Restore position on back/forward. Keep-alive feed pages manage their own
-    // scroll (via per-view scroll state). Everything else starts at the top.
-    if (savedPosition) return savedPosition
-    if (to.name === 'Home' || to.name === 'MyPosts' || to.name === 'SearchResults') return false
+  scrollBehavior(_to, _from, savedPosition) {
+    if (savedPosition) return { ...savedPosition, behavior: 'instant' }
     return { top: 0 }
   },
   routes: [

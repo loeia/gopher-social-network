@@ -1,6 +1,12 @@
 <template>
   <div class="feed" v-loading="loading">
-    <div v-for="post in posts" :key="post.id" class="topic-row" @click="openPost(post.id)">
+    <div
+      v-for="(post, index) in posts"
+      :key="post.id"
+      class="topic-row"
+      :class="{ 'new-post': isNewPost(post.id) || (highlightFirst && index === 0) }"
+      @click="openPost(post.id)"
+    >
       <div class="topic-top">
         <h2 class="topic-title">{{ post.title }}</h2>
         <div v-if="editable" class="topic-actions">
@@ -40,26 +46,21 @@
         </template>
       </div>
     </div>
-    <button v-if="!isStandalone" class="new-btn" :disabled="loading" @click="loadNewPosts">
-      New
-    </button>
+    <div v-if="!isStandalone && loadingMore" class="loading-more">Loading...</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import {
   computed,
-  nextTick,
-  onActivated,
   onBeforeUnmount,
-  onDeactivated,
   onMounted,
   ref,
 } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useFeedStore, type FeedPost } from '@/stores/feed'
-import { getToken } from '@/api'
+import { getToken, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
 
@@ -68,11 +69,13 @@ const props = withDefaults(
     posts?: FeedPost[]
     loading?: boolean
     editable?: boolean
+    highlightFirst?: boolean
   }>(),
   {
     posts: undefined,
     loading: false,
     editable: false,
+    highlightFirst: false,
   },
 )
 
@@ -84,6 +87,7 @@ const emit = defineEmits<{
 const store = useFeedStore()
 const { posts: storePosts } = storeToRefs(store)
 const fetching = ref(false)
+const loadingMore = ref(false)
 const isStandalone = computed(() => !!props.posts)
 const posts = computed(() => props.posts ?? storePosts.value)
 const loading = computed(() => props.loading || fetching.value)
@@ -92,6 +96,10 @@ const likedIds = computed(() => new Set(store.likedPosts.map((p) => p.post_id)))
 
 function isLiked(post: FeedPost): boolean {
   return likedIds.value.has(post.id)
+}
+
+function isNewPost(postId: number): boolean {
+  return store.newPostIds.has(postId)
 }
 
 const router = useRouter()
@@ -115,58 +123,62 @@ function formatDate(value?: string) {
   return date.toLocaleString()
 }
 
-function saveScroll() {
-  store.feedScrollTop = window.scrollY
-}
-
-function restoreScroll() {
-  nextTick(() => window.scrollTo({ top: store.feedScrollTop }))
-}
-
 async function loadPosts() {
   if (store.postsLoaded || isStandalone.value) return
   fetching.value = true
   try {
     await store.fetchPosts()
   } catch (error) {
-    console.error('Load posts error:', error)
-    notify('error', 'Failed to load posts')
+    handleApiError(error, 'Failed to load posts')
   } finally {
     fetching.value = false
   }
 }
 
-async function loadNewPosts() {
-  fetching.value = true
+async function loadMorePosts() {
+  if (loadingMore.value || isStandalone.value) return
+  loadingMore.value = true
   try {
-    await store.refreshPosts()
-    window.scrollTo({ top: 0 })
+    await store.loadMorePosts()
   } catch (error) {
-    console.error('Refresh posts error:', error)
-    notify('error', 'Failed to refresh posts')
+    handleApiError(error, 'Failed to load more posts')
   } finally {
-    fetching.value = false
+    loadingMore.value = false
+  }
+}
+
+function handleScroll() {
+  if (isStandalone.value) return
+  const scrollHeight = document.documentElement.scrollHeight
+  const scrollTop = window.scrollY
+  const clientHeight = window.innerHeight
+  if (scrollTop + clientHeight >= scrollHeight - 200) {
+    loadMorePosts()
   }
 }
 
 onMounted(() => {
   loadPosts()
   loadLikedPosts()
+  if (!isStandalone.value) {
+    window.addEventListener('scroll', handleScroll)
+  }
 })
 
 async function loadLikedPosts() {
-  if (!getToken() || store.likedPostsLoaded) return
+  if (isStandalone.value || !getToken() || store.likedPostsLoaded) return
   try {
     await store.fetchLikedPosts()
   } catch (error) {
     console.error('Load liked posts error:', error)
   }
 }
-onActivated(() => {
-  if (!isStandalone.value) restoreScroll()
+
+onBeforeUnmount(() => {
+  if (!isStandalone.value) {
+    window.removeEventListener('scroll', handleScroll)
+  }
 })
-onDeactivated(saveScroll)
-onBeforeUnmount(saveScroll)
 </script>
 
 <style scoped>
@@ -294,33 +306,23 @@ onBeforeUnmount(saveScroll)
   white-space: nowrap;
 }
 
-.new-btn {
-  flex-shrink: 0;
-  align-self: center;
-  width: 12%;
-  margin-top: 16px;
-  padding: 10px 0;
-  border: 1px solid #ffffff;
-  border-radius: 8px;
-  background: #ffffff;
-  color: #141414;
-  font-size: 15px;
-  font-weight: 600;
+.loading-more {
   text-align: center;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease;
+  padding: 16px;
+  color: #8c8c8c;
+  font-size: 14px;
 }
 
-.new-btn:hover {
-  background: #141414;
-  color: #ffffff;
+.topic-row.new-post {
+  animation: highlight-flash 2.5s ease-out;
 }
 
-.new-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+@keyframes highlight-flash {
+  0% {
+    background-color: rgba(64, 158, 255, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 </style>

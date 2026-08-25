@@ -59,6 +59,23 @@ export async function getApiError(response: Response): Promise<string | null> {
   }
 }
 
+export class RateLimitError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'RateLimitError'
+  }
+}
+
+export function isRateLimitError(error: unknown): boolean {
+  return error instanceof RateLimitError
+}
+
+export function handleApiError(error: unknown, message: string) {
+  if (isRateLimitError(error)) return
+  console.error(message, error)
+  notify('error', message)
+}
+
 export async function handleSessionExpired() {
   if (!getToken() || sessionExpiredHandled) return
   sessionExpiredHandled = true
@@ -89,6 +106,12 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
     path !== '/users/reset'
   ) {
     await handleSessionExpired()
+  }
+
+  if (response.status === 429) {
+    const retryAfter = response.headers.get('Retry-After') || '5'
+    notify('warning', `Rate limit exceeded. Please try again in ${retryAfter} seconds.`)
+    throw new RateLimitError(`Rate limited, retry after ${retryAfter}s`)
   }
 
   return response

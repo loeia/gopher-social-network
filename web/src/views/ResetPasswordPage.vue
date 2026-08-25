@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { apiFetch } from '@/api'
+import { apiFetch, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 
 const route = useRoute()
@@ -70,8 +70,7 @@ async function handleReset() {
 
     done.value = true
   } catch (error) {
-    console.error('Reset password error:', error)
-    notify('error', 'Failed to reset password, please try again')
+    handleApiError(error, 'Failed to reset password, please try again')
   } finally {
     loading.value = false
   }

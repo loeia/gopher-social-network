@@ -1,9 +1,9 @@
 <template>
   <div class="followers-page">
-    <div class="back-nav">
-      <el-button text @click="goBack">← Back</el-button>
-    </div>
     <div class="list" v-loading="loading">
+      <div class="back-nav">
+        <el-button text @click="goBack">← Back</el-button>
+      </div>
       <div v-for="user in users" :key="user.follower_id" class="topic-row">
         <UserAvatar :user-id="user.follower_id" :username="user.username" :size="36" />
         <div class="topic-main">
@@ -19,11 +19,11 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useFeedStore } from '@/stores/feed'
-import { notify } from '@/utils/message'
+import { handleApiError } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
 
 const router = useRouter()
@@ -47,36 +47,18 @@ function formatDate(value?: string) {
   return date.toLocaleString()
 }
 
-function saveScroll() {
-  store.followersScrollTop = window.scrollY
-}
-
-function restoreScroll() {
-  nextTick(() => window.scrollTo({ top: store.followersScrollTop }))
-}
-
 async function loadFollowers() {
   loading.value = true
   try {
     await store.fetchFollowers()
   } catch (error) {
-    console.error('Load followers error:', error)
-    notify('error', 'Failed to load followers')
+    handleApiError(error, 'Failed to load followers')
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  restoreScroll()
-  loadFollowers()
-})
-onActivated(() => {
-  restoreScroll()
-  loadFollowers()
-})
-onDeactivated(saveScroll)
-onBeforeUnmount(saveScroll)
+onMounted(loadFollowers)
 </script>
 
 <style scoped>
@@ -87,10 +69,7 @@ onBeforeUnmount(saveScroll)
 
 .back-nav {
   margin: 0 0 16px;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  padding: 0;
 }
 
 .back-nav :deep(.el-button) {

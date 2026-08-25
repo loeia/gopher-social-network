@@ -131,22 +131,13 @@ export const useFeedStore = defineStore('feed', {
     likedComments: [] as LikedComment[],
     likedCommentsLoaded: false,
     view: 'all' as ViewType,
-    feedScrollTop: 0,
-    likedScrollTop: 0,
-    likedCommentsScrollTop: 0,
-    followingScrollTop: 0,
-    followersScrollTop: 0,
-    myPostsScrollTop: 0,
-    searchScrollTop: 0,
     postHistory: [] as number[],
     postHistoryIndex: -1,
+    newPostIds: new Set<number>(),
   }),
   actions: {
     setView(view: ViewType) {
       this.view = view
-    },
-    setFeedScrollTop(top: number) {
-      this.feedScrollTop = top
     },
     visitPost(id: number) {
       if (this.postHistory[this.postHistoryIndex] === id) return
@@ -254,14 +245,28 @@ export const useFeedStore = defineStore('feed', {
       this.posts = raw.map(toFeedPost)
       this.postsLoaded = true
     },
-    async refreshPosts() {
+    async loadMorePosts() {
       const response = await apiFetch('/posts/free')
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const json = await response.json()
       const raw = Array.isArray(json) ? json : (json.data ?? [])
-      this.posts = raw.map(toFeedPost)
-      this.postsLoaded = true
-      this.feedScrollTop = 0
+      const newPosts = raw.map(toFeedPost)
+      const existingIds = new Set(this.posts.map((p) => p.id))
+      let firstNewId: number | null = null
+      for (const post of newPosts) {
+        if (!existingIds.has(post.id)) {
+          this.posts.push(post)
+          if (firstNewId === null) {
+            firstNewId = post.id
+          }
+        }
+      }
+      if (firstNewId !== null) {
+        this.newPostIds.add(firstNewId)
+        setTimeout(() => {
+          this.newPostIds.delete(firstNewId!)
+        }, 2500)
+      }
     },
     async fetchSearch(params: SearchParams): Promise<FeedPost[]> {
       const query = new URLSearchParams()

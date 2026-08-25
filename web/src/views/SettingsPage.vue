@@ -114,7 +114,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiFetch, clearToken, getApiError } from '@/api'
+import { apiFetch, clearToken, getApiError, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import { useUserStore } from '@/stores/user'
 
@@ -175,8 +175,7 @@ async function handleSubmit() {
     clearToken()
     router.push('/login')
   } catch (error) {
-    console.error('Reset password error:', error)
-    notify('error', 'Failed to update password')
+    handleApiError(error, 'Failed to update password')
   } finally {
     loading.value = false
   }
@@ -213,8 +212,7 @@ async function handleRename() {
     newUsername.value = ''
     notify('success', 'Username updated')
   } catch (error) {
-    console.error('Rename error:', error)
-    notify('error', 'Failed to rename')
+    handleApiError(error, 'Failed to rename')
   } finally {
     renameLoading.value = false
   }

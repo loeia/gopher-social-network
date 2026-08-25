@@ -35,7 +35,7 @@
 
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
-import { apiFetch, getToken } from '@/api'
+import { apiFetch, getToken, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import type { ElInput } from 'element-plus'
 import CommentThread, { type CommentNode } from '@/components/CommentThread.vue'
@@ -193,8 +193,7 @@ async function deleteComment(commentId: number) {
     await loadComments()
     store.updatePostCommentCount(props.postId, comments.value.length)
   } catch (error) {
-    console.error('Delete comment error:', error)
-    notify('error', 'Failed to delete comment')
+    handleApiError(error, 'Failed to delete comment')
   } finally {
     deletingId.value = null
   }
@@ -235,8 +234,7 @@ async function submitReply(commentId: number) {
     await loadComments()
     store.updatePostCommentCount(props.postId, comments.value.length)
   } catch (error) {
-    console.error('Reply comment error:', error)
-    notify('error', 'Failed to add reply')
+    handleApiError(error, 'Failed to add reply')
   } finally {
     replying.value = false
   }
@@ -261,8 +259,7 @@ async function submitComment() {
     await loadComments()
     store.updatePostCommentCount(props.postId, comments.value.length)
   } catch (error) {
-    console.error('Add comment error:', error)
-    notify('error', 'Failed to add comment')
+    handleApiError(error, 'Failed to add comment')
   } finally {
     commenting.value = false
   }
@@ -297,8 +294,7 @@ async function toggleLike(comment: Comment) {
     }
     likedComments.value = new Set(likedComments.value)
   } catch (error) {
-    console.error('Toggle like error:', error)
-    notify('error', 'Failed to like comment')
+    handleApiError(error, 'Failed to like comment')
   } finally {
     likingId.value = null
   }
@@ -314,8 +310,7 @@ async function loadComments(silent = false) {
     emit('count', comments.value.length)
     if (!silent) nextTick(scrollToComment)
   } catch (error) {
-    console.error('Load comments error:', error)
-    if (!silent) notify('error', 'Failed to load comments')
+    if (!silent) handleApiError(error, 'Failed to load comments')
   } finally {
     if (!silent) loading.value = false
   }

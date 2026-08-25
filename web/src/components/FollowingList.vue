@@ -1,9 +1,9 @@
 <template>
   <div class="following-page">
-    <div class="back-nav">
-      <el-button text @click="goBack">← Back</el-button>
-    </div>
     <div class="list" v-loading="loading">
+      <div class="back-nav">
+        <el-button text @click="goBack">← Back</el-button>
+      </div>
       <div v-for="user in users" :key="user.following_id" class="topic-row">
         <UserAvatar :user-id="user.following_id" :username="user.username" :size="36" />
         <div class="topic-main">
@@ -26,10 +26,11 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useFeedStore } from '@/stores/feed'
+import { handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
 
@@ -55,21 +56,12 @@ function formatDate(value?: string) {
   return date.toLocaleString()
 }
 
-function saveScroll() {
-  store.followingScrollTop = window.scrollY
-}
-
-function restoreScroll() {
-  nextTick(() => window.scrollTo({ top: store.followingScrollTop }))
-}
-
 async function loadFollowing() {
   loading.value = true
   try {
     await store.fetchFollowing()
   } catch (error) {
-    console.error('Load following error:', error)
-    notify('error', 'Failed to load followings')
+    handleApiError(error, 'Failed to load followings')
   } finally {
     loading.value = false
   }
@@ -81,23 +73,13 @@ async function unfollow(userId: number) {
     await store.unfollowUser(userId)
     notify('success', 'Unfollowed')
   } catch (error) {
-    console.error('Unfollow error:', error)
-    notify('error', 'Failed to unfollow')
+    handleApiError(error, 'Failed to unfollow')
   } finally {
     unfollowingId.value = null
   }
 }
 
-onMounted(() => {
-  restoreScroll()
-  loadFollowing()
-})
-onActivated(() => {
-  restoreScroll()
-  loadFollowing()
-})
-onDeactivated(saveScroll)
-onBeforeUnmount(saveScroll)
+onMounted(loadFollowing)
 </script>
 
 <style scoped>
@@ -108,10 +90,7 @@ onBeforeUnmount(saveScroll)
 
 .back-nav {
   margin: 0 0 16px;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+  padding: 0;
 }
 
 .back-nav :deep(.el-button) {

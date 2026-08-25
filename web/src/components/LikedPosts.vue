@@ -40,11 +40,11 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useFeedStore } from '@/stores/feed'
-import { notify } from '@/utils/message'
+import { handleApiError } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
 
 const store = useFeedStore()
@@ -64,36 +64,18 @@ function formatDate(value?: string) {
   return date.toLocaleString()
 }
 
-function saveScroll() {
-  store.likedScrollTop = window.scrollY
-}
-
-function restoreScroll() {
-  nextTick(() => window.scrollTo({ top: store.likedScrollTop }))
-}
-
 async function loadLikedPosts() {
   loading.value = true
   try {
     await store.fetchLikedPosts()
   } catch (error) {
-    console.error('Load liked posts error:', error)
-    notify('error', 'Failed to load liked posts')
+    handleApiError(error, 'Failed to load liked posts')
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => {
-  restoreScroll()
-  loadLikedPosts()
-})
-onActivated(() => {
-  restoreScroll()
-  loadLikedPosts()
-})
-onDeactivated(saveScroll)
-onBeforeUnmount(saveScroll)
+onMounted(loadLikedPosts)
 </script>
 
 <style scoped>

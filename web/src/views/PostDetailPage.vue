@@ -2,10 +2,6 @@
   <div class="detail-page">
     <div class="back-nav">
       <el-button text @click="backHome">← Back</el-button>
-      <div class="nav-arrows">
-        <el-button text :disabled="!hasPrevPost" @click="goToPrevious">&lt;</el-button>
-        <el-button text :disabled="!hasNextPost" @click="goToNext">&gt;</el-button>
-      </div>
     </div>
 
     <div class="detail-container" v-loading="loading">
@@ -69,7 +65,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
-import { apiFetch, getCurrentUserId, getToken } from '@/api'
+import { apiFetch, getCurrentUserId, getToken, handleApiError } from '@/api'
 import { useFeedStore } from '@/stores/feed'
 import { renderMarkdown } from '@/utils/markdown'
 import { notify } from '@/utils/message'
@@ -134,8 +130,7 @@ async function toggleFollowAuthor() {
       notify('success', `Following ${current.author}`)
     }
   } catch (error) {
-    console.error('Toggle follow error:', error)
-    notify('error', 'Failed to update follow')
+    handleApiError(error, 'Failed to update follow')
   } finally {
     followBusy.value = false
   }
@@ -150,8 +145,6 @@ async function loadFollowState() {
   }
 }
 
-const hasPrevPost = computed(() => store.postHistoryIndex > 0)
-const hasNextPost = computed(() => store.postHistoryIndex < store.postHistory.length - 1)
 const renderedContent = computed(() => {
   if (!post.value) return ''
   return renderMarkdown(post.value.content)
@@ -159,22 +152,7 @@ const renderedContent = computed(() => {
 
 function backHome() {
   store.clearPostHistory()
-  const state = window.history.state as { back?: unknown } | null
-  if (state && state.back != null) {
-    router.back()
-  } else {
-    router.push('/')
-  }
-}
-
-function goToPrevious() {
-  const id = store.goBackPost()
-  if (id !== null) router.push(`/posts/${id}`)
-}
-
-function goToNext() {
-  const id = store.goForwardPost()
-  if (id !== null) router.push(`/posts/${id}`)
+  router.back()
 }
 
 function formatDate(value?: string) {
@@ -207,8 +185,7 @@ async function toggleLike() {
     likesCount.value += liked.value ? 1 : -1
     store.togglePostLike(post.value.id, liked.value, likesCount.value)
   } catch (error) {
-    console.error('Toggle like error:', error)
-    notify('error', 'Failed to update like')
+    handleApiError(error, 'Failed to update like')
   } finally {
     liking.value = false
   }
@@ -242,8 +219,7 @@ async function startLoad(id: number) {
     commentsCount.value = Number(data.comment_count ?? 0)
     loadLikedState(id)
   } catch (error) {
-    console.error('Load post error:', error)
-    notify('error', 'Failed to load post')
+    handleApiError(error, 'Failed to load post')
   } finally {
     loading.value = false
   }
@@ -274,12 +250,6 @@ watch(() => route.params.postId, loadPost)
   gap: 12px;
 }
 
-.nav-arrows {
-  margin-left: auto;
-  display: flex;
-  gap: 4px;
-}
-
 .back-nav :deep(.el-button) {
   color: #6a737c;
   background: transparent;
@@ -293,15 +263,6 @@ watch(() => route.params.postId, loadPost)
   text-decoration: underline;
   text-decoration-color: #6a737c;
   text-underline-offset: 4px;
-}
-
-.nav-arrows :deep(.el-button:hover),
-.nav-arrows :deep(.el-button:focus),
-.nav-arrows :deep(.el-button:focus-visible) {
-  color: #6a737c;
-  background: transparent;
-  font-weight: 600;
-  text-decoration: none;
 }
 
 .back-nav :deep(.el-button.is-disabled) {

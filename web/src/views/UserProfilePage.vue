@@ -132,7 +132,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { apiFetch, getApiError, getCurrentUserId } from '@/api'
+import { apiFetch, getApiError, getCurrentUserId, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { useFeedStore } from '@/stores/feed'
@@ -229,8 +229,7 @@ async function saveProfile() {
     await load()
     notify('success', 'Profile updated')
   } catch (error) {
-    console.error('Save profile error:', error)
-    notify('error', 'Failed to save profile')
+    handleApiError(error, 'Failed to save profile')
   } finally {
     saving.value = false
   }
@@ -273,8 +272,7 @@ async function load() {
       following_count: Number(data.following_count ?? 0),
     }
   } catch (error) {
-    console.error('Load user profile error:', error)
-    notify('error', 'Failed to load profile')
+    handleApiError(error, 'Failed to load profile')
   } finally {
     loading.value = false
   }

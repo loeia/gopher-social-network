@@ -43,7 +43,7 @@ const activeView = computed<ViewType | null>(() => {
   if (route.name === 'UserProfile') {
     return userStore.id === Number(route.params.userId) ? 'profile' : null
   }
-  return activeNav.value
+  return null
 })
 
 function onSidebarView(next: ViewType) {

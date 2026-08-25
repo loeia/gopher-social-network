@@ -109,11 +109,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onActivated, onBeforeUnmount, onMounted, ref } from 'vue'
-import { onBeforeRouteLeave, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import PostsList from '@/components/PostsList.vue'
-import { apiFetch, getCurrentUserId } from '@/api'
+import { apiFetch, getCurrentUserId, handleApiError } from '@/api'
 import { useFeedStore, toFeedPost, type FeedPost } from '@/stores/feed'
 import { renderMarkdown } from '@/utils/markdown'
 import { notify } from '@/utils/message'
@@ -160,22 +160,7 @@ const tagsChanged = computed(() => {
 const hasChanges = computed(() => titleChanged.value || contentChanged.value || tagsChanged.value)
 const isContentOver = computed(() => contentChanged.value && content.value.length > MAX_CONTENT)
 
-function saveScroll() {
-  feedStore.myPostsScrollTop = window.scrollY
-}
-
-function restoreScroll() {
-  const top = feedStore.myPostsScrollTop
-  nextTick(() => window.scrollTo({ top }))
-}
-
 onMounted(loadMyPosts)
-onBeforeRouteLeave(saveScroll)
-onBeforeUnmount(saveScroll)
-onActivated(() => {
-  restoreScroll()
-  loadMyPosts()
-})
 
 function goBack() {
   if (editingPost.value) {
@@ -199,8 +184,7 @@ async function loadMyPosts() {
       user_id: currentUserId ?? undefined,
     }))
   } catch (error) {
-    console.error('Load my posts error:', error)
-    notify('error', 'Failed to load my posts')
+    handleApiError(error, 'Failed to load my posts')
   } finally {
     loading.value = false
   }
@@ -232,8 +216,7 @@ async function loadPostForEdit(postId: number) {
     originalContent.value = content.value
     originalTags.value = [...tags.value]
   } catch (error) {
-    console.error('Load post for edit error:', error)
-    notify('error', 'Failed to load post content')
+    handleApiError(error, 'Failed to load post content')
   }
 }
 
@@ -297,8 +280,7 @@ async function handleEdit() {
     cancelEdit()
     await loadMyPosts()
   } catch (error) {
-    console.error('Update post error:', error)
-    notify('error', 'Failed to update post')
+    handleApiError(error, 'Failed to update post')
   } finally {
     submitting.value = false
   }
@@ -324,8 +306,7 @@ async function handleDelete(post: FeedPost) {
     if (editingPost.value?.id === post.id) cancelEdit()
     await loadMyPosts()
   } catch (error) {
-    console.error('Delete post error:', error)
-    notify('error', 'Failed to delete post')
+    handleApiError(error, 'Failed to delete post')
   }
 }
 </script>

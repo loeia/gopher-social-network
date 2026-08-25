@@ -48,7 +48,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiFetch } from '@/api'
+import { apiFetch, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 
 const router = useRouter()
@@ -82,8 +82,7 @@ async function handleSubmit() {
     successMessage.value = data?.message || 'If that email exists, a reset link has been sent.'
     sent.value = true
   } catch (error) {
-    console.error('Forgot password error:', error)
-    notify('error', 'Failed to send reset link, please try again')
+    handleApiError(error, 'Failed to send reset link, please try again')
   } finally {
     loading.value = false
   }

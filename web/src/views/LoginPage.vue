@@ -52,7 +52,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { apiFetch, setToken } from '@/api'
+import { apiFetch, setToken, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 
 const route = useRoute()
@@ -93,8 +93,7 @@ async function handleLogin() {
       router.push('/')
     }
   } catch (error) {
-    console.error('Login error:', error)
-    notify('error', 'Login failed')
+    handleApiError(error, 'Login failed')
   } finally {
     loading.value = false
   }

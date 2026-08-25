@@ -102,6 +102,7 @@
       </el-popover>
 
       <el-input
+        ref="searchInputRef"
         v-model="searchQuery"
         class="navbar-search"
         placeholder="Search posts"
@@ -139,7 +140,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getToken, clearToken } from '@/api'
 import { notify } from '@/utils/message'
@@ -156,6 +157,23 @@ const startDate = ref<string | null>(null)
 const endDate = ref<string | null>(null)
 const filterOpen = ref(false)
 const isLoggedIn = ref(!!getToken())
+const searchInputRef = ref<InstanceType<typeof import('element-plus')['ElInput']> | null>(null)
+
+function handleSlashShortcut(e: KeyboardEvent) {
+  if (e.key !== '/') return
+  const tag = (e.target as HTMLElement)?.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return
+  e.preventDefault()
+  searchInputRef.value?.focus()
+}
+
+onMounted(() => {
+  document.addEventListener('keydown', handleSlashShortcut)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleSlashShortcut)
+})
 
 function toggleSidebar() {
   uiStore.toggleSidebar()

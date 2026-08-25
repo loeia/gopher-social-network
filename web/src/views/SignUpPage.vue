@@ -81,7 +81,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiFetch } from '@/api'
+import { apiFetch, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 
 const router = useRouter()
@@ -146,8 +146,7 @@ async function handleRegister() {
     registered.value = true
     password.value = ''
   } catch (error) {
-    console.error('Register error:', error)
-    notify('error', 'Email sending failed, please try again')
+    handleApiError(error, 'Email sending failed, please try again')
   } finally {
     loading.value = false
   }

@@ -93,7 +93,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { apiFetch } from '@/api'
+import { apiFetch, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import { renderMarkdown } from '@/utils/markdown'
 
@@ -175,8 +175,7 @@ async function handleSubmit() {
       router.push('/')
     }
   } catch (error) {
-    console.error('Create post error:', error)
-    notify('error', 'Failed to create post')
+    handleApiError(error, 'Failed to create post')
   } finally {
     submitting.value = false
   }
