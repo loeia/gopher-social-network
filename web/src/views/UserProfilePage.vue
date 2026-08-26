@@ -6,88 +6,92 @@
         <p class="not-found-hint">This user may have been removed or the link is incorrect.</p>
       </template>
       <template v-else>
-        <div class="avatar-wrapper" :class="{ own: isOwnProfile }">
-          <UserAvatar :user-id="userId" :username="user.username" :size="96" />
-          <label v-if="isOwnProfile" class="avatar-overlay">
-            <input
-              ref="avatarInputRef"
-              type="file"
-              accept="image/*"
-              class="hidden-input"
-              @change="onAvatarFileChange"
-            />
-            <svg
-              class="camera-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+        <div class="profile-header">
+          <div class="avatar-wrapper" :class="{ own: isOwnProfile }">
+            <UserAvatar :user-id="userId" :username="user.username" :size="112" />
+            <label v-if="isOwnProfile" class="avatar-overlay">
+              <input
+                ref="avatarInputRef"
+                type="file"
+                accept="image/*"
+                class="hidden-input"
+                @change="onAvatarFileChange"
+              />
+              <svg
+                class="camera-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+            </label>
+          </div>
+
+          <h1 class="username">{{ user.username }}</h1>
+          <span class="handle">Joined {{ formatDate(user.created_at) }}</span>
+
+          <p v-if="user.bio" class="bio">{{ user.bio }}</p>
+
+          <div class="meta-row">
+            <span v-for="(link, index) in user.links" :key="index" class="meta-item">
+              <svg
+                class="info-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+              </svg>
+              <a :href="link" class="website" target="_blank" rel="noopener noreferrer">
+                {{ link }}
+              </a>
+            </span>
+          </div>
+
+          <div class="stats-row">
+            <span class="stat">
+              <strong>{{ userPosts.length }}</strong>
+              <span class="stat-label">Posts</span>
+            </span>
+            <span class="stat">
+              <strong>{{ userReplies.length }}</strong>
+              <span class="stat-label">Replies</span>
+            </span>
+            <span class="stat">
+              <strong>{{ userLikedPosts.length }}</strong>
+              <span class="stat-label">Likes</span>
+            </span>
+            <span
+              class="stat"
+              :class="{ clickable: isOwnProfile }"
+              @click="isOwnProfile && goToFollowers()"
             >
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
-          </label>
+              <strong>{{ user.followers_count }}</strong>
+              <span class="stat-label">Followers</span>
+            </span>
+            <span
+              class="stat"
+              :class="{ clickable: isOwnProfile }"
+              @click="isOwnProfile && goToFollowing()"
+            >
+              <strong>{{ user.following_count }}</strong>
+              <span class="stat-label">Following</span>
+            </span>
+          </div>
+
+          <el-button v-if="isOwnProfile" class="edit-btn" @click="openEdit">
+            Edit profile
+          </el-button>
         </div>
-
-        <h1 class="username">{{ user.username }}</h1>
-
-        <div class="follow-stats">
-          <span
-            class="follow-stat"
-            :class="{ clickable: isOwnProfile }"
-            @click="isOwnProfile && goToFollowers()"
-            ><strong>{{ user.followers_count }}</strong> followers</span
-          >
-          <span class="follow-dot">·</span>
-          <span
-            class="follow-stat"
-            :class="{ clickable: isOwnProfile }"
-            @click="isOwnProfile && goToFollowing()"
-            ><strong>{{ user.following_count }}</strong> following</span
-          >
-        </div>
-
-        <p v-if="user.bio" class="bio">{{ user.bio }}</p>
-
-        <div class="info-row">
-          <svg
-            class="info-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
-          <span>Joined {{ formatDate(user.created_at) }}</span>
-        </div>
-
-        <div v-for="(link, index) in user.links" :key="index" class="info-row">
-          <svg
-            class="info-icon"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-          </svg>
-          <a :href="link" class="website" target="_blank" rel="noopener noreferrer">
-            {{ link }}
-          </a>
-        </div>
-
-        <el-button v-if="isOwnProfile" class="edit-btn" @click="openEdit"> Edit profile </el-button>
       </template>
     </div>
 
@@ -621,15 +625,19 @@ watch(
 .profile-card {
   width: 75%;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 48px 24px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
   text-align: center;
-  background: #141414;
-  border: 1px solid #262626;
-  border-radius: 12px;
+}
+
+.profile-header {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
 
 .avatar-wrapper {
@@ -669,61 +677,53 @@ watch(
 }
 
 .username {
-  margin: 0;
-  font-size: 24px;
+  margin: 18px 0 0;
+  font-size: 28px;
   font-weight: 700;
+  line-height: 1.2;
   color: #ffffff;
 }
 
-.follow-stats {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  color: #8c8c8c;
-}
-
-.follow-stat strong {
-  font-weight: 700;
-  color: #e4e6e8;
-}
-
-.follow-stat.clickable {
-  cursor: pointer;
-}
-
-.follow-stat.clickable:hover strong {
-  color: #6cbbf7;
-}
-
-.follow-dot {
-  color: #8c8c8c;
+.handle {
+  font-size: 15px;
+  color: #8b949e;
 }
 
 .bio {
-  margin: 0;
+  margin: 8px 0 0;
+  max-width: 560px;
   font-size: 14px;
   line-height: 1.6;
-  color: #e4e6e8;
+  color: #c9d1d9;
   word-break: break-word;
 }
 
-.info-row {
+.meta-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  margin-top: 10px;
   font-size: 13px;
-  color: #8c8c8c;
+  color: #8b949e;
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .info-icon {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   flex-shrink: 0;
+  color: #8b949e;
 }
 
 .website {
-  color: #6cbbf7;
+  color: #58a6ff;
   text-decoration: none;
   word-break: break-all;
 }
@@ -745,22 +745,66 @@ watch(
   color: #8c8c8c;
 }
 
+.stats-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px 36px;
+  width: 100%;
+  max-width: 660px;
+  margin-top: 20px;
+  padding: 18px 0 2px;
+  border-top: 1px solid #21262d;
+}
+
+.stat {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 62px;
+}
+
+.stat strong {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #8b949e;
+}
+
+.stat.clickable {
+  cursor: pointer;
+}
+
+.stat.clickable:hover strong {
+  color: #58a6ff;
+}
+
 .edit-btn {
-  margin-top: 12px;
-  padding: 4px 16px;
-  font-size: 13px;
+  margin-top: 16px;
+  padding: 6px 22px;
+  font-size: 14px;
   font-weight: 600;
   color: #141414;
   background: #ffffff;
   border: 1px solid #ffffff;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .edit-btn:hover:not(:disabled) {
   background: #e4e6e8;
-  color: #141414;
   border-color: #e4e6e8;
+  color: #141414;
 }
 
 .field-group {
@@ -863,17 +907,17 @@ watch(
 
 .tabs-bar {
   display: flex;
+  justify-content: center;
   gap: 0;
-  border-bottom: 1px solid #262626;
+  border-bottom: 1px solid #21262d;
 }
 
 .tab-btn {
-  flex: 1;
-  padding: 12px 0;
+  padding: 12px 28px;
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
-  color: #8c8c8c;
+  color: #8b949e;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -881,7 +925,7 @@ watch(
 }
 
 .tab-btn:hover {
-  color: #e4e6e8;
+  color: #e6edf3;
 }
 
 .tab-btn.active {
