@@ -18,6 +18,7 @@ type Post struct {
 	Tags         []string `json:"tags"`
 	CommentCount int64    `json:"comment_count"`
 	LikeCount    int64    `json:"like_count"`
+	ViewCount    int64    `json:"view_count"`
 	Version      int64    `json:"version"`
 	User         User     `json:"user"`
 
@@ -71,7 +72,7 @@ func (s *PostStore) GetById(c context.Context, id int64) (*Post, error) {
 	query := `
 	SELECT
 		p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,u.username,
-		p.comment_count,p.like_count
+		p.comment_count,p.like_count,p.view_count
 	FROM posts p
 	JOIN users u ON p.user_id = u.id WHERE p.id = $1
 	`
@@ -94,6 +95,7 @@ func (s *PostStore) GetById(c context.Context, id int64) (*Post, error) {
 		&post.User.Username,
 		&post.CommentCount,
 		&post.LikeCount,
+		&post.ViewCount,
 	)
 	if err != nil {
 		switch {
@@ -126,6 +128,16 @@ func (s *PostStore) Delete(ctx context.Context, post *Post) error {
 	}
 
 	return nil
+}
+
+func (s *PostStore) IncrementViewCount(c context.Context, postId int64) error {
+	query := `UPDATE posts SET view_count = view_count + 1 WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := s.db.ExecContext(ctx, query, postId)
+	return err
 }
 
 func (s *PostStore) Update(c context.Context, post *Post) error {
@@ -166,7 +178,8 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 		    p.tags,
 		    u.username,
 		    p.comment_count,
-		    p.like_count
+		    p.like_count,
+		    p.view_count
 		FROM posts p
 		LEFT JOIN users u ON p.user_id = u.id
 		LEFT JOIN followers f ON f.user_id = p.user_id
@@ -212,6 +225,7 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 			&post.Post.User.Username,
 			&post.CommentCount,
 			&post.LikeCount,
+			&post.Post.ViewCount,
 		); err != nil {
 			return nil, err
 		}
@@ -228,7 +242,7 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 func (s *PostStore) GetFree(c context.Context, count int) ([]*Post, error) {
 
 	query := `
-		SELECT p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,p.comment_count,p.like_count,u.username
+		SELECT p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,p.comment_count,p.like_count,p.view_count,u.username
 		FROM posts p JOIN users u ON p.user_id = u.id
 		ORDER BY random()
 		LIMIT $1
@@ -257,6 +271,7 @@ func (s *PostStore) GetFree(c context.Context, count int) ([]*Post, error) {
 			&post.UpdatedAt,
 			&post.CommentCount,
 			&post.LikeCount,
+			&post.ViewCount,
 			&post.User.Username,
 		); err != nil {
 			return nil, err
@@ -302,7 +317,7 @@ func (s *PostStore) Search(c context.Context, pfq *PaginatedFeedQuery) ([]*Post,
 
 	query := `
 		SELECT p.id, p.user_id, p.title, p.content, p.tags, p.version, p.created_at,
-		       p.comment_count, p.like_count, u.username
+		       p.comment_count, p.like_count, p.view_count, u.username
 		FROM posts p
 		JOIN users u ON p.user_id = u.id
 		WHERE (p.title ILIKE '%' || $1 || '%' ESCAPE '\')
@@ -342,6 +357,7 @@ func (s *PostStore) Search(c context.Context, pfq *PaginatedFeedQuery) ([]*Post,
 			&post.CreatedAt,
 			&post.CommentCount,
 			&post.LikeCount,
+			&post.ViewCount,
 			&post.User.Username,
 		); err != nil {
 			return nil, err

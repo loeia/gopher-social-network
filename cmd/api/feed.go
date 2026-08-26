@@ -16,6 +16,7 @@ type FeedPostResponse struct {
 	Tags         []string  `json:"tags"`
 	PostLikes    int64     `json:"like_count"`
 	CommentCount int64     `json:"comment_count"`
+	ViewCount    int64     `json:"view_count"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -59,6 +60,7 @@ func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Reques
 			Tags:         f.Post.Tags,
 			PostLikes:    f.LikeCount,
 			CommentCount: f.CommentCount,
+			ViewCount:    f.Post.ViewCount,
 			CreatedAt:    f.Post.CreatedAt,
 		}
 	}

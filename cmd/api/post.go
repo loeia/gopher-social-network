@@ -21,6 +21,7 @@ type PostResponse struct {
 	Tags         []string  `json:"tags"`
 	CommentCount int64     `json:"comment_count"`
 	LikeCount    int64     `json:"like_count"`
+	ViewCount    int64     `json:"view_count"`
 	CreatedAt    time.Time `json:"created_at"`
 	UpdatedAt    time.Time `json:"updated_at"`
 }
@@ -35,6 +36,7 @@ func postResponse(p *store.Post) *PostResponse {
 		Tags:         p.Tags,
 		CommentCount: p.CommentCount,
 		LikeCount:    p.LikeCount,
+		ViewCount:    p.ViewCount,
 		CreatedAt:    p.CreatedAt,
 		UpdatedAt:    p.UpdatedAt,
 	}
@@ -75,6 +77,12 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 // getPostHandler returns a single post with its comments.
 func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromCtx(r)
+
+	if err := app.store.Posts.IncrementViewCount(r.Context(), post.ID); err != nil {
+		app.logger.Errorw("failed to increment view count", "error", err)
+	}
+
+	post.ViewCount++
 
 	if err := app.JSONResponse(w, http.StatusOK, postResponse(post)); err != nil {
 		app.internalServerError(w, r, err)
