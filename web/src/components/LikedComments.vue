@@ -28,8 +28,6 @@
       <div class="topic-bottom">
         <UserAvatar :user-id="comment.user_id" :username="comment.username" :size="20" />
         <span class="topic-author">{{ comment.username }}</span>
-        <span class="meta-dot">&middot;</span>
-        <span class="topic-time">{{ formatDate(comment.created_at) }}</span>
       </div>
     </div>
     <div v-if="!loading && comments.length === 0" class="empty">No liked comments yet</div>
@@ -57,13 +55,6 @@ function openPost(postId: number, commentId: number) {
 function truncateContent(content: string): string {
   if (!content) return ''
   return content.length > 80 ? content.slice(0, 80) + '...' : content
-}
-
-function formatDate(value?: string) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
 }
 
 async function loadLikedComments() {
