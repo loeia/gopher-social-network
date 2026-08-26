@@ -33,6 +33,13 @@
             </svg>
             {{ post.like_count }}
           </span>
+          <span class="topic-stat" :title="`${post.view_count} views`">
+            <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            {{ post.view_count }}
+          </span>
         </div>
       </div>
       <div class="topic-bottom">

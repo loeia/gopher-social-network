@@ -12,6 +12,7 @@ export interface FeedPost {
   user_id?: number
   comment_count: number
   like_count: number
+  view_count: number
   created_at: string
 }
 
@@ -98,6 +99,7 @@ type RawPost = {
   author?: string | null
   comment_count?: number
   like_count?: number
+  view_count?: number
 }
 
 export function toFeedPost(p: RawPost): FeedPost {
@@ -110,6 +112,7 @@ export function toFeedPost(p: RawPost): FeedPost {
     user_id: Number.isFinite(userId) && userId > 0 ? userId : undefined,
     comment_count: Number(p.comment_count ?? 0),
     like_count: Number(p.like_count ?? 0),
+    view_count: Number(p.view_count ?? 0),
     created_at: p.created_at ?? '',
     user: {
       username: p.user?.username ?? p.author ?? '',

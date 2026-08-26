@@ -47,6 +47,14 @@
             </svg>
             <span class="meta-count">{{ commentsCount }}</span>
           </span>
+          <span class="meta-sep">·</span>
+          <span class="view-item">
+            <svg class="view-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            <span class="meta-count">{{ viewsCount }}</span>
+          </span>
         </div>
 
         <div class="markdown-body" v-html="renderedContent" />
@@ -77,6 +85,7 @@ interface PostDetail {
   tags: string[]
   like_count?: number
   comment_count?: number
+  view_count?: number
   created_at: string
   updated_at: string
 }
@@ -94,6 +103,7 @@ const liked = ref(false)
 const liking = ref(false)
 const likesCount = ref(0)
 const commentsCount = ref(0)
+const viewsCount = ref(0)
 
 const likeTitle = computed(() => {
   if (!isLoggedIn.value) return 'Log in to like'
@@ -207,6 +217,7 @@ async function startLoad(id: number) {
     post.value = data
     likesCount.value = Number(data.like_count ?? 0)
     commentsCount.value = Number(data.comment_count ?? 0)
+    viewsCount.value = Number(data.view_count ?? 0)
     loadLikedState(id)
   } catch (error) {
     handleApiError(error, 'Failed to load post')
@@ -324,6 +335,25 @@ watch(() => route.params.postId, loadPost)
 }
 
 .comment-item .comment-icon path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.view-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #9fa6ad;
+}
+
+.view-item .view-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.view-item .view-icon path,
+.view-item .view-icon circle {
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
