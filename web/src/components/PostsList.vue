@@ -38,8 +38,7 @@
       <div class="topic-bottom">
         <UserAvatar :user-id="post.user_id" :username="post.user.username" :size="20" />
         <span class="topic-author">{{ post.user.username }}</span>
-        <span class="meta-dot">&middot;</span>
-        <span class="topic-time">{{ formatDate(post.created_at) }}</span>
+
         <template v-if="post.tags && post.tags.length">
           <span class="meta-dot">&middot;</span>
           <span v-for="tag in post.tags" :key="tag" class="topic-tag">{{ tag }}</span>
@@ -109,13 +108,6 @@ function onEdit(post: FeedPost) {
 
 function onDelete(post: FeedPost) {
   emit('delete', post)
-}
-
-function formatDate(value?: string) {
-  if (!value) return ''
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return value
-  return date.toLocaleString()
 }
 
 async function loadPosts() {

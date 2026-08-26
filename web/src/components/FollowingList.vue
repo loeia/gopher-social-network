@@ -1,9 +1,6 @@
 <template>
   <div class="following-page">
     <div class="list" v-loading="loading">
-      <div class="back-nav">
-        <el-button text @click="goBack">← Back</el-button>
-      </div>
       <div v-for="user in users" :key="user.following_id" class="topic-row">
         <UserAvatar :user-id="user.following_id" :username="user.username" :size="36" />
         <div class="topic-main">
@@ -27,27 +24,16 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useFeedStore } from '@/stores/feed'
 import { handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
 
-const router = useRouter()
 const store = useFeedStore()
-const { following: users } = storeToRefs(store)
+const { following: users, followingLoaded } = storeToRefs(store)
 const loading = ref(false)
 const unfollowingId = ref<number | null>(null)
-
-function goBack() {
-  const state = window.history.state as { back?: unknown } | null
-  if (state && state.back != null) {
-    router.back()
-  } else {
-    router.push('/')
-  }
-}
 
 function formatDate(value?: string) {
   if (!value) return ''
@@ -57,6 +43,7 @@ function formatDate(value?: string) {
 }
 
 async function loadFollowing() {
+  if (followingLoaded.value) return
   loading.value = true
   try {
     await store.fetchFollowing()
@@ -86,26 +73,6 @@ onMounted(loadFollowing)
 .following-page {
   min-height: 100vh;
   padding: 32px 0 80px;
-}
-
-.back-nav {
-  margin: 0 0 16px;
-  padding: 0;
-}
-
-.back-nav :deep(.el-button) {
-  color: #6a737c;
-  background: transparent;
-}
-
-.back-nav :deep(.el-button:hover),
-.back-nav :deep(.el-button:focus),
-.back-nav :deep(.el-button:focus-visible) {
-  color: #6a737c;
-  background: transparent;
-  text-decoration: underline;
-  text-decoration-color: #6a737c;
-  text-underline-offset: 4px;
 }
 
 .list {

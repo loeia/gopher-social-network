@@ -4,7 +4,7 @@
       <NavBar v-if="!route.meta.hideNavBar" />
       <div class="main">
         <router-view v-slot="{ Component }">
-          <keep-alive include="HomePage,MyPostsPage,SearchResults">
+          <keep-alive include="HomePage,MyPostsPage,SearchResults,PostLikesPage,CommentLikesPage,FollowingPage,FollowersPage">
             <component :is="Component" />
           </keep-alive>
         </router-view>
@@ -49,6 +49,7 @@ watch(isLoggedIn, (loggedIn) => {
 <style scoped>
 .main {
   min-height: 100vh;
+  background: #0a0a0a;
 }
 </style>
 
@@ -57,6 +58,14 @@ body {
   margin: 0;
   background: #0a0a0a;
   color: #ffffff;
+}
+
+.el-loading-mask {
+  background-color: rgba(10, 10, 10, 0.7);
+}
+
+.el-loading-spinner .circular {
+  stroke: #ffffff;
 }
 
 .el-message {

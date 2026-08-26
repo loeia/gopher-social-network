@@ -1,9 +1,5 @@
 <template>
   <div class="search-page">
-    <div class="back-nav">
-      <el-button text @click="goHome">← Back</el-button>
-    </div>
-
     <div class="search-header">
       <h1 class="page-title">Search Results</h1>
       <p class="summary">{{ summary }}</p>
@@ -15,15 +11,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import SearchResultsList from '@/components/SearchResultsList.vue'
-import { useFeedStore, type SearchParams } from '@/stores/feed'
+import type { SearchParams } from '@/stores/feed'
 
 defineOptions({ name: 'SearchResults' })
 
-const store = useFeedStore()
 const route = useRoute()
-const router = useRouter()
 
 function q(value: unknown): string {
   if (typeof value === 'string') return value
@@ -51,38 +45,12 @@ const summary = computed(() => {
   if (p.since || p.until) parts.push(`${p.since ?? '…'} ~ ${p.until ?? '…'}`)
   return parts.length ? `Results for ${parts.join(' · ')}` : ''
 })
-
-function goHome() {
-  store.clearPostHistory()
-  router.push('/')
-}
 </script>
 
 <style scoped>
 .search-page {
   min-height: 100vh;
   padding: 32px 0 80px;
-}
-
-.back-nav {
-  margin: 0 auto 16px;
-  max-width: 1100px;
-  padding: 0 20px;
-}
-
-.back-nav :deep(.el-button) {
-  color: #6a737c;
-  background: transparent;
-}
-
-.back-nav :deep(.el-button:hover),
-.back-nav :deep(.el-button:focus),
-.back-nav :deep(.el-button:focus-visible) {
-  color: #6a737c;
-  background: transparent;
-  text-decoration: underline;
-  text-decoration-color: #6a737c;
-  text-underline-offset: 4px;
 }
 
 .search-header {

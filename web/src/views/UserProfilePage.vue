@@ -6,7 +6,30 @@
         <p class="not-found-hint">This user may have been removed or the link is incorrect.</p>
       </template>
       <template v-else>
-        <UserAvatar :user-id="userId" :username="user.username" :size="96" />
+        <div class="avatar-wrapper" :class="{ own: isOwnProfile }">
+          <UserAvatar :user-id="userId" :username="user.username" :size="96" />
+          <label v-if="isOwnProfile" class="avatar-overlay">
+            <input
+              ref="avatarInputRef"
+              type="file"
+              accept="image/*"
+              class="hidden-input"
+              @change="onAvatarFileChange"
+            />
+            <svg
+              class="camera-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+              <circle cx="12" cy="13" r="4" />
+            </svg>
+          </label>
+        </div>
 
         <h1 class="username">{{ user.username }}</h1>
 
@@ -125,6 +148,13 @@
         </div>
       </template>
     </el-dialog>
+
+    <AvatarCropDialog
+      :visible="cropVisible"
+      :src="cropSrc"
+      @confirm="uploadAvatar"
+      @close="cropVisible = false"
+    />
   </div>
 </template>
 
@@ -134,7 +164,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { apiFetch, getApiError, getCurrentUserId, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
-import { useFeedStore } from '@/stores/feed'
+import AvatarCropDialog from '@/components/AvatarCropDialog.vue'
+import { useUserStore } from '@/stores/user'
 
 defineOptions({ name: 'UserProfilePage' })
 
@@ -150,7 +181,7 @@ interface UserProfile {
 
 const route = useRoute()
 const router = useRouter()
-const feedStore = useFeedStore()
+const userStore = useUserStore()
 
 const loading = ref(false)
 const notFound = ref(false)
@@ -168,6 +199,9 @@ const editVisible = ref(false)
 const saving = ref(false)
 const links = ref<string[]>(Array(5).fill(''))
 const bio = ref('')
+const avatarInputRef = ref<HTMLInputElement | null>(null)
+const cropVisible = ref(false)
+const cropSrc = ref('')
 
 const userId = computed(() => Number(route.params.userId))
 const isOwnProfile = computed(() => getCurrentUserId() === userId.value)
@@ -243,13 +277,40 @@ async function saveProfile() {
 }
 
 function goToFollowers() {
-  feedStore.setView('followers')
-  router.push({ name: 'Home' })
+  router.push({ name: 'Followers' })
 }
 
 function goToFollowing() {
-  feedStore.setView('following')
-  router.push({ name: 'Home' })
+  router.push({ name: 'Following' })
+}
+
+function onAvatarFileChange(e: Event) {
+  const file = (e.target as HTMLInputElement).files?.[0]
+  if (!file) return
+  cropSrc.value = URL.createObjectURL(file)
+  cropVisible.value = true
+  if (avatarInputRef.value) avatarInputRef.value.value = ''
+}
+
+async function uploadAvatar(blob: Blob) {
+  try {
+    const formData = new FormData()
+    formData.append('avatar', blob, 'avatar.jpg')
+    const response = await apiFetch('/users/me/avatar', {
+      method: 'PUT',
+      body: formData,
+    })
+    if (!response.ok) {
+      const message = (await getApiError(response)) ?? `Failed to upload avatar (HTTP ${response.status})`
+      notify('error', message)
+      return
+    }
+    userStore.bumpAvatarVersion()
+    cropVisible.value = false
+    notify('success', 'Avatar updated')
+  } catch (error) {
+    handleApiError(error, 'Failed to upload avatar')
+  }
 }
 
 async function load() {
@@ -315,6 +376,42 @@ watch(() => route.params.userId, load)
   background: #141414;
   border: 1px solid #262626;
   border-radius: 12px;
+}
+
+.avatar-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.avatar-wrapper.own {
+  cursor: pointer;
+}
+
+.avatar-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.avatar-wrapper.own:hover .avatar-overlay {
+  opacity: 1;
+}
+
+.hidden-input {
+  display: none;
+}
+
+.camera-icon {
+  width: 28px;
+  height: 28px;
+  color: #ffffff;
 }
 
 .username {

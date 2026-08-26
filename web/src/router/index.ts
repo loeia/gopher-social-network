@@ -8,6 +8,8 @@ import CreatePostPage from '@/views/CreatePostPage.vue'
 import MyPostsPage from '@/views/MyPostsPage.vue'
 import PostLikesPage from '@/views/PostLikesPage.vue'
 import CommentLikesPage from '@/views/CommentLikesPage.vue'
+import FollowingPage from '@/views/FollowingPage.vue'
+import FollowersPage from '@/views/FollowersPage.vue'
 import UserProfilePage from '@/views/UserProfilePage.vue'
 import LoginPage from '@/views/LoginPage.vue'
 import SignUpPage from '@/views/SignUpPage.vue'
@@ -48,6 +50,16 @@ const router = createRouter({
       path: '/comment-likes',
       name: 'CommentLikes',
       component: CommentLikesPage,
+    },
+    {
+      path: '/following',
+      name: 'Following',
+      component: FollowingPage,
+    },
+    {
+      path: '/followers',
+      name: 'Followers',
+      component: FollowersPage,
     },
     {
       path: '/users/:userId',

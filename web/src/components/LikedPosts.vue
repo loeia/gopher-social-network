@@ -48,7 +48,7 @@ import { handleApiError } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
 
 const store = useFeedStore()
-const { likedPosts: posts } = storeToRefs(store)
+const { likedPosts: posts, likedPostsLoaded } = storeToRefs(store)
 const loading = ref(false)
 
 const router = useRouter()
@@ -65,6 +65,7 @@ function formatDate(value?: string) {
 }
 
 async function loadLikedPosts() {
+  if (likedPostsLoaded.value) return
   loading.value = true
   try {
     await store.fetchLikedPosts()

@@ -1,9 +1,5 @@
 <template>
   <div class="detail-page">
-    <div class="back-nav">
-      <el-button text @click="backHome">← Back</el-button>
-    </div>
-
     <div class="detail-container" v-loading="loading">
       <template v-if="post">
         <h1 class="detail-title">{{ post.title }}</h1>
@@ -63,7 +59,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { apiFetch, getCurrentUserId, getToken, handleApiError } from '@/api'
 import { useFeedStore } from '@/stores/feed'
@@ -86,7 +82,6 @@ interface PostDetail {
 }
 
 const route = useRoute()
-const router = useRouter()
 
 const store = useFeedStore()
 const { following } = storeToRefs(store)
@@ -149,11 +144,6 @@ const renderedContent = computed(() => {
   if (!post.value) return ''
   return renderMarkdown(post.value.content)
 })
-
-function backHome() {
-  store.clearPostHistory()
-  router.back()
-}
 
 function formatDate(value?: string) {
   if (!value) return ''
@@ -239,37 +229,6 @@ watch(() => route.params.postId, loadPost)
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Liberation Sans', 'Helvetica Neue', Arial,
     sans-serif;
-}
-
-.back-nav {
-  width: 75%;
-  margin: 0 auto 16px;
-  padding: 0 24px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.back-nav :deep(.el-button) {
-  color: #6a737c;
-  background: transparent;
-}
-
-.back-nav :deep(.el-button:hover),
-.back-nav :deep(.el-button:focus),
-.back-nav :deep(.el-button:focus-visible) {
-  color: #6a737c;
-  background: transparent;
-  text-decoration: underline;
-  text-decoration-color: #6a737c;
-  text-underline-offset: 4px;
-}
-
-.back-nav :deep(.el-button.is-disabled) {
-  color: #3d4043;
-  background: transparent;
-  text-decoration: none;
-  cursor: not-allowed;
 }
 
 .detail-container {

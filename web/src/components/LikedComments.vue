@@ -45,7 +45,7 @@ import { handleApiError } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
 
 const store = useFeedStore()
-const { likedComments: comments } = storeToRefs(store)
+const { likedComments: comments, likedCommentsLoaded } = storeToRefs(store)
 const loading = ref(false)
 
 const router = useRouter()
@@ -67,6 +67,7 @@ function formatDate(value?: string) {
 }
 
 async function loadLikedComments() {
+  if (likedCommentsLoaded.value) return
   loading.value = true
   try {
     await store.fetchLikedComments()
