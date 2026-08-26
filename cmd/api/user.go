@@ -219,9 +219,13 @@ func (app *application) resetPasswordHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func (app *application) getUserFollowersHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromCtx(r)
+	userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
 
-	followers, err := app.store.Users.GetUserFollowers(r.Context(), user.ID)
+	followers, err := app.store.Users.GetUserFollowers(r.Context(), userId)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -234,9 +238,13 @@ func (app *application) getUserFollowersHandler(w http.ResponseWriter, r *http.R
 }
 
 func (app *application) getUserFollowingHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromCtx(r)
+	userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
 
-	following, err := app.store.Users.GetUserFollowing(r.Context(), user.ID)
+	following, err := app.store.Users.GetUserFollowing(r.Context(), userId)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
