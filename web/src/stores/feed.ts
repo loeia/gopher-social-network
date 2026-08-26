@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { apiFetch } from '@/api'
+import { apiFetch, getCurrentUserId } from '@/api'
 
 export const MAX_POST_HISTORY = 50
 
@@ -289,7 +289,9 @@ export const useFeedStore = defineStore('feed', {
       return raw.map(toFeedPost)
     },
     async fetchLikedPosts() {
-      const response = await apiFetch('/users/post-likes')
+      const currentUserId = getCurrentUserId()
+      if (!currentUserId) return
+      const response = await apiFetch(`/users/${currentUserId}/post-likes`)
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const json = await response.json()
       const raw = Array.isArray(json) ? json : (json.data ?? [])

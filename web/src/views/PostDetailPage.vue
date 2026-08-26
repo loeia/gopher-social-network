@@ -196,8 +196,13 @@ async function loadLikedState(id: number) {
     liked.value = false
     return
   }
+  const currentUserId = getCurrentUserId()
+  if (!currentUserId) {
+    liked.value = false
+    return
+  }
   try {
-    const response = await apiFetch('/users/post-likes')
+    const response = await apiFetch(`/users/${currentUserId}/post-likes`)
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
     const list = json.data ?? json

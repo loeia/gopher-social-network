@@ -171,9 +171,10 @@ function goBack() {
 }
 
 async function loadMyPosts() {
+  if (!currentUserId) return
   loading.value = true
   try {
-    const response = await apiFetch('/users/posts')
+    const response = await apiFetch(`/users/${currentUserId}/posts`)
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
     const raw = Array.isArray(json) ? json : (json.data ?? [])

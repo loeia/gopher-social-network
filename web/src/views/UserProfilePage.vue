@@ -91,6 +91,129 @@
       </template>
     </div>
 
+    <div v-if="!notFound && !loading" class="profile-tabs">
+      <div class="tabs-bar">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="tab-btn"
+          :class="{ active: activeTab === tab.key }"
+          @click="activeTab = tab.key"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <div class="tabs-content">
+        <div v-if="activeTab === 'posts'" class="tab-panel">
+          <div v-loading="postsLoading" class="feed">
+            <div
+              v-for="post in userPosts"
+              :key="post.id"
+              class="topic-row"
+              @click="openPost(post.id)"
+            >
+              <div class="topic-top">
+                <h2 class="topic-title">{{ post.title }}</h2>
+                <div class="topic-stats">
+                  <span class="topic-stat" :title="`${post.comment_count} comments`">
+                    <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
+                    </svg>
+                    {{ post.comment_count }}
+                  </span>
+                  <span class="topic-stat" :title="`${post.like_count} likes`">
+                    <svg class="stat-icon like-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                      />
+                    </svg>
+                    {{ post.like_count }}
+                  </span>
+                </div>
+              </div>
+              <div class="topic-meta">
+                <span class="topic-date">{{ formatDate(post.created_at) }}</span>
+                <template v-if="post.tags && post.tags.length">
+                  <span class="meta-dot">&middot;</span>
+                  <span v-for="tag in post.tags" :key="tag" class="topic-tag">{{ tag }}</span>
+                </template>
+              </div>
+            </div>
+            <div v-if="!postsLoading && userPosts.length === 0" class="empty-hint">
+              No posts yet.
+            </div>
+          </div>
+        </div>
+
+        <div v-if="activeTab === 'replies'" class="tab-panel">
+          <div v-loading="repliesLoading" class="feed">
+            <div
+              v-for="reply in userReplies"
+              :key="reply.id"
+              class="topic-row reply-row"
+              @click="openPost(reply.post_id)"
+            >
+              <div class="reply-context">
+                <svg class="reply-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z" />
+                </svg>
+                <span class="reply-hint">replied to a post</span>
+              </div>
+              <p class="reply-content">{{ reply.content }}</p>
+              <div class="topic-meta">
+                <span class="topic-date">{{ formatDate(reply.created_at) }}</span>
+              </div>
+            </div>
+            <div v-if="!repliesLoading && userReplies.length === 0" class="empty-hint">
+              No replies yet.
+            </div>
+          </div>
+        </div>
+
+        <div v-if="activeTab === 'likes'" class="tab-panel">
+          <div v-loading="likesLoading" class="feed">
+            <div
+              v-for="post in userLikedPosts"
+              :key="post.post_id"
+              class="topic-row"
+              @click="openPost(post.post_id)"
+            >
+              <div class="topic-top">
+                <h2 class="topic-title">{{ post.title }}</h2>
+                <div class="topic-stats">
+                  <span class="topic-stat" :title="`${post.comment_count} comments`">
+                    <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
+                    </svg>
+                    {{ post.comment_count ?? 0 }}
+                  </span>
+                  <span class="topic-stat" :title="`${post.like_count} likes`">
+                    <svg class="stat-icon like-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path
+                        d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                      />
+                    </svg>
+                    {{ post.like_count ?? 0 }}
+                  </span>
+                </div>
+              </div>
+              <div class="topic-bottom">
+                <span class="topic-author">{{ post.author }}</span>
+                <template v-if="post.tags && post.tags.length">
+                  <span class="meta-dot">&middot;</span>
+                  <span v-for="tag in post.tags" :key="tag" class="topic-tag">{{ tag }}</span>
+                </template>
+              </div>
+            </div>
+            <div v-if="!likesLoading && userLikedPosts.length === 0" class="empty-hint">
+              No liked posts yet.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <el-dialog
       :model-value="editVisible"
       title="Edit profile"
@@ -179,6 +302,32 @@ interface UserProfile {
   following_count: number
 }
 
+interface UserPost {
+  id: number
+  title: string
+  tags: string[]
+  comment_count: number
+  like_count: number
+  created_at: string
+}
+
+interface UserReply {
+  id: number
+  post_id: number
+  content: string
+  created_at: string
+}
+
+interface LikedPost {
+  post_id: number
+  author: string
+  title: string
+  tags: string[]
+  comment_count?: number
+  like_count?: number
+  created_at: string
+}
+
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
@@ -202,6 +351,20 @@ const bio = ref('')
 const avatarInputRef = ref<HTMLInputElement | null>(null)
 const cropVisible = ref(false)
 const cropSrc = ref('')
+
+const activeTab = ref<'posts' | 'replies' | 'likes'>('posts')
+const tabs = [
+  { key: 'posts' as const, label: 'Posts' },
+  { key: 'replies' as const, label: 'Replies' },
+  { key: 'likes' as const, label: 'Likes' },
+]
+
+const userPosts = ref<UserPost[]>([])
+const postsLoading = ref(false)
+const userReplies = ref<UserReply[]>([])
+const repliesLoading = ref(false)
+const userLikedPosts = ref<LikedPost[]>([])
+const likesLoading = ref(false)
 
 const userId = computed(() => Number(route.params.userId))
 const isOwnProfile = computed(() => getCurrentUserId() === userId.value)
@@ -347,6 +510,7 @@ async function load() {
       followers_count: Number(data.followers_count ?? 0),
       following_count: Number(data.following_count ?? 0),
     }
+    loadTabData()
   } catch (error) {
     handleApiError(error, 'Failed to load profile')
   } finally {
@@ -354,8 +518,95 @@ async function load() {
   }
 }
 
+async function loadTabData() {
+  switch (activeTab.value) {
+    case 'posts':
+      await loadUserPosts()
+      break
+    case 'replies':
+      await loadUserReplies()
+      break
+    case 'likes':
+      await loadUserLikedPosts()
+      break
+  }
+}
+
+async function loadUserPosts() {
+  if (postsLoading.value) return
+  postsLoading.value = true
+  try {
+    const response = await apiFetch(`/users/${userId.value}/posts`)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const raw = Array.isArray(json) ? json : (json.data ?? [])
+    userPosts.value = raw.map((p: Record<string, unknown>) => ({
+      id: Number(p.post_id ?? p.id ?? 0),
+      title: String(p.title ?? ''),
+      tags: Array.isArray(p.tags) ? p.tags : [],
+      comment_count: Number(p.comment_count ?? 0),
+      like_count: Number(p.like_count ?? 0),
+      created_at: String(p.created_at ?? ''),
+    }))
+  } catch (error) {
+    handleApiError(error, 'Failed to load posts')
+  } finally {
+    postsLoading.value = false
+  }
+}
+
+async function loadUserReplies() {
+  if (repliesLoading.value) return
+  repliesLoading.value = true
+  try {
+    const response = await apiFetch(`/users/${userId.value}/comments`)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const raw = Array.isArray(json) ? json : (json.data ?? [])
+    userReplies.value = raw.map((c: Record<string, unknown>) => ({
+      id: Number(c.comment_id ?? c.id ?? 0),
+      post_id: Number(c.post_id ?? 0),
+      content: String(c.content ?? ''),
+      created_at: String(c.created_at ?? ''),
+    }))
+  } catch (error) {
+    handleApiError(error, 'Failed to load replies')
+  } finally {
+    repliesLoading.value = false
+  }
+}
+
+async function loadUserLikedPosts() {
+  if (likesLoading.value) return
+  likesLoading.value = true
+  try {
+    const response = await apiFetch(`/users/${userId.value}/post-likes`)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const raw = Array.isArray(json) ? json : (json.data ?? [])
+    userLikedPosts.value = raw.map((p: Record<string, unknown>) => ({
+      post_id: Number(p.post_id ?? p.id ?? 0),
+      author: String(p.author ?? ''),
+      title: String(p.title ?? ''),
+      tags: Array.isArray(p.tags) ? p.tags : [],
+      comment_count: Number(p.comment_count ?? 0),
+      like_count: Number(p.like_count ?? 0),
+      created_at: String(p.created_at ?? ''),
+    }))
+  } catch (error) {
+    handleApiError(error, 'Failed to load liked posts')
+  } finally {
+    likesLoading.value = false
+  }
+}
+
+function openPost(id: number) {
+  router.push(`/posts/${id}`)
+}
+
 onMounted(load)
 watch(() => route.params.userId, load)
+watch(activeTab, loadTabData)
 </script>
 
 <style scoped>
@@ -600,5 +851,200 @@ watch(() => route.params.userId, load)
   background: #e4e6e8;
   color: #141414;
   border-color: #e4e6e8;
+}
+
+.profile-tabs {
+  width: 75%;
+  margin: 24px auto 0;
+}
+
+.tabs-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid #262626;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #8c8c8c;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab-btn:hover {
+  color: #e4e6e8;
+}
+
+.tab-btn.active {
+  color: #ffffff;
+  border-bottom-color: #ffffff;
+}
+
+.tabs-content {
+  margin-top: 8px;
+}
+
+.tab-panel {
+  min-height: 120px;
+}
+
+.feed {
+  display: flex;
+  flex-direction: column;
+}
+
+.topic-row {
+  padding: 14px 0;
+  border-bottom: 1px solid #1f1f1f;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.topic-row:first-child {
+  border-top: 1px solid #1f1f1f;
+}
+
+.topic-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.topic-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topic-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #e4e6e8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.topic-stats {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.topic-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #8c8c8c;
+  white-space: nowrap;
+}
+
+.stat-icon {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.like-icon {
+  fill: none;
+  stroke: #8c8c8c;
+  stroke-width: 2;
+}
+
+.topic-bottom {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  padding-left: 2px;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.topic-author {
+  color: #bfbfbf;
+  font-weight: 500;
+}
+
+.topic-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.topic-date {
+  color: #8c8c8c;
+}
+
+.meta-dot {
+  color: #555;
+}
+
+.topic-tag {
+  padding: 1px 8px;
+  background: #1f1f1f;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #bfbfbf;
+  white-space: nowrap;
+}
+
+.reply-row {
+  display: block;
+}
+
+.reply-context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #8c8c8c;
+}
+
+.reply-icon {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+.reply-hint {
+  color: #8c8c8c;
+}
+
+.reply-content {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #e4e6e8;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.empty-hint {
+  text-align: center;
+  padding: 32px 16px;
+  color: #8c8c8c;
+  font-size: 14px;
 }
 </style>
