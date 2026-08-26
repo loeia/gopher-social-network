@@ -105,7 +105,7 @@
       </div>
 
       <div class="tabs-content">
-        <div v-if="activeTab === 'posts'" class="tab-panel">
+        <div v-show="activeTab === 'posts'" class="tab-panel">
           <div v-loading="postsLoading" class="feed">
             <div
               v-for="post in userPosts"
@@ -146,7 +146,7 @@
           </div>
         </div>
 
-        <div v-if="activeTab === 'replies'" class="tab-panel">
+        <div v-show="activeTab === 'replies'" class="tab-panel">
           <div v-loading="repliesLoading" class="feed">
             <div
               v-for="reply in userReplies"
@@ -171,7 +171,7 @@
           </div>
         </div>
 
-        <div v-if="activeTab === 'likes'" class="tab-panel">
+        <div v-show="activeTab === 'likes'" class="tab-panel">
           <div v-loading="likesLoading" class="feed">
             <div
               v-for="post in userLikedPosts"
@@ -282,7 +282,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { apiFetch, getApiError, getCurrentUserId, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
@@ -331,6 +331,11 @@ interface LikedPost {
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+
+// ID of the user whose data is currently loaded. Used to avoid re-fetching when
+// returning to the same profile (keep-alive restores the cached DOM, so the
+// router's scrollBehavior can restore the exact scroll position, same as Home).
+let loadedUserId = 0
 
 const loading = ref(false)
 const notFound = ref(false)
@@ -479,6 +484,7 @@ async function uploadAvatar(blob: Blob) {
 async function load() {
   const id = userId.value
   if (!id) return
+  loadedUserId = id
   loading.value = true
   notFound.value = false
   user.value = {
@@ -510,25 +516,14 @@ async function load() {
       followers_count: Number(data.followers_count ?? 0),
       following_count: Number(data.following_count ?? 0),
     }
-    loadTabData()
+    // Preload all tab data up front so switching tabs never has to
+    // mount an empty panel (which collapses the page height and makes
+    // the scroll position jump/jitter when scrolled down).
+    await Promise.all([loadUserPosts(), loadUserReplies(), loadUserLikedPosts()])
   } catch (error) {
     handleApiError(error, 'Failed to load profile')
   } finally {
     loading.value = false
-  }
-}
-
-async function loadTabData() {
-  switch (activeTab.value) {
-    case 'posts':
-      await loadUserPosts()
-      break
-    case 'replies':
-      await loadUserReplies()
-      break
-    case 'likes':
-      await loadUserLikedPosts()
-      break
   }
 }
 
@@ -604,9 +599,17 @@ function openPost(id: number) {
   router.push(`/posts/${id}`)
 }
 
-onMounted(load)
-watch(() => route.params.userId, load)
-watch(activeTab, loadTabData)
+// Load on first mount, and only reload when the profile user actually changes.
+// Returning to the same profile (e.g. back from a post) must NOT reload, otherwise
+// the loading collapse breaks scroll restoration.
+watch(
+  () => route.params.userId,
+  (id) => {
+    const newId = Number(id)
+    if (newId && newId !== loadedUserId) load()
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>
