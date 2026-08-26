@@ -129,8 +129,10 @@ export const useFeedStore = defineStore('feed', {
     likedPostsLoaded: false,
     following: [] as FollowingUser[],
     followingLoaded: false,
+    followingUserId: 0,
     followers: [] as FollowerUser[],
     followersLoaded: false,
+    followersUserId: 0,
     likedComments: [] as LikedComment[],
     likedCommentsLoaded: false,
     view: 'all' as ViewType,
@@ -327,19 +329,23 @@ export const useFeedStore = defineStore('feed', {
       }))
       this.likedCommentsLoaded = true
     },
-    async fetchFollowing() {
-      const response = await apiFetch('/users/following')
+    async fetchFollowing(userId: number) {
+      if (!userId || (this.followingLoaded && this.followingUserId === userId)) return
+      const response = await apiFetch(`/users/${userId}/following`)
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const json = await response.json()
       this.following = Array.isArray(json) ? json : (json.data ?? [])
       this.followingLoaded = true
+      this.followingUserId = userId
     },
-    async fetchFollowers() {
-      const response = await apiFetch('/users/followers')
+    async fetchFollowers(userId: number) {
+      if (!userId || (this.followersLoaded && this.followersUserId === userId)) return
+      const response = await apiFetch(`/users/${userId}/followers`)
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const json = await response.json()
       this.followers = Array.isArray(json) ? json : (json.data ?? [])
       this.followersLoaded = true
+      this.followersUserId = userId
     },
     async unfollowUser(userId: number) {
       const response = await apiFetch(`/users/${userId}/unfollow`, {

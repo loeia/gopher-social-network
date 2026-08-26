@@ -8,6 +8,7 @@
           <span class="topic-time">{{ formatDate(user.created_at) }}</span>
         </div>
         <el-button
+          v-if="isOwn"
           class="unfollow-btn"
           :disabled="unfollowingId === user.following_id"
           @click="unfollow(user.following_id)"
@@ -23,17 +24,29 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useFeedStore } from '@/stores/feed'
-import { handleApiError } from '@/api'
+import { getCurrentUserId, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
 
+const props = withDefaults(defineProps<{ userId?: number }>(), { userId: 0 })
+
 const store = useFeedStore()
-const { following: users, followingLoaded } = storeToRefs(store)
+const { following: users } = storeToRefs(store)
 const loading = ref(false)
 const unfollowingId = ref<number | null>(null)
+
+// Target user: the profile being viewed, falling back to the current user
+// (e.g. when shown from the home page views).
+const targetUserId = computed(() => {
+  if (props.userId && Number.isFinite(props.userId)) return props.userId
+  return getCurrentUserId() ?? 0
+})
+
+// Only the current user's own following list supports unfollowing.
+const isOwn = computed(() => targetUserId.value === getCurrentUserId())
 
 function formatDate(value?: string) {
   if (!value) return ''
@@ -43,10 +56,10 @@ function formatDate(value?: string) {
 }
 
 async function loadFollowing() {
-  if (followingLoaded.value) return
+  if (!targetUserId.value) return
   loading.value = true
   try {
-    await store.fetchFollowing()
+    await store.fetchFollowing(targetUserId.value)
   } catch (error) {
     handleApiError(error, 'Failed to load followings')
   } finally {
@@ -67,6 +80,7 @@ async function unfollow(userId: number) {
 }
 
 onMounted(loadFollowing)
+watch(targetUserId, loadFollowing)
 </script>
 
 <style scoped>

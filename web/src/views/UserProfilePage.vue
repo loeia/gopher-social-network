@@ -35,10 +35,10 @@
           <h1 class="username">{{ user.username }}</h1>
           <span class="handle">Joined {{ formatDate(user.created_at) }}</span>
 
-          <p v-if="user.bio" class="bio">{{ user.bio }}</p>
+          <p v-if="profileBio" class="bio">{{ profileBio }}</p>
 
           <div class="meta-row">
-            <span v-for="(link, index) in user.links" :key="index" class="meta-item">
+            <span v-for="(link, index) in profileLinks" :key="index" class="meta-item">
               <svg
                 class="info-icon"
                 viewBox="0 0 24 24"
@@ -58,45 +58,40 @@
           </div>
 
           <div class="stats-row">
-            <span class="stat">
+            <span class="stat clickable" @click="goToTab('posts')">
               <strong>{{ userPosts.length }}</strong>
               <span class="stat-label">Posts</span>
             </span>
-            <span class="stat">
+            <span class="stat clickable" @click="goToTab('replies')">
               <strong>{{ userReplies.length }}</strong>
               <span class="stat-label">Replies</span>
             </span>
-            <span class="stat">
+            <span class="stat clickable" @click="goToTab('likes')">
               <strong>{{ userLikedPosts.length }}</strong>
               <span class="stat-label">Likes</span>
             </span>
             <span
-              class="stat"
-              :class="{ clickable: isOwnProfile }"
-              @click="isOwnProfile && goToFollowers()"
+              class="stat clickable"
+              @click="goToFollowers()"
             >
               <strong>{{ user.followers_count }}</strong>
               <span class="stat-label">Followers</span>
             </span>
             <span
-              class="stat"
-              :class="{ clickable: isOwnProfile }"
-              @click="isOwnProfile && goToFollowing()"
+              class="stat clickable"
+              @click="goToFollowing()"
             >
               <strong>{{ user.following_count }}</strong>
               <span class="stat-label">Following</span>
             </span>
           </div>
 
-          <el-button v-if="isOwnProfile" class="edit-btn" @click="openEdit">
-            Edit profile
-          </el-button>
         </div>
       </template>
     </div>
 
     <div v-if="!notFound && !loading" class="profile-tabs">
-      <div class="tabs-bar">
+      <div class="tabs-bar" ref="tabsBarRef">
         <button
           v-for="tab in tabs"
           :key="tab.key"
@@ -218,64 +213,6 @@
       </div>
     </div>
 
-    <el-dialog
-      :model-value="editVisible"
-      title="Edit profile"
-      width="520px"
-      append-to-body
-      @update:model-value="editVisible = $event"
-    >
-      <div class="field-group">
-        <label class="field-label" for="profile-links">Links</label>
-        <div class="links-list">
-          <div
-            v-for="index in 5"
-            :key="index"
-            class="link-field"
-            :class="{ 'has-error': linkInvalid(index - 1) }"
-          >
-            <el-input
-              :model-value="links[index - 1]"
-              :placeholder="`https://link-${index}.com`"
-              class="field"
-              @update:model-value="onLinkInput(index - 1, $event)"
-            />
-            <span v-if="linkInvalid(index - 1)" class="link-hint">
-              Must start with http(s)://
-            </span>
-          </div>
-        </div>
-      </div>
-      <div class="field-group">
-        <div class="field-label-row">
-          <label class="field-label" for="profile-bio">Bio</label>
-          <span class="char-count" :class="{ over: bioOverLimit }">{{ bio.length }}/500</span>
-        </div>
-        <el-input
-          id="profile-bio"
-          v-model="bio"
-          type="textarea"
-          :rows="4"
-          placeholder="Tell us a bit about yourself"
-          class="field"
-          :class="{ 'is-over': bioOverLimit }"
-        />
-      </div>
-      <template #footer>
-        <div class="dialog-footer">
-          <el-button @click="editVisible = false">Cancel</el-button>
-          <el-button
-            class="save-btn"
-            :loading="saving"
-            :disabled="bioOverLimit || hasInvalidLink"
-            @click="saveProfile"
-          >
-            Save
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
-
     <AvatarCropDialog
       :visible="cropVisible"
       :src="cropSrc"
@@ -286,7 +223,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { apiFetch, getApiError, getCurrentUserId, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
@@ -353,10 +290,6 @@ const user = ref<UserProfile>({
   following_count: 0,
 })
 
-const editVisible = ref(false)
-const saving = ref(false)
-const links = ref<string[]>(Array(5).fill(''))
-const bio = ref('')
 const avatarInputRef = ref<HTMLInputElement | null>(null)
 const cropVisible = ref(false)
 const cropSrc = ref('')
@@ -377,18 +310,20 @@ const likesLoading = ref(false)
 
 const userId = computed(() => Number(route.params.userId))
 const isOwnProfile = computed(() => getCurrentUserId() === userId.value)
-const bioOverLimit = computed(() => bio.value.length > 500)
 
-function isValidLink(value: string) {
-  const trimmed = value.trim()
-  return trimmed === '' || /^https?:\/\//i.test(trimmed)
-}
+const tabsBarRef = ref<HTMLElement | null>(null)
 
-function linkInvalid(index: number) {
-  return !isValidLink(links.value[index] ?? '')
-}
+// When viewing the own profile, prefer the user store so that bio / links
+// changes made in Settings show up immediately even with keep-alive.
+const profileBio = computed(() => {
+  if (isOwnProfile.value && userStore.loaded) return userStore.bio
+  return user.value.bio
+})
 
-const hasInvalidLink = computed(() => links.value.some((link) => !isValidLink(link)))
+const profileLinks = computed(() => {
+  if (isOwnProfile.value && userStore.loaded) return userStore.links
+  return user.value.links
+})
 
 function formatDate(value?: string) {
   if (!value) return ''
@@ -400,60 +335,25 @@ function formatDate(value?: string) {
   return `${y}/${m}/${d}`
 }
 
-function onLinkInput(index: number, value: string) {
-  links.value[index] = value
-}
-
-function openEdit() {
-  bio.value = user.value.bio
-  links.value = Array(5).fill('')
-  ;(user.value.links ?? []).slice(0, 5).forEach((link, index) => {
-    links.value[index] = link
+function goToTab(tab: 'posts' | 'replies' | 'likes') {
+  activeTab.value = tab
+  nextTick(() => {
+    const bar = tabsBarRef.value
+    if (!bar) return
+    // Scroll so the tab bar sits right below the sticky navbar.
+    const navbar = document.querySelector('.navbar')
+    const navHeight = navbar ? navbar.getBoundingClientRect().height : 0
+    const top = bar.getBoundingClientRect().top + window.scrollY - navHeight
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
   })
-  editVisible.value = true
-}
-
-async function saveProfile() {
-  if (bioOverLimit.value) {
-    notify('error', 'Bio must be 500 characters or fewer')
-    return
-  }
-  if (hasInvalidLink.value) {
-    notify('error', 'Links must start with http(s)://')
-    return
-  }
-  const filledLinks = links.value.map((link) => link.trim()).filter(Boolean)
-  saving.value = true
-  try {
-    const response = await apiFetch('/users/me/profile', {
-      method: 'PUT',
-      body: JSON.stringify({
-        bio: bio.value.trim(),
-        links: filledLinks,
-      }),
-    })
-    if (!response.ok) {
-      const message =
-        (await getApiError(response)) ?? `Failed to save profile (HTTP ${response.status})`
-      notify('error', message)
-      return
-    }
-    editVisible.value = false
-    await load()
-    notify('success', 'Profile updated')
-  } catch (error) {
-    handleApiError(error, 'Failed to save profile')
-  } finally {
-    saving.value = false
-  }
 }
 
 function goToFollowers() {
-  router.push({ name: 'Followers' })
+  router.push({ name: 'Followers', params: { userId: String(userId.value) } })
 }
 
 function goToFollowing() {
-  router.push({ name: 'Following' })
+  router.push({ name: 'Following', params: { userId: String(userId.value) } })
 }
 
 function onAvatarFileChange(e: Event) {
@@ -784,120 +684,6 @@ watch(
 
 .stat.clickable:hover strong {
   color: #58a6ff;
-}
-
-.edit-btn {
-  margin-top: 16px;
-  padding: 6px 22px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #141414;
-  background: #ffffff;
-  border: 1px solid #ffffff;
-  border-radius: 8px;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease;
-}
-
-.edit-btn:hover:not(:disabled) {
-  background: #e4e6e8;
-  border-color: #e4e6e8;
-  color: #141414;
-}
-
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-bottom: 16px;
-}
-
-.links-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.link-field {
-  display: flex;
-  flex-direction: column;
-}
-
-.link-field.has-error :deep(.el-input__wrapper) {
-  box-shadow: 0 0 0 1px #cf222e inset;
-}
-
-.link-field.has-error :deep(.el-input__wrapper.is-focus) {
-  box-shadow:
-    0 0 0 1px #cf222e inset,
-    0 0 0 3px rgba(207, 34, 46, 0.2);
-}
-
-.link-hint {
-  align-self: flex-end;
-  margin-top: 2px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #cf222e;
-}
-
-.field-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1f2328;
-}
-
-.field-label-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.char-count {
-  font-size: 12px;
-  color: #6e7781;
-}
-
-.char-count.over {
-  color: #cf222e;
-  font-weight: 600;
-}
-
-.field.is-over :deep(.el-textarea__inner) {
-  border-color: #cf222e;
-  box-shadow: 0 0 0 1px #cf222e inset;
-}
-
-.field.is-over :deep(.el-textarea__inner:focus) {
-  border-color: #cf222e;
-  box-shadow:
-    0 0 0 1px #cf222e inset,
-    0 0 0 3px rgba(207, 34, 46, 0.2);
-}
-
-.dialog-footer {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.save-btn {
-  margin-left: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: #141414;
-  background: #ffffff;
-  border: 1px solid #ffffff;
-  border-radius: 6px;
-}
-
-.save-btn:hover:not(:disabled) {
-  background: #e4e6e8;
-  color: #141414;
-  border-color: #e4e6e8;
 }
 
 .profile-tabs {

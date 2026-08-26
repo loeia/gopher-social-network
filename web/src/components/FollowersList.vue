@@ -16,15 +16,24 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useFeedStore } from '@/stores/feed'
-import { handleApiError } from '@/api'
+import { getCurrentUserId, handleApiError } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
 
+const props = withDefaults(defineProps<{ userId?: number }>(), { userId: 0 })
+
 const store = useFeedStore()
-const { followers: users, followersLoaded } = storeToRefs(store)
+const { followers: users } = storeToRefs(store)
 const loading = ref(false)
+
+// Target user: the profile being viewed, falling back to the current user
+// (e.g. when shown from the home page views).
+const targetUserId = computed(() => {
+  if (props.userId && Number.isFinite(props.userId)) return props.userId
+  return getCurrentUserId() ?? 0
+})
 
 function formatDate(value?: string) {
   if (!value) return ''
@@ -34,10 +43,10 @@ function formatDate(value?: string) {
 }
 
 async function loadFollowers() {
-  if (followersLoaded.value) return
+  if (!targetUserId.value) return
   loading.value = true
   try {
-    await store.fetchFollowers()
+    await store.fetchFollowers(targetUserId.value)
   } catch (error) {
     handleApiError(error, 'Failed to load followers')
   } finally {
@@ -46,6 +55,7 @@ async function loadFollowers() {
 }
 
 onMounted(loadFollowers)
+watch(targetUserId, loadFollowers)
 </script>
 
 <style scoped>

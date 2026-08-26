@@ -142,9 +142,10 @@ async function toggleFollowAuthor() {
 }
 
 async function loadFollowState() {
-  if (!getToken()) return
+  const currentUserId = getCurrentUserId()
+  if (!currentUserId) return
   try {
-    await store.fetchFollowing()
+    await store.fetchFollowing(currentUserId)
   } catch (error) {
     console.error('Load following error:', error)
   }

@@ -52,12 +52,12 @@ const router = createRouter({
       component: CommentLikesPage,
     },
     {
-      path: '/following',
+      path: '/users/:userId/following',
       name: 'Following',
       component: FollowingPage,
     },
     {
-      path: '/followers',
+      path: '/users/:userId/followers',
       name: 'Followers',
       component: FollowersPage,
     },
