@@ -1,22 +1,6 @@
 <template>
   <header class="navbar">
     <div class="navbar-left">
-      <el-button v-if="isLoggedIn" class="menu-btn" @click="toggleSidebar">
-        <svg
-          class="menu-icon"
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-        >
-          <line x1="3" y1="6" x2="21" y2="6" />
-          <line x1="3" y1="12" x2="21" y2="12" />
-          <line x1="3" y1="18" x2="21" y2="18" />
-        </svg>
-      </el-button>
       <router-link to="/" class="brand">Gopher</router-link>
     </div>
 
@@ -129,7 +113,113 @@
 
     <div class="navbar-right">
       <template v-if="isLoggedIn">
-        <el-button @click="handleLogout">Logout</el-button>
+        <el-dropdown trigger="click" popper-class="user-dropdown" @command="handleCommand">
+          <div class="user-avatar-btn">
+            <UserAvatar :user-id="userStore.id" :username="userStore.username" :size="32" />
+          </div>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="profile">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Profile
+              </el-dropdown-item>
+              <el-dropdown-item command="myposts">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                  <polyline points="10 9 9 9 8 9" />
+                </svg>
+                My Posts
+              </el-dropdown-item>
+              <el-dropdown-item command="mypostlikes">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+                  />
+                </svg>
+                My Post Likes
+              </el-dropdown-item>
+              <el-dropdown-item command="mycommentlikes">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path
+                    d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"
+                  />
+                </svg>
+                My Comment Likes
+              </el-dropdown-item>
+              <el-dropdown-item command="settings">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                  />
+                </svg>
+                Settings
+              </el-dropdown-item>
+              <el-dropdown-item divided command="logout">
+                <svg
+                  class="dropdown-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Logout
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </template>
       <template v-else>
         <el-button @click="goToLogin">Login</el-button>
@@ -144,11 +234,14 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getToken, clearToken } from '@/api'
 import { notify } from '@/utils/message'
-import { useUIStore } from '@/stores/ui'
+import { useUserStore } from '@/stores/user'
+import { useFeedStore } from '@/stores/feed'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 const router = useRouter()
 const route = useRoute()
-const uiStore = useUIStore()
+const userStore = useUserStore()
+const feedStore = useFeedStore()
 
 const searchQuery = ref('')
 const author = ref('')
@@ -157,7 +250,7 @@ const startDate = ref<string | null>(null)
 const endDate = ref<string | null>(null)
 const filterOpen = ref(false)
 const isLoggedIn = ref(!!getToken())
-const searchInputRef = ref<InstanceType<typeof import('element-plus')['ElInput']> | null>(null)
+const searchInputRef = ref<InstanceType<(typeof import('element-plus'))['ElInput']> | null>(null)
 
 function handleSlashShortcut(e: KeyboardEvent) {
   if (e.key !== '/') return
@@ -169,20 +262,22 @@ function handleSlashShortcut(e: KeyboardEvent) {
 
 onMounted(() => {
   document.addEventListener('keydown', handleSlashShortcut)
+  if (isLoggedIn.value) {
+    userStore.fetchCurrentUser()
+  }
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('keydown', handleSlashShortcut)
 })
 
-function toggleSidebar() {
-  uiStore.toggleSidebar()
-}
-
 watch(
   () => route.fullPath,
   () => {
     isLoggedIn.value = !!getToken()
+    if (isLoggedIn.value) {
+      userStore.fetchCurrentUser()
+    }
   },
 )
 
@@ -217,6 +312,29 @@ function goToLogin() {
 function goToSignUp() {
   if (route.path === '/signup') return
   router.push({ path: '/signup', query: { redirect: route.fullPath } })
+}
+
+function handleCommand(command: string) {
+  switch (command) {
+    case 'profile':
+      router.push(`/users/${userStore.id}`)
+      break
+    case 'myposts':
+      router.push('/my-posts')
+      break
+    case 'mypostlikes':
+      router.push('/post-likes')
+      break
+    case 'mycommentlikes':
+      router.push('/comment-likes')
+      break
+    case 'settings':
+      router.push('/settings')
+      break
+    case 'logout':
+      handleLogout()
+      break
+  }
 }
 
 async function handleLogout() {
@@ -254,40 +372,6 @@ async function handleLogout() {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.menu-btn {
-  padding: 8px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  color: #ffffff;
-  transition: background 0.2s ease;
-  --el-button-bg-color: transparent;
-  --el-button-border-color: transparent;
-  --el-button-text-color: #ffffff;
-  --el-button-hover-bg-color: transparent;
-  --el-button-hover-border-color: transparent;
-  --el-button-hover-text-color: #ffffff;
-  --el-button-active-bg-color: transparent;
-  --el-button-active-border-color: transparent;
-  --el-button-active-text-color: #ffffff;
-}
-
-.menu-btn:hover,
-.menu-btn:active,
-.menu-btn.is-active {
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border-color: transparent;
-}
-
-.menu-btn:focus-visible {
-  outline: 2px solid rgba(255, 255, 255, 0.4);
-  outline-offset: 1px;
-}
-
-.menu-icon {
-  display: block;
 }
 
 .brand {
@@ -562,5 +646,65 @@ async function handleLogout() {
   background: #e4e6e8;
   color: #141414;
   border-color: #e4e6e8;
+}
+
+.user-avatar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.user-avatar-btn:hover {
+  transform: scale(1.05);
+}
+
+.dropdown-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+</style>
+
+<style>
+.user-dropdown.el-popper {
+  background: #1a1a1a;
+  border: 1px solid #333 !important;
+  border-radius: 8px;
+  padding: 4px 0;
+}
+
+.user-dropdown .el-dropdown-menu {
+  background: #1a1a1a;
+  border: none;
+}
+
+.user-dropdown .el-dropdown-menu__item {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  color: #e4e6e8;
+  font-size: 14px;
+}
+
+.user-dropdown .el-dropdown-menu__item:hover,
+.user-dropdown .el-dropdown-menu__item:focus {
+  background-color: #262626;
+  color: #e4e6e8;
+}
+
+.user-dropdown .el-dropdown-menu__item--divided {
+  border-top: 1px solid #333;
+}
+
+.user-dropdown .el-dropdown-menu__item--divided:before {
+  display: none;
+}
+
+.user-dropdown .el-popper__arrow {
+  display: none;
 }
 </style>

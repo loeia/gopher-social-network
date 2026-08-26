@@ -10,6 +10,7 @@
 
 <script setup lang="ts">
 import { computed, onActivated, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import PostsList from '@/components/PostsList.vue'
 import LikedPosts from '@/components/LikedPosts.vue'
@@ -21,6 +22,7 @@ import { useFeedStore } from '@/stores/feed'
 
 defineOptions({ name: 'HomePage' })
 
+const route = useRoute()
 const store = useFeedStore()
 const { view } = storeToRefs(store)
 const isLoggedIn = computed(() => !!getToken())

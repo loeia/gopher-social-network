@@ -1,6 +1,11 @@
 <template>
   <div class="results" v-loading="loading" element-loading-background="rgba(20, 20, 20, 0.6)">
-    <PostsList v-if="results.length" :posts="results" :loading="loading" :highlight-first="highlightFirst" />
+    <PostsList
+      v-if="results.length"
+      :posts="results"
+      :loading="loading"
+      :highlight-first="highlightFirst"
+    />
     <div v-if="loadingMore" class="loading-more">Loading...</div>
 
     <div v-if="!loading && !hasSearchParams" class="empty">
@@ -53,7 +58,9 @@ async function fetchPage(page: number, append: boolean) {
     } else {
       results.value = posts
       highlightFirst.value = true
-      setTimeout(() => { highlightFirst.value = false }, 2500)
+      setTimeout(() => {
+        highlightFirst.value = false
+      }, 2500)
     }
     hasMore.value = posts.length === SEARCH_PAGE_SIZE
   } catch (error) {
@@ -93,16 +100,20 @@ const hasSearchParams = computed(() => {
   return !!(p.search?.trim() || p.author?.trim() || (p.tags && p.tags.length) || p.since || p.until)
 })
 
-watch(paramsKey, (newKey) => {
-  if (deactivated) return
-  if (!hasSearchParams.value) return
-  if (newKey === lastFetchedKey) return
-  lastFetchedKey = newKey
-  currentPage.value = 1
-  hasMore.value = true
-  requestId++
-  fetchPage(1, false)
-}, { immediate: true })
+watch(
+  paramsKey,
+  (newKey) => {
+    if (deactivated) return
+    if (!hasSearchParams.value) return
+    if (newKey === lastFetchedKey) return
+    lastFetchedKey = newKey
+    currentPage.value = 1
+    hasMore.value = true
+    requestId++
+    fetchPage(1, false)
+  },
+  { immediate: true },
+)
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)

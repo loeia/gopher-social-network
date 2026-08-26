@@ -125,7 +125,6 @@
         </div>
       </template>
     </el-dialog>
-
   </div>
 </template>
 
@@ -155,7 +154,15 @@ const feedStore = useFeedStore()
 
 const loading = ref(false)
 const notFound = ref(false)
-const user = ref<UserProfile>({ id: 0, username: '', created_at: '', bio: '', links: [], followers_count: 0, following_count: 0 })
+const user = ref<UserProfile>({
+  id: 0,
+  username: '',
+  created_at: '',
+  bio: '',
+  links: [],
+  followers_count: 0,
+  following_count: 0,
+})
 
 const editVisible = ref(false)
 const saving = ref(false)
@@ -250,7 +257,15 @@ async function load() {
   if (!id) return
   loading.value = true
   notFound.value = false
-  user.value = { id, username: '', created_at: '', bio: '', links: [], followers_count: 0, following_count: 0 }
+  user.value = {
+    id,
+    username: '',
+    created_at: '',
+    bio: '',
+    links: [],
+    followers_count: 0,
+    following_count: 0,
+  }
   try {
     const response = await apiFetch(`/users/${id}`)
     if (!response.ok) {

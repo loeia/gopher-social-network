@@ -2,8 +2,7 @@
   <el-config-provider :message="{ placement: 'top-right', offset: 64 }">
     <div class="layout">
       <NavBar v-if="!route.meta.hideNavBar" />
-      <SideBar v-if="showSidebar" :active-view="activeView" @view="onSidebarView" />
-      <div class="main" :class="{ 'with-sidebar': showSidebar }">
+      <div class="main">
         <router-view v-slot="{ Component }">
           <keep-alive include="HomePage,MyPostsPage,SearchResults">
             <component :is="Component" />
@@ -17,39 +16,14 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { storeToRefs } from 'pinia'
 import { ElConfigProvider } from 'element-plus'
 import NavBar from '@/components/NavBar.vue'
-import SideBar from '@/components/SideBar.vue'
 import { getToken, handleSessionExpired, isTokenExpired } from '@/api'
-import { useFeedStore } from '@/stores/feed'
-import { useUIStore } from '@/stores/ui'
 import { useUserStore } from '@/stores/user'
-import type { ViewType } from '@/stores/feed'
 
 const route = useRoute()
-const feedStore = useFeedStore()
-const uiStore = useUIStore()
 const userStore = useUserStore()
-const { view, activeNav } = storeToRefs(feedStore)
-const { sidebarOpen } = storeToRefs(uiStore)
 const isLoggedIn = computed(() => !!getToken())
-const showSidebar = computed(() => isLoggedIn.value && sidebarOpen.value && !route.meta.hideNavBar)
-const activeView = computed<ViewType | null>(() => {
-  if (route.name === 'Home') return view.value
-  if (route.name === 'MyPosts') return 'myposts'
-  if (route.name === 'CreatePost') return 'create'
-  if (route.name === 'Settings') return 'settings'
-  if (route.name === 'UserProfile') {
-    return userStore.id === Number(route.params.userId) ? 'profile' : null
-  }
-  return null
-})
-
-function onSidebarView(next: ViewType) {
-  view.value = next
-  activeNav.value = next
-}
 
 let sessionTimer: number | null = null
 
@@ -67,14 +41,6 @@ onBeforeUnmount(() => {
   if (sessionTimer !== null) window.clearInterval(sessionTimer)
 })
 
-watch(
-  () => route.name,
-  (name) => {
-    if (name === 'MyPosts') activeNav.value = 'myposts'
-  },
-  { immediate: true },
-)
-
 watch(isLoggedIn, (loggedIn) => {
   if (!loggedIn) userStore.reset()
 })
@@ -83,10 +49,6 @@ watch(isLoggedIn, (loggedIn) => {
 <style scoped>
 .main {
   min-height: 100vh;
-}
-
-.main.with-sidebar {
-  padding-left: 216px;
 }
 </style>
 
