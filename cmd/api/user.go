@@ -218,21 +218,6 @@ func (app *application) resetPasswordHandler(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
-func (app *application) getUserFavoritePosts(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromCtx(r)
-
-	posts, err := app.store.PostLikes.GetUserFavoritePosts(r.Context(), user.ID)
-	if err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
-
-	if err := app.JSONResponse(w, http.StatusOK, posts); err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
-}
-
 func (app *application) getUserFollowersHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 
@@ -262,21 +247,6 @@ func (app *application) getUserFollowingHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-}
-
-func (app *application) getUserOwnPostsHandler(w http.ResponseWriter, r *http.Request) {
-	user := getUserFromCtx(r)
-
-	posts, err := app.store.Users.GetUserOwnPosts(r.Context(), user.ID)
-	if err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
-
-	if err := app.JSONResponse(w, http.StatusOK, posts); err != nil {
-		app.internalServerError(w, r, err)
-		return
-	}
 }
 
 // uploadAvatarHandler processes an avatar image upload for the authenticated user.
@@ -555,4 +525,64 @@ func (app *application) userRenameHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// getUserPostsHandler returns posts by a specific user
+func (app *application) getUserPostsHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	posts, err := app.store.Users.GetUserOwnPosts(r.Context(), userId)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, posts); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+// getUserLikedPostsHandler returns posts liked by a specific user
+func (app *application) getUserLikedPostsHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	posts, err := app.store.PostLikes.GetUserFavoritePosts(r.Context(), userId)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, posts); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+// getUserCommentsHandler returns comments by a specific user
+func (app *application) getUserCommentsHandler(w http.ResponseWriter, r *http.Request) {
+	userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	comments, err := app.store.Comments.GetUserComments(r.Context(), userId)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, comments); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
 }

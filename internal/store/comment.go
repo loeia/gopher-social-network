@@ -152,3 +152,55 @@ func (s *CommentStore) GetById(c context.Context, commentId int64) (*Comment, er
 
 	return &comment, nil
 }
+
+func (s *CommentStore) GetUserComments(c context.Context, userId int64) ([]*Comment, error) {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `
+		SELECT 
+			c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username,
+			c.like_count 
+		FROM comments c
+		JOIN users u on u.id = c.user_id
+		LEFT JOIN users ru ON ru.id = c.reply_to_user_id
+		WHERE c.user_id = $1
+		ORDER BY c.created_at DESC
+	`
+
+	rows, err := s.db.QueryContext(ctx, query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var comments []*Comment
+	for rows.Next() {
+		var comment Comment
+		var replyToUsername sql.NullString
+
+		if err := rows.Scan(
+			&comment.ID,
+			&comment.PostID,
+			&comment.UserID,
+			&comment.Content,
+			&comment.CreatedAt,
+			&comment.ParentID,
+			&comment.ReplyToUserID,
+			&replyToUsername,
+			&comment.User.Username,
+			&comment.LikeCount,
+		); err != nil {
+			return nil, err
+		}
+		comment.ReplyToUsername = replyToUsername.String
+
+		comments = append(comments, &comment)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return comments, nil
+}
