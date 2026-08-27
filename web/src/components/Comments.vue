@@ -71,6 +71,7 @@ const loading = ref(false)
 const commentsOffset = ref(0)
 const hasMore = ref(true)
 const highlightId = ref<number | null>(null)
+const hasScrolledToComment = ref(false)
 
 const isLoggedIn = computed(() => !!getToken())
 const showCommentBox = ref(false)
@@ -369,16 +370,42 @@ async function loadMoreComments() {
   }
 }
 
+function expandParentComments(targetId: number) {
+  const commentMap = new Map<number, Comment>()
+  for (const c of comments.value) commentMap.set(c.id, c)
+
+  let current = commentMap.get(targetId)
+  while (current?.parent_id) {
+    const parentId = current.parent_id
+    const parentChildren = comments.value.filter((c) => c.parent_id === parentId)
+    const curShown = shownFor(parentId)
+    if (curShown < parentChildren.length) {
+      replyShown.value = { ...replyShown.value, [parentId]: parentChildren.length }
+    }
+    current = commentMap.get(parentId)
+  }
+}
+
 function scrollToComment() {
+  if (hasScrolledToComment.value) return
   const hash = window.location.hash
   if (!hash || !hash.startsWith('#comment-')) return
-  const id = hash.slice(9)
-  const el = document.getElementById(`comment-${id}`)
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    el.classList.add('highlight')
-    setTimeout(() => el.classList.remove('highlight'), 2000)
-  }
+  const id = parseInt(hash.slice(9), 10)
+  if (isNaN(id)) return
+
+  hasScrolledToComment.value = true
+  expandParentComments(id)
+
+  nextTick(() => {
+    nextTick(() => {
+      const el = document.getElementById(`comment-${id}`)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        el.classList.add('highlight')
+        setTimeout(() => el.classList.remove('highlight'), 2000)
+      }
+    })
+  })
 }
 
 let pollTimer: number | null = null
@@ -398,6 +425,7 @@ function stopPolling() {
 }
 
 onMounted(() => {
+  hasScrolledToComment.value = false
   loadCurrentUser()
   loadComments()
   fetchLikedComments()

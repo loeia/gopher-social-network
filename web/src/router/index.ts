@@ -21,8 +21,9 @@ import SettingsPage from '@/views/SettingsPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  scrollBehavior(_to, _from, savedPosition) {
+  scrollBehavior(to, _from, savedPosition) {
     if (savedPosition) return { ...savedPosition, behavior: 'instant' }
+    if (to.hash) return false
     return { top: 0 }
   },
   routes: [
