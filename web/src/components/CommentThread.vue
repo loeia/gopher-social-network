@@ -1,6 +1,6 @@
 <template>
   <div class="thread" :id="`comment-${comment.id}`">
-    <div class="comment">
+    <div class="comment" :class="{ 'new-item': highlightId === comment.id }">
       <div class="comment-avatar">
         <UserAvatar :user-id="comment.user_id" :username="comment.username" :size="30" />
       </div>
@@ -121,6 +121,7 @@ interface ThreadContext {
   toggleLike: (comment: Comment) => void
   likedComments: Ref<Set<number>>
   likingId: Ref<number | null>
+  highlightId: Ref<number | null>
 }
 
 const props = defineProps<{
@@ -148,6 +149,7 @@ const {
   toggleLike,
   likedComments,
   likingId,
+  highlightId,
 } = ctx
 
 const comment = computed(() => props.node.comment)

@@ -4,6 +4,8 @@
 
     <CommentThread v-for="root in commentTree" :key="root.comment.id" :node="root" />
 
+    <div v-if="loadingMore" class="loading-more">Loading...</div>
+
     <div class="add-comment" v-if="isLoggedIn">
       <el-button
         v-if="!showCommentBox"
@@ -40,6 +42,7 @@ import { notify } from '@/utils/message'
 import type { ElInput } from 'element-plus'
 import CommentThread, { type CommentNode } from '@/components/CommentThread.vue'
 import { useFeedStore } from '@/stores/feed'
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 
 const store = useFeedStore()
 
@@ -65,6 +68,9 @@ const emit = defineEmits<{
 
 const comments = ref<Comment[]>([])
 const loading = ref(false)
+const commentsOffset = ref(0)
+const hasMore = ref(true)
+const highlightId = ref<number | null>(null)
 
 const isLoggedIn = computed(() => !!getToken())
 const showCommentBox = ref(false)
@@ -127,6 +133,7 @@ provide('commentThread', {
   toggleLike,
   likedComments,
   likingId,
+  highlightId,
 })
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
@@ -170,7 +177,7 @@ async function fetchLikedComments() {
     return
   }
   try {
-    const response = await apiFetch('/users/comment-likes')
+    const response = await apiFetch('/users/comment-likes?limit=20&offset=0&sort=desc')
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
     const data = json.data ?? json
@@ -184,12 +191,17 @@ async function fetchLikedComments() {
   }
 }
 
+const canLoadMore = computed(() => hasMore.value && !loading.value)
+const { loadingMore } = useInfiniteScroll(loadMoreComments, canLoadMore)
+
 async function deleteComment(commentId: number) {
   deletingId.value = commentId
   try {
     const response = await apiFetch(`/comments/${commentId}`, { method: 'DELETE' })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     notify('success', 'Comment deleted')
+    commentsOffset.value = 0
+    hasMore.value = true
     await loadComments()
     store.updatePostCommentCount(props.postId, comments.value.length)
   } catch (error) {
@@ -231,6 +243,8 @@ async function submitReply(commentId: number) {
     replyContent.value = ''
     replyingTo.value = null
     notify('success', 'Reply added')
+    commentsOffset.value = 0
+    hasMore.value = true
     await loadComments()
     store.updatePostCommentCount(props.postId, comments.value.length)
   } catch (error) {
@@ -256,6 +270,8 @@ async function submitComment() {
     newComment.value = ''
     showCommentBox.value = false
     notify('success', 'Comment added')
+    commentsOffset.value = 0
+    hasMore.value = true
     await loadComments()
     store.updatePostCommentCount(props.postId, comments.value.length)
   } catch (error) {
@@ -303,16 +319,53 @@ async function toggleLike(comment: Comment) {
 async function loadComments(silent = false) {
   if (!silent) loading.value = true
   try {
-    const response = await apiFetch(`/posts/${props.postId}/comments`)
+    const response = await apiFetch(
+      `/posts/${props.postId}/comments?limit=20&offset=0&sort=desc`,
+    )
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
-    comments.value = json.data ?? []
+    const data = json.data ?? json
+    if (silent) {
+      const existingIds = new Set(comments.value.map((c) => c.id))
+      const newComments = Array.isArray(data) ? data.filter((c: Comment) => !existingIds.has(c.id)) : []
+      if (newComments.length > 0) {
+        comments.value = [...newComments, ...comments.value]
+      }
+    } else {
+      comments.value = Array.isArray(data) ? data : []
+      commentsOffset.value = 0
+      hasMore.value = comments.value.length >= 20
+    }
     emit('count', comments.value.length)
     if (!silent) nextTick(scrollToComment)
   } catch (error) {
     if (!silent) handleApiError(error, 'Failed to load comments')
   } finally {
     if (!silent) loading.value = false
+  }
+}
+
+async function loadMoreComments() {
+  if (!hasMore.value) return
+  try {
+    const response = await apiFetch(
+      `/posts/${props.postId}/comments?limit=20&offset=${commentsOffset.value}&sort=desc`,
+    )
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const data = json.data ?? json
+    const newComments = Array.isArray(data) ? data : []
+    if (newComments.length > 0) {
+      comments.value = [...comments.value, ...newComments]
+      commentsOffset.value += newComments.length
+      highlightId.value = newComments[0].id
+      setTimeout(() => { highlightId.value = null }, 2500)
+    }
+    if (newComments.length < 20) {
+      hasMore.value = false
+    }
+  } catch (error) {
+    handleApiError(error, 'Failed to load more comments')
   }
 }
 
@@ -437,5 +490,25 @@ onBeforeUnmount(stopPolling)
   justify-content: flex-end;
   gap: 8px;
   margin-top: 10px;
+}
+
+.loading-more {
+  text-align: center;
+  padding: 16px;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.comment.new-item {
+  animation: highlight-flash 2.5s ease-out;
+}
+
+@keyframes highlight-flash {
+  0% {
+    background-color: rgba(64, 158, 255, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 </style>

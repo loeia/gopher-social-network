@@ -1,7 +1,7 @@
 <template>
   <div class="following-page">
     <div class="list" v-loading="loading">
-      <div v-for="user in users" :key="user.following_id" class="topic-row">
+      <div v-for="user in users" :key="user.following_id" class="topic-row" :class="{ 'new-item': highlightId === user.following_id }">
         <UserAvatar :user-id="user.following_id" :username="user.username" :size="36" />
         <div class="topic-main">
           <span class="topic-username">{{ user.username }}</span>
@@ -16,6 +16,7 @@
           Unfollow
         </el-button>
       </div>
+      <div v-if="loadingMore" class="loading-more">Loading...</div>
       <div v-if="!loading && users.length === 0" class="empty">
         <p>No followings yet.</p>
       </div>
@@ -25,27 +26,31 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useFeedStore } from '@/stores/feed'
-import { getCurrentUserId, handleApiError } from '@/api'
+import { apiFetch, getCurrentUserId, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
+
+interface FollowingUser {
+  following_id: number
+  username: string
+  created_at: string
+}
 
 const props = withDefaults(defineProps<{ userId?: number }>(), { userId: 0 })
 
-const store = useFeedStore()
-const { following: users } = storeToRefs(store)
+const users = ref<FollowingUser[]>([])
 const loading = ref(false)
+const followingOffset = ref(0)
+const hasMore = ref(true)
+const highlightId = ref<number | null>(null)
 const unfollowingId = ref<number | null>(null)
 
-// Target user: the profile being viewed, falling back to the current user
-// (e.g. when shown from the home page views).
 const targetUserId = computed(() => {
   if (props.userId && Number.isFinite(props.userId)) return props.userId
   return getCurrentUserId() ?? 0
 })
 
-// Only the current user's own following list supports unfollowing.
 const isOwn = computed(() => targetUserId.value === getCurrentUserId())
 
 function formatDate(value?: string) {
@@ -59,7 +64,15 @@ async function loadFollowing() {
   if (!targetUserId.value) return
   loading.value = true
   try {
-    await store.fetchFollowing(targetUserId.value)
+    const response = await apiFetch(
+      `/users/${targetUserId.value}/following?limit=20&offset=0&sort=desc`,
+    )
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const data = json.data ?? json
+    users.value = Array.isArray(data) ? data : []
+    followingOffset.value = users.value.length
+    hasMore.value = users.value.length >= 20
   } catch (error) {
     handleApiError(error, 'Failed to load followings')
   } finally {
@@ -67,10 +80,39 @@ async function loadFollowing() {
   }
 }
 
+async function loadMoreFollowing() {
+  if (!targetUserId.value || !hasMore.value) return
+  try {
+    const response = await apiFetch(
+      `/users/${targetUserId.value}/following?limit=20&offset=${followingOffset.value}&sort=desc`,
+    )
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const data = json.data ?? json
+    const newUsers = Array.isArray(data) ? data : []
+    if (newUsers.length > 0) {
+      users.value = [...users.value, ...newUsers]
+      followingOffset.value += newUsers.length
+      highlightId.value = newUsers[0].following_id
+      setTimeout(() => { highlightId.value = null }, 2500)
+    }
+    if (newUsers.length < 20) {
+      hasMore.value = false
+    }
+  } catch (error) {
+    handleApiError(error, 'Failed to load more followings')
+  }
+}
+
+const canLoadMore = computed(() => hasMore.value && !loading.value)
+const { loadingMore } = useInfiniteScroll(loadMoreFollowing, canLoadMore)
+
 async function unfollow(userId: number) {
   unfollowingId.value = userId
   try {
-    await store.unfollowUser(userId)
+    const response = await apiFetch(`/users/${userId}/unfollow`, { method: 'PUT' })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    users.value = users.value.filter((u) => u.following_id !== userId)
     notify('success', 'Unfollowed')
   } catch (error) {
     handleApiError(error, 'Failed to unfollow')
@@ -157,6 +199,26 @@ watch(targetUserId, loadFollowing)
   border-color: #3d444d;
   color: #8c8c8c;
   background: transparent;
+}
+
+.loading-more {
+  text-align: center;
+  padding: 16px;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.topic-row.new-item {
+  animation: highlight-flash 2.5s ease-out;
+}
+
+@keyframes highlight-flash {
+  0% {
+    background-color: rgba(64, 158, 255, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 .empty {

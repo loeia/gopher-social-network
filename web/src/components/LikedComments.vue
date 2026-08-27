@@ -4,6 +4,7 @@
       v-for="comment in comments"
       :key="comment.comment_id"
       class="topic-row"
+      :class="{ 'new-item': highlightId === comment.comment_id }"
       @click="openPost(comment.post_id, comment.comment_id)"
     >
       <div class="topic-top">
@@ -30,21 +31,33 @@
         <span class="topic-author">{{ comment.username }}</span>
       </div>
     </div>
+    <div v-if="loadingMore" class="loading-more">Loading...</div>
     <div v-if="!loading && comments.length === 0" class="empty">No liked comments yet</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { useFeedStore } from '@/stores/feed'
-import { handleApiError } from '@/api'
+import { apiFetch, handleApiError } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 
-const store = useFeedStore()
-const { likedComments: comments, likedCommentsLoaded } = storeToRefs(store)
+interface LikedComment {
+  comment_id: number
+  post_id: number
+  content: string
+  username: string
+  user_id: number
+  like_count?: number
+  reply_count?: number
+}
+
+const comments = ref<LikedComment[]>([])
 const loading = ref(false)
+const commentsOffset = ref(0)
+const hasMore = ref(true)
+const highlightId = ref<number | null>(null)
 
 const router = useRouter()
 
@@ -58,16 +71,48 @@ function truncateContent(content: string): string {
 }
 
 async function loadLikedComments() {
-  if (likedCommentsLoaded.value) return
   loading.value = true
   try {
-    await store.fetchLikedComments()
+    const response = await apiFetch('/users/comment-likes?limit=20&offset=0&sort=desc')
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const data = json.data ?? json
+    comments.value = Array.isArray(data) ? data : []
+    commentsOffset.value = comments.value.length
+    hasMore.value = comments.value.length >= 20
   } catch (error) {
     handleApiError(error, 'Failed to load liked comments')
   } finally {
     loading.value = false
   }
 }
+
+async function loadMoreLikedComments() {
+  if (!hasMore.value) return
+  try {
+    const response = await apiFetch(
+      `/users/comment-likes?limit=20&offset=${commentsOffset.value}&sort=desc`,
+    )
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const data = json.data ?? json
+    const newComments = Array.isArray(data) ? data : []
+    if (newComments.length > 0) {
+      comments.value = [...comments.value, ...newComments]
+      commentsOffset.value += newComments.length
+      highlightId.value = newComments[0].comment_id
+      setTimeout(() => { highlightId.value = null }, 2500)
+    }
+    if (newComments.length < 20) {
+      hasMore.value = false
+    }
+  } catch (error) {
+    handleApiError(error, 'Failed to load more liked comments')
+  }
+}
+
+const canLoadMore = computed(() => hasMore.value && !loading.value)
+const { loadingMore } = useInfiniteScroll(loadMoreLikedComments, canLoadMore)
 
 onMounted(loadLikedComments)
 </script>
@@ -159,8 +204,24 @@ onMounted(loadLikedComments)
   font-weight: 500;
 }
 
-.meta-dot {
-  color: #555;
+.loading-more {
+  text-align: center;
+  padding: 16px;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.topic-row.new-item {
+  animation: highlight-flash 2.5s ease-out;
+}
+
+@keyframes highlight-flash {
+  0% {
+    background-color: rgba(64, 158, 255, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 
 .empty {

@@ -4,6 +4,7 @@
       v-for="post in posts"
       :key="post.post_id"
       class="topic-row"
+      :class="{ 'new-item': highlightId === post.post_id }"
       @click="openPost(post.post_id)"
     >
       <div class="topic-top">
@@ -34,20 +35,33 @@
         </template>
       </div>
     </div>
+    <div v-if="loadingMore" class="loading-more">Loading...</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { useFeedStore } from '@/stores/feed'
-import { handleApiError } from '@/api'
+import { getCurrentUserId, apiFetch, handleApiError } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 
-const store = useFeedStore()
-const { likedPosts: posts, likedPostsLoaded } = storeToRefs(store)
+interface LikedPost {
+  post_id: number
+  author: string
+  title: string
+  tags: string[]
+  comment_count?: number
+  like_count?: number
+  created_at: string
+  user_id?: number
+}
+
+const posts = ref<LikedPost[]>([])
 const loading = ref(false)
+const postsOffset = ref(0)
+const hasMore = ref(true)
+const highlightId = ref<number | null>(null)
 
 const router = useRouter()
 
@@ -56,16 +70,53 @@ function openPost(id: number) {
 }
 
 async function loadLikedPosts() {
-  if (likedPostsLoaded.value) return
+  const userId = getCurrentUserId()
+  if (!userId) return
   loading.value = true
   try {
-    await store.fetchLikedPosts()
+    const response = await apiFetch(
+      `/users/${userId}/post-likes?limit=20&offset=0&sort=desc`,
+    )
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const data = json.data ?? json
+    posts.value = Array.isArray(data) ? data : []
+    postsOffset.value = posts.value.length
+    hasMore.value = posts.value.length >= 20
   } catch (error) {
     handleApiError(error, 'Failed to load liked posts')
   } finally {
     loading.value = false
   }
 }
+
+async function loadMoreLikedPosts() {
+  const userId = getCurrentUserId()
+  if (!userId || !hasMore.value) return
+  try {
+    const response = await apiFetch(
+      `/users/${userId}/post-likes?limit=20&offset=${postsOffset.value}&sort=desc`,
+    )
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const data = json.data ?? json
+    const newPosts = Array.isArray(data) ? data : []
+    if (newPosts.length > 0) {
+      posts.value = [...posts.value, ...newPosts]
+      postsOffset.value += newPosts.length
+      highlightId.value = newPosts[0].post_id
+      setTimeout(() => { highlightId.value = null }, 2500)
+    }
+    if (newPosts.length < 20) {
+      hasMore.value = false
+    }
+  } catch (error) {
+    handleApiError(error, 'Failed to load more liked posts')
+  }
+}
+
+const canLoadMore = computed(() => hasMore.value && !loading.value)
+const { loadingMore } = useInfiniteScroll(loadMoreLikedPosts, canLoadMore)
 
 onMounted(loadLikedPosts)
 </script>
@@ -170,5 +221,25 @@ onMounted(loadLikedPosts)
   font-size: 12px;
   color: #bfbfbf;
   white-space: nowrap;
+}
+
+.loading-more {
+  text-align: center;
+  padding: 16px;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.topic-row.new-item {
+  animation: highlight-flash 2.5s ease-out;
+}
+
+@keyframes highlight-flash {
+  0% {
+    background-color: rgba(64, 158, 255, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 </style>

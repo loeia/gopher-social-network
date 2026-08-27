@@ -4,7 +4,7 @@
       v-for="(post, index) in posts"
       :key="post.id"
       class="topic-row"
-      :class="{ 'new-post': isNewPost(post.id) || (highlightFirst && index === 0) }"
+      :class="{ 'new-post': isNewPost(post.id) || (highlightFirst && index === 0) || highlightId === post.id }"
       @click="openPost(post.id)"
     >
       <div class="topic-top">
@@ -71,12 +71,14 @@ const props = withDefaults(
     loading?: boolean
     editable?: boolean
     highlightFirst?: boolean
+    highlightId?: number | null
   }>(),
   {
     posts: undefined,
     loading: false,
     editable: false,
     highlightFirst: false,
+    highlightId: null,
   },
 )
 

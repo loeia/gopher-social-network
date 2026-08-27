@@ -101,10 +101,12 @@
       v-else
       :posts="posts"
       :loading="loading"
+      :highlight-id="highlightId"
       editable
       @edit="startEdit"
       @delete="handleDelete"
     />
+    <div v-if="!editingPost && loadingMore" class="loading-more">Loading...</div>
   </div>
 </template>
 
@@ -117,6 +119,7 @@ import { apiFetch, getCurrentUserId, handleApiError } from '@/api'
 import { useFeedStore, toFeedPost, type FeedPost } from '@/stores/feed'
 import { renderMarkdown } from '@/utils/markdown'
 import { notify } from '@/utils/message'
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 
 defineOptions({ name: 'MyPostsPage' })
 
@@ -124,6 +127,9 @@ const router = useRouter()
 const feedStore = useFeedStore()
 const posts = ref<FeedPost[]>([])
 const loading = ref(false)
+const postsOffset = ref(0)
+const hasMore = ref(true)
+const highlightId = ref<number | null>(null)
 const currentUserId = getCurrentUserId()
 
 const editingPost = ref<FeedPost | null>(null)
@@ -174,7 +180,9 @@ async function loadMyPosts() {
   if (!currentUserId) return
   loading.value = true
   try {
-    const response = await apiFetch(`/users/${currentUserId}/posts`)
+    const response = await apiFetch(
+      `/users/${currentUserId}/posts?limit=20&offset=0&sort=desc`,
+    )
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
     const raw = Array.isArray(json) ? json : (json.data ?? [])
@@ -184,12 +192,46 @@ async function loadMyPosts() {
       like_count: Number(p.like_count ?? p.likes_count ?? 0),
       user_id: currentUserId ?? undefined,
     }))
+    postsOffset.value = posts.value.length
+    hasMore.value = posts.value.length >= 20
   } catch (error) {
     handleApiError(error, 'Failed to load my posts')
   } finally {
     loading.value = false
   }
 }
+
+async function loadMoreMyPosts() {
+  if (!currentUserId || !hasMore.value) return
+  try {
+    const response = await apiFetch(
+      `/users/${currentUserId}/posts?limit=20&offset=${postsOffset.value}&sort=desc`,
+    )
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const raw = Array.isArray(json) ? json : (json.data ?? [])
+    const newPosts = raw.map((p: any) => ({
+      ...toFeedPost(p),
+      comment_count: Number(p.comment_count ?? p.comments_count ?? 0),
+      like_count: Number(p.like_count ?? p.likes_count ?? 0),
+      user_id: currentUserId ?? undefined,
+    }))
+    if (newPosts.length > 0) {
+      posts.value = [...posts.value, ...newPosts]
+      postsOffset.value += newPosts.length
+      highlightId.value = newPosts[0].id
+      setTimeout(() => { highlightId.value = null }, 2500)
+    }
+    if (newPosts.length < 20) {
+      hasMore.value = false
+    }
+  } catch (error) {
+    handleApiError(error, 'Failed to load more posts')
+  }
+}
+
+const canLoadMore = computed(() => hasMore.value && !loading.value && !editingPost.value)
+const { loadingMore } = useInfiniteScroll(loadMoreMyPosts, canLoadMore)
 
 function startEdit(post: FeedPost) {
   editingPost.value = post
@@ -316,6 +358,13 @@ async function handleDelete(post: FeedPost) {
 .my-posts-page {
   min-height: 100vh;
   padding: 32px 0 80px;
+}
+
+.loading-more {
+  text-align: center;
+  padding: 16px;
+  color: #8c8c8c;
+  font-size: 14px;
 }
 
 .back-nav {

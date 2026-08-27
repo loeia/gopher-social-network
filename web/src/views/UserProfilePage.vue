@@ -110,6 +110,7 @@
               v-for="post in userPosts"
               :key="post.id"
               class="topic-row"
+              :class="{ 'new-item': postsHighlightId === post.id }"
               @click="openPost(post.id)"
             >
               <div class="topic-top">
@@ -129,6 +130,13 @@
                     </svg>
                     {{ post.like_count }}
                   </span>
+                  <span class="topic-stat" :title="`${post.view_count} views`">
+                    <svg class="stat-icon" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    {{ post.view_count }}
+                  </span>
                 </div>
               </div>
               <div class="topic-meta">
@@ -142,6 +150,7 @@
             <div v-if="!postsLoading && userPosts.length === 0" class="empty-hint">
               No posts yet.
             </div>
+            <div v-if="postsLoadingMore" class="loading-more">Loading...</div>
           </div>
         </div>
 
@@ -151,6 +160,7 @@
               v-for="reply in userReplies"
               :key="reply.id"
               class="topic-row reply-row"
+              :class="{ 'new-item': repliesHighlightId === reply.id }"
               @click="openPost(reply.post_id)"
             >
               <div class="reply-context">
@@ -167,6 +177,7 @@
             <div v-if="!repliesLoading && userReplies.length === 0" class="empty-hint">
               No replies yet.
             </div>
+            <div v-if="repliesLoadingMore" class="loading-more">Loading...</div>
           </div>
         </div>
 
@@ -176,6 +187,7 @@
               v-for="post in userLikedPosts"
               :key="post.post_id"
               class="topic-row"
+              :class="{ 'new-item': likesHighlightId === post.post_id }"
               @click="openPost(post.post_id)"
             >
               <div class="topic-top">
@@ -208,6 +220,7 @@
             <div v-if="!likesLoading && userLikedPosts.length === 0" class="empty-hint">
               No liked posts yet.
             </div>
+            <div v-if="likesLoadingMore" class="loading-more">Loading...</div>
           </div>
         </div>
       </div>
@@ -230,6 +243,7 @@ import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
 import AvatarCropDialog from '@/components/AvatarCropDialog.vue'
 import { useUserStore } from '@/stores/user'
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 
 defineOptions({ name: 'UserProfilePage' })
 
@@ -249,6 +263,7 @@ interface UserPost {
   tags: string[]
   comment_count: number
   like_count: number
+  view_count: number
   created_at: string
 }
 
@@ -303,10 +318,19 @@ const tabs = [
 
 const userPosts = ref<UserPost[]>([])
 const postsLoading = ref(false)
+const postsOffset = ref(0)
+const postsHasMore = ref(true)
+const postsHighlightId = ref<number | null>(null)
 const userReplies = ref<UserReply[]>([])
 const repliesLoading = ref(false)
+const repliesOffset = ref(0)
+const repliesHasMore = ref(true)
+const repliesHighlightId = ref<number | null>(null)
 const userLikedPosts = ref<LikedPost[]>([])
 const likesLoading = ref(false)
+const likesOffset = ref(0)
+const likesHasMore = ref(true)
+const likesHighlightId = ref<number | null>(null)
 
 const userId = computed(() => Number(route.params.userId))
 const isOwnProfile = computed(() => getCurrentUserId() === userId.value)
@@ -420,33 +444,95 @@ async function load() {
       followers_count: Number(data.followers_count ?? 0),
       following_count: Number(data.following_count ?? 0),
     }
-    // Preload all tab data up front so switching tabs never has to
-    // mount an empty panel (which collapses the page height and makes
-    // the scroll position jump/jitter when scrolled down).
-    await Promise.all([loadUserPosts(), loadUserReplies(), loadUserLikedPosts()])
+
+    postsLoading.value = true
+    repliesLoading.value = true
+    likesLoading.value = true
+    const [postsRes, repliesRes, likesRes] = await Promise.all([
+      apiFetch(`/users/${id}/posts?limit=20&offset=0&sort=desc`),
+      apiFetch(`/users/${id}/comments?limit=20&offset=0&sort=desc`),
+      apiFetch(`/users/${id}/post-likes?limit=20&offset=0&sort=desc`),
+    ])
+
+    if (postsRes.ok) {
+      const postsJson = await postsRes.json()
+      const raw = Array.isArray(postsJson) ? postsJson : (postsJson.data ?? [])
+      userPosts.value = mapPostsData(raw)
+      postsOffset.value = userPosts.value.length
+      postsHasMore.value = userPosts.value.length >= 20
+    }
+    if (repliesRes.ok) {
+      const repliesJson = await repliesRes.json()
+      const raw = Array.isArray(repliesJson) ? repliesJson : (repliesJson.data ?? [])
+      userReplies.value = mapRepliesData(raw)
+      repliesOffset.value = userReplies.value.length
+      repliesHasMore.value = userReplies.value.length >= 20
+    }
+    if (likesRes.ok) {
+      const likesJson = await likesRes.json()
+      const raw = Array.isArray(likesJson) ? likesJson : (likesJson.data ?? [])
+      userLikedPosts.value = mapLikesData(raw)
+      likesOffset.value = userLikedPosts.value.length
+      likesHasMore.value = userLikedPosts.value.length >= 20
+    }
   } catch (error) {
     handleApiError(error, 'Failed to load profile')
   } finally {
     loading.value = false
+    postsLoading.value = false
+    repliesLoading.value = false
+    likesLoading.value = false
   }
+}
+
+function mapPostsData(raw: Record<string, unknown>[]): UserPost[] {
+  return raw.map((p) => ({
+    id: Number(p.post_id ?? p.id ?? 0),
+    title: String(p.title ?? ''),
+    tags: Array.isArray(p.tags) ? p.tags : [],
+    comment_count: Number(p.comment_count ?? 0),
+    like_count: Number(p.like_count ?? 0),
+    view_count: Number(p.view_count ?? 0),
+    created_at: String(p.created_at ?? ''),
+  }))
+}
+
+function mapRepliesData(raw: Record<string, unknown>[]): UserReply[] {
+  return raw.map((c) => ({
+    id: Number(c.comment_id ?? c.id ?? 0),
+    post_id: Number(c.post_id ?? 0),
+    content: String(c.content ?? ''),
+    created_at: String(c.created_at ?? ''),
+  }))
+}
+
+function mapLikesData(raw: Record<string, unknown>[]): LikedPost[] {
+  return raw.map((p) => ({
+    post_id: Number(p.post_id ?? p.id ?? 0),
+    author: String(p.author ?? ''),
+    title: String(p.title ?? ''),
+    tags: Array.isArray(p.tags) ? p.tags : [],
+    comment_count: Number(p.comment_count ?? 0),
+    like_count: Number(p.like_count ?? 0),
+    created_at: String(p.created_at ?? ''),
+  }))
+}
+
+async function apiGet(url: string): Promise<Record<string, unknown>[]> {
+  const response = await apiFetch(url)
+  if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  const json = await response.json()
+  return Array.isArray(json) ? json : (json.data ?? [])
 }
 
 async function loadUserPosts() {
   if (postsLoading.value) return
   postsLoading.value = true
   try {
-    const response = await apiFetch(`/users/${userId.value}/posts`)
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const json = await response.json()
-    const raw = Array.isArray(json) ? json : (json.data ?? [])
-    userPosts.value = raw.map((p: Record<string, unknown>) => ({
-      id: Number(p.post_id ?? p.id ?? 0),
-      title: String(p.title ?? ''),
-      tags: Array.isArray(p.tags) ? p.tags : [],
-      comment_count: Number(p.comment_count ?? 0),
-      like_count: Number(p.like_count ?? 0),
-      created_at: String(p.created_at ?? ''),
-    }))
+    const raw = await apiGet(`/users/${userId.value}/posts?limit=20&offset=0&sort=desc`)
+    userPosts.value = mapPostsData(raw)
+    postsOffset.value = userPosts.value.length
+    postsHasMore.value = userPosts.value.length >= 20
   } catch (error) {
     handleApiError(error, 'Failed to load posts')
   } finally {
@@ -454,20 +540,33 @@ async function loadUserPosts() {
   }
 }
 
+async function loadMoreUserPosts() {
+  if (!postsHasMore.value) return
+  try {
+    const raw = await apiGet(`/users/${userId.value}/posts?limit=20&offset=${postsOffset.value}&sort=desc`)
+    const newPosts = mapPostsData(raw)
+    if (newPosts.length > 0) {
+      userPosts.value = [...userPosts.value, ...newPosts]
+      postsOffset.value += newPosts.length
+      postsHighlightId.value = newPosts[0].id
+      setTimeout(() => { postsHighlightId.value = null }, 2500)
+    }
+    if (newPosts.length < 20) {
+      postsHasMore.value = false
+    }
+  } catch (error) {
+    handleApiError(error, 'Failed to load more posts')
+  }
+}
+
 async function loadUserReplies() {
   if (repliesLoading.value) return
   repliesLoading.value = true
   try {
-    const response = await apiFetch(`/users/${userId.value}/comments`)
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const json = await response.json()
-    const raw = Array.isArray(json) ? json : (json.data ?? [])
-    userReplies.value = raw.map((c: Record<string, unknown>) => ({
-      id: Number(c.comment_id ?? c.id ?? 0),
-      post_id: Number(c.post_id ?? 0),
-      content: String(c.content ?? ''),
-      created_at: String(c.created_at ?? ''),
-    }))
+    const raw = await apiGet(`/users/${userId.value}/comments?limit=20&offset=0&sort=desc`)
+    userReplies.value = mapRepliesData(raw)
+    repliesOffset.value = userReplies.value.length
+    repliesHasMore.value = userReplies.value.length >= 20
   } catch (error) {
     handleApiError(error, 'Failed to load replies')
   } finally {
@@ -475,29 +574,65 @@ async function loadUserReplies() {
   }
 }
 
+async function loadMoreUserReplies() {
+  if (!repliesHasMore.value) return
+  try {
+    const raw = await apiGet(`/users/${userId.value}/comments?limit=20&offset=${repliesOffset.value}&sort=desc`)
+    const newReplies = mapRepliesData(raw)
+    if (newReplies.length > 0) {
+      userReplies.value = [...userReplies.value, ...newReplies]
+      repliesOffset.value += newReplies.length
+      repliesHighlightId.value = newReplies[0].id
+      setTimeout(() => { repliesHighlightId.value = null }, 2500)
+    }
+    if (newReplies.length < 20) {
+      repliesHasMore.value = false
+    }
+  } catch (error) {
+    handleApiError(error, 'Failed to load more replies')
+  }
+}
+
 async function loadUserLikedPosts() {
   if (likesLoading.value) return
   likesLoading.value = true
   try {
-    const response = await apiFetch(`/users/${userId.value}/post-likes`)
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const json = await response.json()
-    const raw = Array.isArray(json) ? json : (json.data ?? [])
-    userLikedPosts.value = raw.map((p: Record<string, unknown>) => ({
-      post_id: Number(p.post_id ?? p.id ?? 0),
-      author: String(p.author ?? ''),
-      title: String(p.title ?? ''),
-      tags: Array.isArray(p.tags) ? p.tags : [],
-      comment_count: Number(p.comment_count ?? 0),
-      like_count: Number(p.like_count ?? 0),
-      created_at: String(p.created_at ?? ''),
-    }))
+    const raw = await apiGet(`/users/${userId.value}/post-likes?limit=20&offset=0&sort=desc`)
+    userLikedPosts.value = mapLikesData(raw)
+    likesOffset.value = userLikedPosts.value.length
+    likesHasMore.value = userLikedPosts.value.length >= 20
   } catch (error) {
     handleApiError(error, 'Failed to load liked posts')
   } finally {
     likesLoading.value = false
   }
 }
+
+async function loadMoreUserLikedPosts() {
+  if (!likesHasMore.value) return
+  try {
+    const raw = await apiGet(`/users/${userId.value}/post-likes?limit=20&offset=${likesOffset.value}&sort=desc`)
+    const newPosts = mapLikesData(raw)
+    if (newPosts.length > 0) {
+      userLikedPosts.value = [...userLikedPosts.value, ...newPosts]
+      likesOffset.value += newPosts.length
+      likesHighlightId.value = newPosts[0].post_id
+      setTimeout(() => { likesHighlightId.value = null }, 2500)
+    }
+    if (newPosts.length < 20) {
+      likesHasMore.value = false
+    }
+  } catch (error) {
+    handleApiError(error, 'Failed to load more liked posts')
+  }
+}
+
+const postsCanLoadMore = computed(() => postsHasMore.value && !postsLoading.value)
+const repliesCanLoadMore = computed(() => repliesHasMore.value && !repliesLoading.value)
+const likesCanLoadMore = computed(() => likesHasMore.value && !likesLoading.value)
+const { loadingMore: postsLoadingMore } = useInfiniteScroll(loadMoreUserPosts, postsCanLoadMore)
+const { loadingMore: repliesLoadingMore } = useInfiniteScroll(loadMoreUserReplies, repliesCanLoadMore)
+const { loadingMore: likesLoadingMore } = useInfiniteScroll(loadMoreUserLikedPosts, likesCanLoadMore)
 
 function openPost(id: number) {
   router.push(`/posts/${id}`)
@@ -877,6 +1012,27 @@ watch(
 .empty-hint {
   text-align: center;
   padding: 32px 16px;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.topic-row.new-item,
+.reply-row.new-item {
+  animation: highlight-flash 2.5s ease-out;
+}
+
+@keyframes highlight-flash {
+  0% {
+    background-color: rgba(64, 158, 255, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.loading-more {
+  text-align: center;
+  padding: 16px;
   color: #8c8c8c;
   font-size: 14px;
 }
