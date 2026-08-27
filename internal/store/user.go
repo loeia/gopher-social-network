@@ -30,6 +30,9 @@ type User struct {
 	Links          []string  `json:"links"`
 	FollowersCount int64     `json:"followers_count"`
 	FollowingCount int64     `json:"following_count"`
+	PostsCount     int64     `json:"posts_count"`
+	LikesCount     int64     `json:"likes_count"`
+	RepliesCount   int64     `json:"replies_count"`
 }
 
 type UserFollower struct {
@@ -116,7 +119,7 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 			SELECT
 				u.id,u.username,u.email,u.password,u.created_at,u.is_active,u.token_ver,
 				COALESCE(u.bio,''),u.links,
-				u.followers_count,u.following_count,
+				u.followers_count,u.following_count,u.posts_count,u.likes_count,u.replies_count,
 				r.id,r.name,r.description,r.level
 			FROM users u
 			JOIN roles r ON r.id = u.role_id
@@ -136,6 +139,9 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 		pq.Array(&user.Links),
 		&user.FollowersCount,
 		&user.FollowingCount,
+		&user.PostsCount,
+		&user.LikesCount,
+		&user.RepliesCount,
 		&user.Role.ID,
 		&user.Role.Name,
 		&user.Role.Description,

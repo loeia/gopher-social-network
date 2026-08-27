@@ -42,6 +42,9 @@ type PublicUser struct {
 	CreatedAt      time.Time `json:"created_at"`
 	FollowersCount int64     `json:"followers_count"`
 	FollowingCount int64     `json:"following_count"`
+	PostsCount     int64     `json:"posts_count"`
+	LikesCount     int64     `json:"likes_count"`
+	RepliesCount   int64     `json:"replies_count"`
 }
 
 func userResponse(u *store.User) PublicUser {
@@ -54,6 +57,20 @@ func userResponse(u *store.User) PublicUser {
 		CreatedAt:      u.CreatedAt,
 		FollowersCount: u.FollowersCount,
 		FollowingCount: u.FollowingCount,
+		PostsCount:     u.PostsCount,
+		LikesCount:     u.LikesCount,
+		RepliesCount:   u.RepliesCount,
+	}
+}
+
+// invalidateUserCache deletes a user's cached profile so the next read
+// refetches fresh data (e.g. after post/comment/like counts change).
+func (app *application) invalidateUserCache(r *http.Request, userId int64) {
+	if !app.config.redisCfg.enabled {
+		return
+	}
+	if err := app.cache.Delete(r.Context(), userId); err != nil {
+		app.logger.Errorw("error deleting user from cache", "error", err)
 	}
 }
 
@@ -209,11 +226,7 @@ func (app *application) resetPasswordHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if app.config.redisCfg.enabled {
-		if err := app.cache.Delete(r.Context(), user.ID); err != nil {
-			app.logger.Errorw("error deleting user from cache", "error", err)
-		}
-	}
+	app.invalidateUserCache(r, user.ID)
 
 	w.WriteHeader(http.StatusOK)
 }
@@ -366,11 +379,7 @@ func (app *application) uploadAvatarHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if app.config.redisCfg.enabled {
-		if err := app.cache.Delete(r.Context(), user.ID); err != nil {
-			app.logger.Errorw("error deleting user from cache", "error", err)
-		}
-	}
+	app.invalidateUserCache(r, user.ID)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -418,11 +427,7 @@ func (app *application) updateProfileHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if app.config.redisCfg.enabled {
-		if err := app.cache.Delete(r.Context(), user.ID); err != nil {
-			app.logger.Errorw("error deleting user from cache", "error", err)
-		}
-	}
+	app.invalidateUserCache(r, user.ID)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -571,11 +576,7 @@ func (app *application) userRenameHandler(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	if app.config.redisCfg.enabled {
-		if err := app.cache.Delete(r.Context(), user.ID); err != nil {
-			app.logger.Errorw("error deleting user from cache", "error", err)
-		}
-	}
+	app.invalidateUserCache(r, user.ID)
 
 	w.WriteHeader(http.StatusNoContent)
 }

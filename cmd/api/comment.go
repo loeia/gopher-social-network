@@ -34,7 +34,7 @@ func commentResponse(c *store.Comment) CommentResponse {
 		ParentID:        c.ParentID,
 		ReplyToUserID:   c.ReplyToUserID,
 		ReplyToUsername: c.ReplyToUsername,
-		LikeCount: c.LikeCount,
+		LikeCount:       c.LikeCount,
 		CreatedAt:       c.CreatedAt,
 	}
 }
@@ -126,6 +126,8 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 	}
 	comment.User.Username = user.Username
 
+	app.invalidateUserCache(r, user.ID)
+
 	resp := commentResponse(comment)
 	if err := app.JSONResponse(w, http.StatusCreated, resp); err != nil {
 		app.internalServerError(w, r, err)
@@ -140,6 +142,8 @@ func (app *application) deleteCommentHandler(w http.ResponseWriter, r *http.Requ
 		app.internalServerError(w, r, err)
 		return
 	}
+
+	app.invalidateUserCache(r, comment.UserID)
 
 	w.WriteHeader(http.StatusNoContent)
 }

@@ -68,6 +68,8 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	app.invalidateUserCache(r, post.UserID)
+
 	if err := app.JSONResponse(w, http.StatusCreated, postResponse(&post)); err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -103,6 +105,8 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 		}
 		return
 	}
+
+	app.invalidateUserCache(r, post.UserID)
 
 	w.WriteHeader(http.StatusNoContent)
 }
