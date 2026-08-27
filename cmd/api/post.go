@@ -168,7 +168,7 @@ func (app *application) getFreePostsHandler(w http.ResponseWriter, r *http.Reque
 }
 
 func (app *application) getSearchPostHandler(w http.ResponseWriter, r *http.Request) {
-	pfq := store.PaginatedFeedQuery{
+	pfq := store.FilterQuery{
 		Limit:  20,
 		Offset: 0,
 	}

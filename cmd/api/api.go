@@ -108,11 +108,9 @@ func (app *application) mount() http.Handler {
 	})
 
 	r.Route("/posts", func(r chi.Router) {
-
 		r.Route("/{postId}", func(r chi.Router) {
 			r.Use(app.postsContextMiddleware)
 			r.Get("/", app.getPostHandler)
-
 			r.Group(func(r chi.Router) {
 				r.Use(app.AuthTokenMiddleware)
 				r.Patch("/", app.checkPostOwnerShip("moderator", app.updatePostHandler))
@@ -120,10 +118,8 @@ func (app *application) mount() http.Handler {
 				r.Put("/like", app.likePostHandler)
 				r.Put("/dislike", app.unlikePostHandler)
 			})
-
 			r.Route("/comments", func(r chi.Router) {
 				r.Get("/", app.getPostCommentsHandler)
-
 				r.Group(func(r chi.Router) {
 					r.Use(app.AuthTokenMiddleware)
 					r.Post("/", app.createCommentHandler)
@@ -131,12 +127,10 @@ func (app *application) mount() http.Handler {
 				})
 			})
 		})
-
 		r.Group(func(r chi.Router) {
 			r.Use(app.AuthTokenMiddleware)
 			r.Post("/", app.createPostHandler)
 		})
-
 		r.Get("/search", app.getSearchPostHandler)
 		r.Get("/free", app.getFreePostsHandler)
 	})
@@ -144,21 +138,16 @@ func (app *application) mount() http.Handler {
 	r.Route("/users", func(r chi.Router) {
 		r.Post("/forgot-password", app.forgetPassHandler)
 		r.Post("/reset-password", app.resetPasswordFromTokenHandler)
-
 		r.Group(func(r chi.Router) {
 			r.Use(app.AuthTokenMiddleware)
 			r.Get("/feed", app.getUserFeedHandler)
 			r.Patch("/reset", app.resetPasswordHandler)
-			// r.Get("/followers", app.getUserFollowersHandler)
-			// r.Get("/following", app.getUserFollowingHandler)
 			r.Put("/me/avatar", app.uploadAvatarHandler)
 			r.Put("/me/profile", app.updateProfileHandler)
 			r.Get("/comment-likes", app.getUserCommentLikesHandler)
 			r.Patch("/rename", app.userRenameHandler)
 		})
-
 		r.Put("/activate/{token}", app.activateUserHandler)
-
 		r.Route("/{userId}", func(r chi.Router) {
 			r.Get("/", app.getUserHandler)
 			r.Get("/posts", app.getUserPostsHandler)
@@ -172,7 +161,6 @@ func (app *application) mount() http.Handler {
 				r.Put("/unfollow", app.unfollowUserHandler)
 			})
 		})
-
 		r.Get("/{userId}/avatar", app.getAvatarHandler)
 	})
 

@@ -225,7 +225,22 @@ func (app *application) getUserFollowersHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	followers, err := app.store.Users.GetUserFollowers(r.Context(), userId)
+	pq := store.PaginationQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+	}
+	p, err := pq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(p); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	followers, err := app.store.Users.GetUserFollowers(r.Context(), userId, p)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -244,7 +259,22 @@ func (app *application) getUserFollowingHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	following, err := app.store.Users.GetUserFollowing(r.Context(), userId)
+	pq := store.PaginationQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+	}
+	p, err := pq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(p); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	following, err := app.store.Users.GetUserFollowing(r.Context(), userId, p)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -480,7 +510,22 @@ func (app *application) resetPasswordFromTokenHandler(w http.ResponseWriter, r *
 func (app *application) getUserCommentLikesHandler(w http.ResponseWriter, r *http.Request) {
 	user := getUserFromCtx(r)
 
-	comments, err := app.store.CommentLikes.GetUserFavoriteComments(r.Context(), user.ID)
+	pq := store.PaginationQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+	}
+	p, err := pq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(p); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	comments, err := app.store.CommentLikes.GetUserFavoriteComments(r.Context(), user.ID, p)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -543,7 +588,22 @@ func (app *application) getUserPostsHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	posts, err := app.store.Users.GetUserOwnPosts(r.Context(), userId)
+	pq := store.PaginationQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+	}
+	p, err := pq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(p); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	posts, err := app.store.Users.GetUserOwnPosts(r.Context(), userId, p)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -563,7 +623,22 @@ func (app *application) getUserLikedPostsHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	posts, err := app.store.PostLikes.GetUserFavoritePosts(r.Context(), userId)
+	pq := store.PaginationQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+	}
+	p, err := pq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(p); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	posts, err := app.store.PostLikes.GetUserFavoritePosts(r.Context(), userId, p)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
@@ -583,7 +658,22 @@ func (app *application) getUserCommentsHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	comments, err := app.store.Comments.GetUserComments(r.Context(), userId)
+	pq := store.PaginationQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+	}
+	p, err := pq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(p); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	comments, err := app.store.Comments.GetUserComments(r.Context(), userId, p)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return

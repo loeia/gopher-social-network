@@ -8,7 +8,39 @@ import (
 	"time"
 )
 
-type PaginatedFeedQuery struct {
+type PaginationQuery struct {
+	Limit  int    `json:"limit" validate:"gte=1,lte=20"`
+	Offset int    `json:"offset" validate:"gte=0"`
+	Sort   string `json:"sort" validate:"omitempty,oneof=asc desc"`
+}
+
+func (p *PaginationQuery) Parse(r *http.Request) (*PaginationQuery, error) {
+	qs := r.URL.Query()
+
+	if limit := qs.Get("limit"); limit != "" {
+		l, err := strconv.Atoi(limit)
+		if err != nil {
+			return nil, err
+		}
+		p.Limit = l
+	}
+
+	if offset := qs.Get("offset"); offset != "" {
+		o, err := strconv.Atoi(offset)
+		if err != nil {
+			return nil, err
+		}
+		p.Offset = o
+	}
+
+	if sort := qs.Get("sort"); sort != "" {
+		p.Sort = sort
+	}
+
+	return p, nil
+}
+
+type FilterQuery struct {
 	Limit  int      `json:"limit" validate:"gte=1,lte=20"`
 	Offset int      `json:"offset" validate:"gte=0"`
 	Sort   string   `json:"sort" validate:"omitempty,oneof=asc desc"`
@@ -19,7 +51,7 @@ type PaginatedFeedQuery struct {
 	Until  string   `json:"until"`
 }
 
-func (p *PaginatedFeedQuery) Parse(r *http.Request) (*PaginatedFeedQuery, error) {
+func (p *FilterQuery) Parse(r *http.Request) (*FilterQuery, error) {
 	qs := r.URL.Query()
 
 	limit := qs.Get("limit")

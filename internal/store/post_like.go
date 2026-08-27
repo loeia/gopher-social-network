@@ -55,7 +55,7 @@ func (s *PostLikeStore) Dislike(c context.Context, postId, userId int64) error {
 	return nil
 }
 
-func (s *PostLikeStore) GetUserFavoritePosts(c context.Context, userId int64) ([]*FavoritePostList, error) {
+func (s *PostLikeStore) GetUserFavoritePosts(c context.Context, userId int64, pgq *PaginationQuery) ([]*FavoritePostList, error) {
 
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
@@ -65,10 +65,11 @@ func (s *PostLikeStore) GetUserFavoritePosts(c context.Context, userId int64) ([
 		INNER JOIN post_likes l ON p.id = l.post_id
 		LEFT JOIN users u ON p.user_id = u.id
 		WHERE l.user_id = $1
-		ORDER BY l.created_at DESC
+		ORDER BY l.created_at ` + pgq.Sort + `
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := s.db.QueryContext(ctx, query, userId)
+	rows, err := s.db.QueryContext(ctx, query, userId, pgq.Limit, pgq.Offset)
 	if err != nil {
 		return nil, err
 	}

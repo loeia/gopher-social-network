@@ -16,20 +16,20 @@ import (
 )
 
 type User struct {
-	ID              int64     `json:"id"`
-	Username        string    `json:"username"`
-	Email           string    `json:"email"`
-	Password        password  `json:"-"`
-	CreatedAt       time.Time `json:"created_at"`
-	IsActive        bool      `json:"is_active"`
-	RoleID          int       `json:"role_id"`
-	Role            Role      `json:"role"`
-	TokenVer        int       `json:"token_ver"`
-	AvatarURL       string    `json:"avatar_url"`
-	Bio             string    `json:"bio"`
-	Links           []string  `json:"links"`
-	FollowersCount  int64     `json:"followers_count"`
-	FollowingCount  int64     `json:"following_count"`
+	ID             int64     `json:"id"`
+	Username       string    `json:"username"`
+	Email          string    `json:"email"`
+	Password       password  `json:"-"`
+	CreatedAt      time.Time `json:"created_at"`
+	IsActive       bool      `json:"is_active"`
+	RoleID         int       `json:"role_id"`
+	Role           Role      `json:"role"`
+	TokenVer       int       `json:"token_ver"`
+	AvatarURL      string    `json:"avatar_url"`
+	Bio            string    `json:"bio"`
+	Links          []string  `json:"links"`
+	FollowersCount int64     `json:"followers_count"`
+	FollowingCount int64     `json:"following_count"`
 }
 
 type UserFollower struct {
@@ -379,7 +379,7 @@ func (s *UserStore) GetAvatar(c context.Context, userId int64) ([]byte, string, 
 	return data, mime.String, nil
 }
 
-func (s *UserStore) GetUserFollowing(c context.Context, userId int64) ([]*UserFollowing, error) {
+func (s *UserStore) GetUserFollowing(c context.Context, userId int64, pgq *PaginationQuery) ([]*UserFollowing, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
@@ -387,9 +387,11 @@ func (s *UserStore) GetUserFollowing(c context.Context, userId int64) ([]*UserFo
 				SELECT f.user_id,u.username,f.created_at FROM followers f
 				LEFT JOIN users u ON u.id = f.user_id
 				WHERE f.follower_id = $1
-			`
+		ORDER BY f.created_at ` + pgq.Sort + `
+		LIMIT $2 OFFSET $3
+	`
 
-	rows, err := s.db.QueryContext(ctx, query, userId)
+	rows, err := s.db.QueryContext(ctx, query, userId, pgq.Limit, pgq.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +414,7 @@ func (s *UserStore) GetUserFollowing(c context.Context, userId int64) ([]*UserFo
 
 }
 
-func (s *UserStore) GetUserFollowers(c context.Context, userId int64) ([]*UserFollower, error) {
+func (s *UserStore) GetUserFollowers(c context.Context, userId int64, pgq *PaginationQuery) ([]*UserFollower, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
@@ -420,9 +422,11 @@ func (s *UserStore) GetUserFollowers(c context.Context, userId int64) ([]*UserFo
 			SELECT f.follower_id,u.username,f.created_at FROM followers f
 			LEFT JOIN users u ON u.id = f.follower_id
 			WHERE f.user_id = $1
+			ORDER BY f.created_at ` + pgq.Sort + `
+			LIMIT $2 OFFSET $3
 		`
 
-	rows, err := s.db.QueryContext(ctx, query, userId)
+	rows, err := s.db.QueryContext(ctx, query, userId, pgq.Limit, pgq.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -444,7 +448,7 @@ func (s *UserStore) GetUserFollowers(c context.Context, userId int64) ([]*UserFo
 	return followers, nil
 }
 
-func (s *UserStore) GetUserOwnPosts(c context.Context, userId int64) ([]*PostBrief, error) {
+func (s *UserStore) GetUserOwnPosts(c context.Context, userId int64, pgq *PaginationQuery) ([]*PostBrief, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
@@ -454,10 +458,11 @@ func (s *UserStore) GetUserOwnPosts(c context.Context, userId int64) ([]*PostBri
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		WHERE p.user_id = $1
-		ORDER BY p.created_at DESC
+		ORDER BY p.created_at ` + pgq.Sort + `
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := s.db.QueryContext(ctx, query, userId)
+	rows, err := s.db.QueryContext(ctx, query, userId, pgq.Limit, pgq.Offset)
 	if err != nil {
 		return nil, err
 	}

@@ -166,7 +166,7 @@ func (s *PostStore) Update(c context.Context, post *Post) error {
 	return nil
 }
 
-func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedFeedQuery) ([]*PostWithMetaData, error) {
+func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *FilterQuery) ([]*PostWithMetaData, error) {
 	query := `
 		SELECT
 		    p.id,
@@ -294,7 +294,7 @@ func escapeLike(s string) string {
 }
 
 // Search returns posts matching search/tags/author/date-range filters, ordered by relevance.
-func (s *PostStore) Search(c context.Context, pfq *PaginatedFeedQuery) ([]*Post, error) {
+func (s *PostStore) Search(c context.Context, pfq *FilterQuery) ([]*Post, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 

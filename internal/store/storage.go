@@ -28,9 +28,9 @@ type PostStorage interface {
 	Delete(context.Context, *Post) error
 	Update(context.Context, *Post) error
 	IncrementViewCount(context.Context, int64) error
-	GetUserFeed(context.Context, int64, *PaginatedFeedQuery) ([]*PostWithMetaData, error)
+	GetUserFeed(context.Context, int64, *FilterQuery) ([]*PostWithMetaData, error)
 	GetFree(context.Context, int) ([]*Post, error)
-	Search(context.Context, *PaginatedFeedQuery) ([]*Post, error)
+	Search(context.Context, *FilterQuery) ([]*Post, error)
 }
 type UserStorage interface {
 	Create(context.Context, *User, *sql.Tx) error
@@ -42,9 +42,9 @@ type UserStorage interface {
 	UpdatePassword(context.Context, string, int64) error
 	UpdateAvatar(context.Context, int64, []byte, string) error
 	GetAvatar(context.Context, int64) ([]byte, string, error)
-	GetUserFollowing(context.Context, int64) ([]*UserFollowing, error)
-	GetUserFollowers(context.Context, int64) ([]*UserFollower, error)
-	GetUserOwnPosts(context.Context, int64) ([]*PostBrief, error)
+	GetUserFollowing(context.Context, int64, *PaginationQuery) ([]*UserFollowing, error)
+	GetUserFollowers(context.Context, int64, *PaginationQuery) ([]*UserFollower, error)
+	GetUserOwnPosts(context.Context, int64, *PaginationQuery) ([]*PostBrief, error)
 	UpdateProfile(context.Context, int64, string, []string) error
 	CreatePasswordReset(context.Context, string, int64, time.Duration) error
 	ResetPassword(context.Context, string, string) error
@@ -54,8 +54,8 @@ type CommentStorage interface {
 	Create(context.Context, *Comment) (*Comment, error)
 	GetById(context.Context, int64) (*Comment, error)
 	Delete(context.Context, int64) error
-	GetByPostId(context.Context, int64) ([]*Comment, error)
-	GetUserComments(context.Context, int64) ([]*Comment, error)
+	GetByPostId(context.Context, int64, *PaginationQuery) ([]*Comment, error)
+	GetUserComments(context.Context, int64, *PaginationQuery) ([]*Comment, error)
 }
 type FollowerStorage interface {
 	Follow(context.Context, int64, int64) error
@@ -67,12 +67,12 @@ type RoleStorage interface {
 type PostLikeStorage interface {
 	Like(context.Context, int64, int64) error
 	Dislike(context.Context, int64, int64) error
-	GetUserFavoritePosts(context.Context, int64) ([]*FavoritePostList, error)
+	GetUserFavoritePosts(context.Context, int64, *PaginationQuery) ([]*FavoritePostList, error)
 }
 type CommentLikeStorage interface {
 	Like(context.Context, int64, int64) error
 	Dislike(context.Context, int64, int64) error
-	GetUserFavoriteComments(context.Context, int64) ([]*FavoriteCommentList, error)
+	GetUserFavoriteComments(context.Context, int64, *PaginationQuery) ([]*FavoriteCommentList, error)
 }
 
 type Storage struct {

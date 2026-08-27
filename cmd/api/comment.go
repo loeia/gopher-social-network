@@ -42,7 +42,22 @@ func commentResponse(c *store.Comment) CommentResponse {
 func (app *application) getPostCommentsHandler(w http.ResponseWriter, r *http.Request) {
 	post := getPostFromCtx(r)
 
-	comments, err := app.store.Comments.GetByPostId(r.Context(), post.ID)
+	pq := store.PaginationQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+	}
+	p, err := pq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(p); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	comments, err := app.store.Comments.GetByPostId(r.Context(), post.ID, p)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return

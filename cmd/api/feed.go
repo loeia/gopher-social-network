@@ -22,7 +22,7 @@ type FeedPostResponse struct {
 
 // getUserFeedHandler returns the paginated feed for the authenticated user.
 func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Request) {
-	pfq := store.PaginatedFeedQuery{
+	pfq := store.FilterQuery{
 		Limit:  20,
 		Offset: 0,
 		Sort:   "desc",

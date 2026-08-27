@@ -30,21 +30,22 @@ func NewCommentStore(db *sql.DB) *CommentStore {
 	}
 }
 
-func (s *CommentStore) GetByPostId(c context.Context, postId int64) ([]*Comment, error) {
+func (s *CommentStore) GetByPostId(c context.Context, postId int64, pq *PaginationQuery) ([]*Comment, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
 	query := `
-		SELECT 
-			c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username,c.like_count 
+		SELECT
+			c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username,c.like_count
 		FROM comments c
 		JOIN users u on u.id = c.user_id
 		LEFT JOIN users ru ON ru.id = c.reply_to_user_id
 		WHERE c.post_id = $1
-		ORDER BY c.created_at DESC;
+		ORDER BY c.created_at ` + pq.Sort + `
+		LIMIT $2 OFFSET $3;
 	`
 
-	rows, err := s.db.QueryContext(ctx, query, postId)
+	rows, err := s.db.QueryContext(ctx, query, postId, pq.Limit, pq.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -120,9 +121,9 @@ func (s *CommentStore) GetById(c context.Context, commentId int64) (*Comment, er
 	defer cancel()
 
 	query := `
-		SELECT 
+		SELECT
 			c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username,
-			c.like_count 
+			c.like_count
 		FROM comments c
 		JOIN users u on u.id = c.user_id
 		LEFT JOIN users ru ON ru.id = c.reply_to_user_id
@@ -153,22 +154,23 @@ func (s *CommentStore) GetById(c context.Context, commentId int64) (*Comment, er
 	return &comment, nil
 }
 
-func (s *CommentStore) GetUserComments(c context.Context, userId int64) ([]*Comment, error) {
+func (s *CommentStore) GetUserComments(c context.Context, userId int64, pq *PaginationQuery) ([]*Comment, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
 	query := `
-		SELECT 
+		SELECT
 			c.id,c.post_id,c.user_id,c.content,c.created_at,c.parent_id,c.reply_to_user_id,ru.username,u.username,
-			c.like_count 
+			c.like_count
 		FROM comments c
 		JOIN users u on u.id = c.user_id
 		LEFT JOIN users ru ON ru.id = c.reply_to_user_id
 		WHERE c.user_id = $1
-		ORDER BY c.created_at DESC
+		ORDER BY c.created_at ` + pq.Sort + `
+		LIMIT $2 OFFSET $3
 	`
 
-	rows, err := s.db.QueryContext(ctx, query, userId)
+	rows, err := s.db.QueryContext(ctx, query, userId, pq.Limit, pq.Offset)
 	if err != nil {
 		return nil, err
 	}

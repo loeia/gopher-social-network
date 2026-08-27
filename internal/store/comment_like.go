@@ -52,7 +52,7 @@ func (s *CommentLikeStore) Dislike(c context.Context, commentId, userId int64) e
 	return err
 }
 
-func (s *CommentLikeStore) GetUserFavoriteComments(c context.Context, userId int64) ([]*FavoriteCommentList, error) {
+func (s *CommentLikeStore) GetUserFavoriteComments(c context.Context, userId int64, pq *PaginationQuery) ([]*FavoriteCommentList, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
@@ -64,10 +64,11 @@ func (s *CommentLikeStore) GetUserFavoriteComments(c context.Context, userId int
 			INNER JOIN comment_likes l ON c.id = l.comment_id
 			LEFT JOIN users u ON c.user_id = u.id
 			WHERE l.user_id = $1
-			ORDER BY l.created_at DESC
+			ORDER BY l.created_at ` + pq.Sort + `
+			LIMIT $2 OFFSET $3
 		`
 
-	rows, err := s.db.QueryContext(ctx, query, userId)
+	rows, err := s.db.QueryContext(ctx, query, userId, pq.Limit, pq.Offset)
 	if err != nil {
 		return nil, err
 	}
