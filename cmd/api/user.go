@@ -609,7 +609,13 @@ func (app *application) getUserPostsHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := app.JSONResponse(w, http.StatusOK, posts); err != nil {
+	var resp []*PostResponse
+	for i := range posts {
+		p := postResponse(posts[i])
+		resp = append(resp, p)
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

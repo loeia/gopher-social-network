@@ -44,7 +44,7 @@ type UserStorage interface {
 	GetAvatar(context.Context, int64) ([]byte, string, error)
 	GetUserFollowing(context.Context, int64, *PaginationQuery) ([]*UserFollowing, error)
 	GetUserFollowers(context.Context, int64, *PaginationQuery) ([]*UserFollower, error)
-	GetUserOwnPosts(context.Context, int64, *PaginationQuery) ([]*PostBrief, error)
+	GetUserOwnPosts(context.Context, int64, *PaginationQuery) ([]*Post, error)
 	UpdateProfile(context.Context, int64, string, []string) error
 	CreatePasswordReset(context.Context, string, int64, time.Duration) error
 	ResetPassword(context.Context, string, string) error

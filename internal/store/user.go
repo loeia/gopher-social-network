@@ -44,16 +44,6 @@ type UserFollowing struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-type PostBrief struct {
-	ID           int64     `json:"post_id"`
-	Author       string    `json:"author"`
-	Title        string    `json:"title"`
-	Tags         []string  `json:"tags"`
-	CreatedAt    time.Time `json:"created_at"`
-	CommentCount int64     `json:"comment_count"`
-	LikeCount    int64     `json:"like_count"`
-}
-
 type password struct {
 	text *string
 	hash []byte
@@ -448,13 +438,15 @@ func (s *UserStore) GetUserFollowers(c context.Context, userId int64, pgq *Pagin
 	return followers, nil
 }
 
-func (s *UserStore) GetUserOwnPosts(c context.Context, userId int64, pgq *PaginationQuery) ([]*PostBrief, error) {
+func (s *UserStore) GetUserOwnPosts(c context.Context, userId int64, pgq *PaginationQuery) ([]*Post, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
 	query := `
 		SELECT
-			p.id,p.title,p.tags,p.created_at,u.username,p.comment_count,p.like_count
+		    p.id,p.user_id,p.title,p.content,p.tags,p.version,
+		    p.created_at,p.updated_at,p.comment_count,p.like_count,p.view_count,
+		    u.username
 		FROM posts p
 		JOIN users u ON u.id = p.user_id
 		WHERE p.user_id = $1
@@ -468,17 +460,22 @@ func (s *UserStore) GetUserOwnPosts(c context.Context, userId int64, pgq *Pagina
 	}
 	defer rows.Close()
 
-	var posts []*PostBrief
+	var posts []*Post
 	for rows.Next() {
-		var p PostBrief
+		var p Post
 		if err := rows.Scan(
 			&p.ID,
+			&p.UserID,
 			&p.Title,
+			&p.Content,
 			pq.Array(&p.Tags),
+			&p.Version,
 			&p.CreatedAt,
-			&p.Author,
+			&p.UpdatedAt,
 			&p.CommentCount,
 			&p.LikeCount,
+			&p.ViewCount,
+			&p.User.Username,
 		); err != nil {
 			return nil, err
 		}
