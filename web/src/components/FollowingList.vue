@@ -113,7 +113,6 @@ async function unfollow(userId: number) {
     const response = await apiFetch(`/users/${userId}/unfollow`, { method: 'PUT' })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     users.value = users.value.filter((u) => u.following_id !== userId)
-    notify('success', 'Unfollowed')
   } catch (error) {
     handleApiError(error, 'Failed to unfollow')
   } finally {

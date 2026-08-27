@@ -3,9 +3,16 @@ import { onActivated, onBeforeUnmount, onDeactivated, onMounted, ref, type Ref }
 export function useInfiniteScroll(callback: () => Promise<void>, enabled: Ref<boolean>) {
   const loadingMore = ref(false)
   const active = ref(true)
+  let lastScrollTime = 0
+  const scrollDebounceMs = 300
 
   async function handleScroll() {
     if (!active.value || loadingMore.value || !enabled.value) return
+
+    const now = Date.now()
+    if (now - lastScrollTime < scrollDebounceMs) return
+    lastScrollTime = now
+
     const scrollHeight = document.documentElement.scrollHeight
     const scrollTop = window.scrollY
     const clientHeight = window.innerHeight

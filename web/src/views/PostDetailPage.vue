@@ -129,10 +129,8 @@ async function toggleFollowAuthor() {
   try {
     if (isFollowingAuthor.value) {
       await store.unfollowUser(authorId)
-      notify('success', 'Unfollowed')
     } else {
       await store.followUser(authorId, current.author)
-      notify('success', `Following ${current.author}`)
     }
   } catch (error) {
     handleApiError(error, 'Failed to update follow')

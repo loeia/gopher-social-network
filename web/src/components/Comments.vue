@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, provide, ref, watch } from 'vue'
 import { apiFetch, getToken, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import type { ElInput } from 'element-plus'
@@ -332,6 +332,7 @@ async function loadComments(silent = false) {
       if (newComments.length > 0) {
         comments.value = [...newComments, ...comments.value]
       }
+      hasMore.value = comments.value.length >= 20
     } else {
       comments.value = Array.isArray(data) ? data : []
       commentsOffset.value = 0
@@ -408,28 +409,11 @@ function scrollToComment() {
   })
 }
 
-let pollTimer: number | null = null
-
-function startPolling() {
-  stopPolling()
-  pollTimer = window.setInterval(() => {
-    if (!loading.value) loadComments(true)
-  }, 5000)
-}
-
-function stopPolling() {
-  if (pollTimer !== null) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
-}
-
 onMounted(() => {
   hasScrolledToComment.value = false
   loadCurrentUser()
   loadComments()
   fetchLikedComments()
-  startPolling()
 })
 watch(
   () => props.postId,
@@ -437,10 +421,8 @@ watch(
     loadCurrentUser()
     loadComments()
     fetchLikedComments()
-    startPolling()
   },
 )
-onBeforeUnmount(stopPolling)
 </script>
 
 <style scoped>
