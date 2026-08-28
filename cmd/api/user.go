@@ -691,3 +691,14 @@ func (app *application) getUserCommentsHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 }
+
+func (app *application) deleteAvatarHandler(w http.ResponseWriter, r *http.Request) {
+	user := getUserFromCtx(r)
+
+	if err := app.store.Users.DeleteUserAvatar(r.Context(), user.ID); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

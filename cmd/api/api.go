@@ -143,6 +143,7 @@ func (app *application) mount() http.Handler {
 			r.Get("/feed", app.getUserFeedHandler)
 			r.Patch("/reset", app.resetPasswordHandler)
 			r.Put("/me/avatar", app.uploadAvatarHandler)
+			r.Delete("/me/avatar", app.deleteAvatarHandler)
 			r.Put("/me/profile", app.updateProfileHandler)
 			r.Get("/comment-likes", app.getUserCommentLikesHandler)
 			r.Patch("/rename", app.userRenameHandler)

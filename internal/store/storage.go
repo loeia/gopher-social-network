@@ -49,6 +49,7 @@ type UserStorage interface {
 	CreatePasswordReset(context.Context, string, int64, time.Duration) error
 	ResetPassword(context.Context, string, string) error
 	Rename(context.Context, int64, string) error
+	DeleteUserAvatar(context.Context, int64) error
 }
 type CommentStorage interface {
 	Create(context.Context, *Comment) (*Comment, error)

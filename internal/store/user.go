@@ -586,3 +586,14 @@ func (s *UserStore) Rename(c context.Context, userId int64, newName string) erro
 	}
 	return nil
 }
+
+func (s *UserStore) DeleteUserAvatar(c context.Context, userId int64) error {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := `UPDATE users SET avatar = NULL, avatar_mime = NULL WHERE id = $1`
+
+	_, err := s.db.ExecContext(ctx, query, userId)
+
+	return err
+}
