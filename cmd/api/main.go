@@ -52,7 +52,7 @@ func main() {
 		},
 		rateLimiter: ratelimiter.Config{
 			RequestsPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 20),
-			TimeFrame:            time.Second * 5,
+			TimeFrame:            time.Duration(env.GetInt("RATELIMITER_TIME_FRAME", 5)) * time.Second,
 			Enabled:              env.GetBool("RATE_LIMITER_ENABLED", true),
 		},
 	}
@@ -93,7 +93,13 @@ func main() {
 	jwtAuthenticator := auth.NewJWTAuthenticator(config.auth.token.secret, config.auth.token.iss, config.auth.token.iss)
 
 	// rate limiter
-	rateLimiter := ratelimiter.NewFixedWindowLimiter(config.rateLimiter.RequestsPerTimeFrame, config.rateLimiter.TimeFrame)
+	var rl ratelimiter.Limiter
+	if config.rateLimiter.Enabled && config.redisCfg.enabled {
+		rl = ratelimiter.NewRedisRateLimiter(rdb, config.rateLimiter.RequestsPerTimeFrame, config.rateLimiter.TimeFrame)
+		logger.Info("redis rate limiter enabled!")
+	} else {
+		config.rateLimiter.Enabled = false
+	}
 
 	app := &application{
 		config:        config,
@@ -102,7 +108,7 @@ func main() {
 		logger:        logger,
 		mailer:        mailtrap,
 		authenticator: jwtAuthenticator,
-		rateLimiter:   rateLimiter,
+		rateLimiter:   rl,
 	}
 
 	logger.Fatalln(app.run(app.mount()))
