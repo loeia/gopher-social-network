@@ -26,12 +26,6 @@ type Post struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type PostWithMetaData struct {
-	Post         Post
-	CommentCount int64
-	LikeCount    int64
-}
-
 type SearchReq struct {
 	Author string   `json:"author" validate:"max=100"`
 	Tags   []string `json:"tags" validate:"max=5"`
@@ -166,7 +160,7 @@ func (s *PostStore) Update(c context.Context, post *Post) error {
 	return nil
 }
 
-func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *FilterQuery) ([]*PostWithMetaData, error) {
+func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *FilterQuery) ([]*Post, error) {
 	query := `
 		SELECT
 		    p.id,
@@ -211,21 +205,21 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *FilterQuer
 	}
 	defer rows.Close()
 
-	var feed []*PostWithMetaData
+	var feed []*Post
 	for rows.Next() {
-		var post PostWithMetaData
+		var post Post
 		if err := rows.Scan(
-			&post.Post.ID,
-			&post.Post.UserID,
-			&post.Post.Title,
-			&post.Post.Content,
-			&post.Post.CreatedAt,
-			&post.Post.Version,
-			pq.Array(&post.Post.Tags),
-			&post.Post.User.Username,
+			&post.ID,
+			&post.UserID,
+			&post.Title,
+			&post.Content,
+			&post.CreatedAt,
+			&post.Version,
+			pq.Array(&post.Tags),
+			&post.User.Username,
 			&post.CommentCount,
 			&post.LikeCount,
-			&post.Post.ViewCount,
+			&post.ViewCount,
 		); err != nil {
 			return nil, err
 		}

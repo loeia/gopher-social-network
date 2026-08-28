@@ -52,16 +52,16 @@ func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Reques
 	resp := make([]*FeedPostResponse, len(feed))
 	for i, f := range feed {
 		resp[i] = &FeedPostResponse{
-			ID:           f.Post.ID,
-			AuthorId:     f.Post.UserID,
-			Author:       f.Post.User.Username,
-			Title:        f.Post.Title,
-			Content:      f.Post.Content,
-			Tags:         f.Post.Tags,
+			ID:           f.ID,
+			AuthorId:     f.UserID,
+			Author:       f.User.Username,
+			Title:        f.Title,
+			Content:      f.Content,
+			Tags:         f.Tags,
 			PostLikes:    f.LikeCount,
 			CommentCount: f.CommentCount,
-			ViewCount:    f.Post.ViewCount,
-			CreatedAt:    f.Post.CreatedAt,
+			ViewCount:    f.ViewCount,
+			CreatedAt:    f.CreatedAt,
 		}
 	}
 

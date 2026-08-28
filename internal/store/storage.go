@@ -28,7 +28,7 @@ type PostStorage interface {
 	Delete(context.Context, *Post) error
 	Update(context.Context, *Post) error
 	IncrementViewCount(context.Context, int64) error
-	GetUserFeed(context.Context, int64, *FilterQuery) ([]*PostWithMetaData, error)
+	GetUserFeed(context.Context, int64, *FilterQuery) ([]*Post, error)
 	GetFree(context.Context, int) ([]*Post, error)
 	Search(context.Context, *FilterQuery) ([]*Post, error)
 }

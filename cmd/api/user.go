@@ -33,7 +33,7 @@ type UserWithToken struct {
 	Token string      `json:"token"`
 }
 
-type PublicUser struct {
+type UserResponse struct {
 	ID             int64     `json:"id"`
 	Username       string    `json:"username"`
 	AvatarURL      string    `json:"avatar_url"`
@@ -47,8 +47,8 @@ type PublicUser struct {
 	RepliesCount   int64     `json:"replies_count"`
 }
 
-func userResponse(u *store.User) PublicUser {
-	return PublicUser{
+func userResponse(u *store.User) *UserResponse {
+	return &UserResponse{
 		ID:             u.ID,
 		Username:       u.Username,
 		AvatarURL:      u.AvatarURL,
