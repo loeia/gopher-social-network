@@ -188,13 +188,13 @@ onBeforeUnmount(() => {
 
 .topic-row {
   padding: 14px 0;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid #262626;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
 .topic-row:first-child {
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid #262626;
 }
 
 .topic-row:hover {
@@ -238,9 +238,9 @@ onBeforeUnmount(() => {
 }
 
 .action-btn:hover {
-  background: #262626;
+  background: rgba(255, 255, 255, 0.03);
   color: #e4e6e8;
-  border-color: #555;
+  border-color: #595959;
 }
 
 .topic-stats {
@@ -284,12 +284,12 @@ onBeforeUnmount(() => {
 }
 
 .topic-author {
-  color: #bfbfbf;
+  color: #e4e6e8;
   font-weight: 500;
 }
 
 .meta-dot {
-  color: #555;
+  color: #595959;
 }
 
 .topic-tag {
@@ -298,7 +298,7 @@ onBeforeUnmount(() => {
   border: 1px solid #333;
   border-radius: 4px;
   font-size: 12px;
-  color: #bfbfbf;
+  color: #8c8c8c;
   white-space: nowrap;
 }
 

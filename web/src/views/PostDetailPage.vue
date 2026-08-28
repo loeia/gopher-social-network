@@ -257,7 +257,7 @@ watch(() => route.params.postId, loadPost)
   font-size: 27px;
   font-weight: 600;
   line-height: 1.2;
-  color: #ffffff;
+  color: #e4e6e8;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -268,13 +268,13 @@ watch(() => route.params.postId, loadPost)
   flex-wrap: wrap;
   gap: 8px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #3d4043;
+  border-bottom: 1px solid #262626;
   font-size: 13px;
-  color: #9fa6ad;
+  color: #8c8c8c;
 }
 
 .meta-sep {
-  color: #6a737c;
+  color: #595959;
 }
 
 .like-btn {
@@ -286,16 +286,16 @@ watch(() => route.params.postId, loadPost)
   border: none;
   cursor: pointer;
   font-size: 13px;
-  color: #6a737c;
+  color: #8c8c8c;
 }
 
 .like-btn:disabled {
   cursor: not-allowed;
-  color: #6a737c;
+  color: #595959;
 }
 
 .like-btn:not(:disabled) {
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .like-btn .like-icon {
@@ -330,7 +330,7 @@ watch(() => route.params.postId, loadPost)
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #9fa6ad;
+  color: #8c8c8c;
 }
 
 .comment-item .comment-icon {
@@ -348,7 +348,7 @@ watch(() => route.params.postId, loadPost)
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #9fa6ad;
+  color: #8c8c8c;
 }
 
 .view-item .view-icon {
@@ -369,17 +369,17 @@ watch(() => route.params.postId, loadPost)
   padding: 2px 10px;
   font-size: 12px;
   font-weight: 600;
-  color: #141414;
-  background: #ffffff;
-  border: 1px solid #ffffff;
+  color: #e4e6e8;
+  background: #262626;
+  border: 1px solid #333;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .follow-btn:hover:not(:disabled) {
-  background: #e4e6e8;
-  color: #141414;
-  border-color: #e4e6e8;
+  background: #333;
+  color: #e4e6e8;
+  border-color: #595959;
 }
 
 .follow-btn:disabled {
@@ -409,7 +409,7 @@ watch(() => route.params.postId, loadPost)
   margin: 28px 0 12px;
   font-weight: 600;
   line-height: 1.3;
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .markdown-body :deep(h1) {
@@ -486,8 +486,8 @@ watch(() => route.params.postId, loadPost)
 .markdown-body :deep(blockquote) {
   margin: 0 0 16px;
   padding: 4px 16px;
-  border-left: 4px solid #3d4043;
-  color: #b2b6b9;
+  border-left: 4px solid #333;
+  color: #8c8c8c;
 }
 
 .markdown-body :deep(img) {
@@ -504,18 +504,18 @@ watch(() => route.params.postId, loadPost)
 .markdown-body :deep(th),
 .markdown-body :deep(td) {
   padding: 8px 12px;
-  border: 1px solid #3d4043;
+  border: 1px solid #333;
 }
 
 .markdown-body :deep(th) {
   background: #232629;
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .markdown-body :deep(hr) {
   margin: 24px 0;
   border: none;
-  border-top: 1px solid #3d4043;
+  border-top: 1px solid #262626;
 }
 
 .detail-tags {
@@ -528,8 +528,8 @@ watch(() => route.params.postId, loadPost)
 .tag {
   padding: 4px 6px;
   border-radius: 4px;
-  background: #26324a;
-  color: #9faccc;
+  background: #1f1f1f;
+  color: #8c8c8c;
   font-size: 12px;
 }
 </style>

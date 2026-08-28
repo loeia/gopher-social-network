@@ -198,7 +198,7 @@ async function handleSubmit() {
   margin: 0 0 40px;
   font-size: 30px;
   font-weight: 600;
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .form {
@@ -223,7 +223,7 @@ async function handleSubmit() {
 .form-label {
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .char-count {
@@ -238,15 +238,15 @@ async function handleSubmit() {
 
 .field :deep(.el-input__wrapper) {
   background: transparent;
-  box-shadow: 0 0 0 1px #262626 inset;
+  box-shadow: 0 0 0 1px #333 inset;
 }
 
 .field :deep(.el-input__inner) {
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .field :deep(.el-input__inner::placeholder) {
-  color: #595959;
+  color: #8c8c8c;
 }
 
 .field.over-limit :deep(.el-input__wrapper) {
@@ -255,15 +255,15 @@ async function handleSubmit() {
 
 .body-field :deep(.el-textarea__inner) {
   background: transparent;
-  color: #ffffff;
-  box-shadow: 0 0 0 1px #262626 inset;
+  color: #e4e6e8;
+  box-shadow: 0 0 0 1px #333 inset;
   border-radius: 4px;
   font-size: 15px;
   line-height: 1.7;
 }
 
 .body-field :deep(.el-textarea__inner::placeholder) {
-  color: #595959;
+  color: #8c8c8c;
 }
 
 .body-field.over-limit :deep(.el-textarea__inner) {
@@ -275,26 +275,26 @@ async function handleSubmit() {
 }
 
 .content-tabs :deep(.el-tabs__item.is-active) {
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .content-tabs :deep(.el-tabs__active-bar) {
-  background-color: #ffffff;
+  background-color: #e4e6e8;
 }
 
 .content-tabs :deep(.el-tabs__nav-wrap::after) {
-  background-color: #262626;
+  background-color: #333;
 }
 
 .preview {
   min-height: 360px;
   padding: 16px;
-  border: 1px solid #262626;
+  border: 1px solid #333;
   border-radius: 4px;
   background: #141414;
   font-size: 15px;
   line-height: 1.7;
-  color: #bfbfbf;
+  color: #8c8c8c;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -312,7 +312,7 @@ async function handleSubmit() {
   margin: 24px 0 12px;
   font-weight: 600;
   line-height: 1.3;
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .preview :deep(h1) {
@@ -381,8 +381,8 @@ async function handleSubmit() {
 .preview :deep(blockquote) {
   margin: 0 0 16px;
   padding: 4px 16px;
-  border-left: 4px solid #3d4043;
-  color: #b2b6b9;
+  border-left: 4px solid #333;
+  color: #8c8c8c;
 }
 
 .preview :deep(img) {
@@ -399,18 +399,18 @@ async function handleSubmit() {
 .preview :deep(th),
 .preview :deep(td) {
   padding: 8px 12px;
-  border: 1px solid #3d4043;
+  border: 1px solid #333;
 }
 
 .preview :deep(th) {
   background: #232629;
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .preview :deep(hr) {
   margin: 24px 0;
   border: none;
-  border-top: 1px solid #3d4043;
+  border-top: 1px solid #333;
 }
 
 .tags-input-row {
@@ -429,17 +429,17 @@ async function handleSubmit() {
 }
 
 .tags-list :deep(.el-tag) {
-  background: #ffffff;
-  color: #141414;
-  border: 1px solid #ffffff;
+  background: #1f1f1f;
+  color: #e4e6e8;
+  border: 1px solid #333;
 }
 
 .tags-list :deep(.el-tag .el-tag__close) {
-  color: #595959;
+  color: #8c8c8c;
 }
 
 .tags-list :deep(.el-tag .el-tag__close:hover) {
-  background: #141414;
+  background: #333;
   color: #ffffff;
 }
 
@@ -451,19 +451,19 @@ async function handleSubmit() {
 
 .add-btn {
   min-width: 88px;
-  background: #ffffff;
-  color: #141414;
-  border: 1px solid #ffffff;
+  background: #262626;
+  color: #e4e6e8;
+  border: 1px solid #333;
 }
 
 .add-btn:hover {
-  background: #e4e6e8;
-  color: #141414;
+  background: #333;
+  color: #e4e6e8;
 }
 
 .add-btn.is-disabled,
 .add-btn.is-disabled:hover {
-  background: #262626;
+  background: #1f1f1f;
   border-color: #262626;
   color: #595959;
 }
@@ -474,14 +474,14 @@ async function handleSubmit() {
 }
 
 .publish-btn {
-  background: #ffffff;
-  color: #141414;
-  border: 1px solid #ffffff;
+  background: #e4e6e8;
+  color: #1a1a1a;
+  border: 1px solid #e4e6e8;
   font-weight: 600;
 }
 
 .publish-btn:hover {
-  background: #e4e6e8;
-  color: #141414;
+  background: #ffffff;
+  color: #1a1a1a;
 }
 </style>

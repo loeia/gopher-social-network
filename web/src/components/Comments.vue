@@ -429,14 +429,14 @@ watch(
 .comments {
   margin-top: 32px;
   padding-top: 16px;
-  border-top: 1px solid #3d4043;
+  border-top: 1px solid #262626;
 }
 
 .comments-title {
   margin: 0 0 12px;
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .add-comment {
@@ -449,7 +449,7 @@ watch(
   padding: 0;
   background: transparent !important;
   text-decoration: underline;
-  text-decoration-color: #595959;
+  text-decoration-color: #8c8c8c;
   text-underline-offset: 3px;
 }
 
@@ -463,36 +463,36 @@ watch(
 }
 
 .comment-box {
-  border: 1px solid #3d4043;
+  border: 1px solid #262626;
   border-radius: 8px;
   padding: 12px;
-  background: #0f1010;
+  background: #141414;
 }
 
 .bw-btn,
 .bw-btn + .bw-btn {
   margin-left: 0;
-  background: #ffffff;
-  color: #141414;
-  border: 1px solid #ffffff;
+  background: #262626;
+  color: #e4e6e8;
+  border: 1px solid #333;
   font-weight: 600;
 }
 
 .bw-btn:hover {
-  background: #e4e6e8;
-  color: #141414;
-  border-color: #e4e6e8;
+  background: #333;
+  color: #e4e6e8;
+  border-color: #595959;
 }
 
 .comment-input :deep(.el-textarea__inner) {
-  background: #0a0a0a;
+  background: #141414;
   border: 1px solid #262626;
   border-radius: 6px;
   color: #e4e6e8;
 }
 
 .comment-input :deep(.el-textarea__inner::placeholder) {
-  color: #595959;
+  color: #8c8c8c;
 }
 
 .comment-actions {

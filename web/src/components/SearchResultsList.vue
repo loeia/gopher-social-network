@@ -1,5 +1,5 @@
 <template>
-  <div class="results" v-loading="loading" element-loading-background="rgba(20, 20, 20, 0.6)">
+  <div class="results" v-loading="loading"   element-loading-background="rgba(20, 20, 20, 0.8)">
     <PostsList
       v-if="results.length"
       :posts="results"
@@ -148,7 +148,7 @@ onBeforeUnmount(() => {
 
 .empty {
   padding: 80px 24px;
-  border: 1px dashed #262626;
+  border: 1px dashed #333;
   border-radius: 12px;
   text-align: center;
   font-size: 16px;

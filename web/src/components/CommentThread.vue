@@ -197,8 +197,8 @@ const isLiking = computed(() => likingId.value === comment.value.id)
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #343536;
-  color: #ffffff;
+  background: #333;
+  color: #e4e6e8;
   font-size: 14px;
   font-weight: 600;
 }
@@ -223,20 +223,20 @@ const isLiking = computed(() => likingId.value === comment.value.id)
 
 .comment-date {
   font-size: 12px;
-  color: #818384;
+  color: #8c8c8c;
 }
 
 .comment-body {
   font-size: 14px;
   line-height: 1.45;
-  color: #d7dadc;
+  color: #e4e6e8;
   white-space: pre-wrap;
   word-break: break-word;
   margin-bottom: 6px;
 }
 
 .reply-to {
-  color: #818384;
+  color: #8c8c8c;
 }
 
 .comment-actions {
@@ -248,7 +248,7 @@ const isLiking = computed(() => likingId.value === comment.value.id)
 .action-btn {
   padding: 0;
   font-size: 12px;
-  color: #818384;
+  color: #8c8c8c;
   background: transparent !important;
 }
 
@@ -267,13 +267,13 @@ const isLiking = computed(() => likingId.value === comment.value.id)
   background: transparent;
   border: none;
   cursor: pointer;
-  color: #818384;
+  color: #8c8c8c;
   font-size: 12px;
   transition: color 0.2s;
 }
 
 .like-btn:hover:not(:disabled) {
-  color: #ff6b6b;
+  color: #e05c5c;
 }
 
 .like-btn:disabled {
@@ -282,7 +282,7 @@ const isLiking = computed(() => likingId.value === comment.value.id)
 }
 
 .like-btn.is-liked {
-  color: #ff4757;
+  color: #e05c5c;
 }
 
 .like-icon {
@@ -296,10 +296,10 @@ const isLiking = computed(() => likingId.value === comment.value.id)
 }
 
 .comment-box {
-  border: 1px solid #3d4043;
+  border: 1px solid #262626;
   border-radius: 8px;
   padding: 12px;
-  background: #0a0a0a;
+  background: #141414;
 }
 
 .reply-box {
@@ -309,27 +309,27 @@ const isLiking = computed(() => likingId.value === comment.value.id)
 .bw-btn,
 .bw-btn + .bw-btn {
   margin-left: 0;
-  background: #ffffff;
-  color: #141414;
-  border: 1px solid #ffffff;
+  background: #262626;
+  color: #e4e6e8;
+  border: 1px solid #333;
   font-weight: 600;
 }
 
 .bw-btn:hover {
-  background: #e4e6e8;
-  color: #141414;
-  border-color: #e4e6e8;
+  background: #333;
+  color: #e4e6e8;
+  border-color: #595959;
 }
 
 .comment-input :deep(.el-textarea__inner) {
-  background: #0a0a0a;
+  background: #141414;
   border: 1px solid #262626;
   border-radius: 6px;
   color: #e4e6e8;
 }
 
 .comment-input :deep(.el-textarea__inner::placeholder) {
-  color: #595959;
+  color: #8c8c8c;
 }
 
 .input-actions {
@@ -340,7 +340,7 @@ const isLiking = computed(() => likingId.value === comment.value.id)
 }
 
 .reply-tree {
-  border-left: 2px solid #343536;
+  border-left: 2px solid #333;
   margin-left: 12px;
   padding-left: 16px;
 }
@@ -354,10 +354,10 @@ const isLiking = computed(() => likingId.value === comment.value.id)
   border: none;
   padding: 0;
   font-size: 12px;
-  color: #818384;
+  color: #8c8c8c;
   cursor: pointer;
   text-decoration: underline;
-  text-decoration-color: #595959;
+  text-decoration-color: #8c8c8c;
   text-underline-offset: 3px;
 }
 
@@ -367,7 +367,7 @@ const isLiking = computed(() => likingId.value === comment.value.id)
 }
 
 .thread.highlight {
-  background: rgba(108, 187, 247, 0.1);
+  background: rgba(37, 99, 235, 0.05);
   border-radius: 8px;
   transition: background 0.3s ease;
 }

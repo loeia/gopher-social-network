@@ -143,12 +143,12 @@ watch(targetUserId, loadFollowing)
   align-items: center;
   gap: 14px;
   padding: 14px 0;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid #262626;
   transition: background 0.15s ease;
 }
 
 .topic-row:first-child {
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid #262626;
 }
 
 .topic-row:hover {
@@ -183,8 +183,8 @@ watch(targetUserId, loadFollowing)
   margin-left: auto;
   font-weight: 500;
   --el-button-bg-color: transparent;
-  --el-button-border-color: #3d444d;
-  --el-button-text-color: #f0f6fc;
+  --el-button-border-color: #333;
+  --el-button-text-color: #e4e6e8;
   --el-button-hover-bg-color: transparent;
   --el-button-hover-border-color: #f85149;
   --el-button-hover-text-color: #f85149;
@@ -195,8 +195,8 @@ watch(targetUserId, loadFollowing)
 
 .unfollow-btn.is-disabled,
 .unfollow-btn.is-disabled:hover {
-  border-color: #3d444d;
-  color: #8c8c8c;
+  border-color: #333;
+  color: #595959;
   background: transparent;
 }
 

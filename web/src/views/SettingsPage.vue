@@ -422,7 +422,7 @@ async function handleRename() {
     margin: 0 0 24px;
     font-size: 22px;
     font-weight: 600;
-    color: #ffffff;
+    color: #e4e6e8;
 }
 
 .menu-btn {
@@ -437,15 +437,15 @@ async function handleRename() {
 }
 
 .menu-btn:hover {
-    color: #ffffff;
+    color: #e4e6e8;
     background: transparent;
     border-color: transparent;
 }
 
 .menu-btn.active {
-    color: #ffffff;
-    background: #262626;
-    border-color: #3d444d;
+    color: #e4e6e8;
+    background: #333;
+    border-color: #333;
 }
 
 .settings-main {
@@ -522,7 +522,7 @@ async function handleRename() {
 
 .char-count {
     font-size: 12px;
-    color: #595959;
+    color: #8c8c8c;
 }
 
 .char-count.over {
@@ -532,19 +532,19 @@ async function handleRename() {
 
 .profile-section .field :deep(.el-textarea__inner) {
     background: transparent;
-    box-shadow: 0 0 0 1px #262626 inset;
+    box-shadow: 0 0 0 1px #333 inset;
     border-radius: 6px;
-    color: #ffffff;
+    color: #e4e6e8;
 }
 
 .profile-section .field :deep(.el-textarea__inner:focus) {
     box-shadow:
-        0 0 0 1px #ffffff inset,
-        0 0 0 3px rgba(255, 255, 255, 0.15);
+        0 0 0 1px #e4e6e8 inset,
+        0 0 0 3px rgba(228, 230, 232, 0.1);
 }
 
 .profile-section .field :deep(.el-textarea__inner::placeholder) {
-    color: #595959;
+    color: #8c8c8c;
 }
 
 .field.is-over :deep(.el-textarea__inner) {
@@ -563,7 +563,7 @@ async function handleRename() {
     margin: 0 0 4px;
     font-size: 21px;
     font-weight: 600;
-    color: #ffffff;
+    color: #e4e6e8;
     text-align: center;
 }
 
@@ -581,22 +581,22 @@ async function handleRename() {
 
 .field :deep(.el-input__wrapper) {
     background: transparent;
-    box-shadow: 0 0 0 1px #262626 inset;
+    box-shadow: 0 0 0 1px #333 inset;
     border-radius: 6px;
 }
 
 .field :deep(.el-input__wrapper.is-focus) {
     box-shadow:
-        0 0 0 1px #ffffff inset,
-        0 0 0 3px rgba(255, 255, 255, 0.15);
+        0 0 0 1px #e4e6e8 inset,
+        0 0 0 3px rgba(228, 230, 232, 0.1);
 }
 
 .field :deep(.el-input__inner) {
-    color: #ffffff;
+    color: #e4e6e8;
 }
 
 .field :deep(.el-input__inner::placeholder) {
-    color: #595959;
+    color: #8c8c8c;
 }
 
 .field.is-error :deep(.el-input__wrapper),
@@ -615,28 +615,28 @@ async function handleRename() {
 .field-hint {
     margin: 0;
     font-size: 12px;
-    color: #595959;
+    color: #8c8c8c;
     text-align: right;
 }
 
 .submit-btn {
     width: 100%;
-    background: #ffffff;
-    color: #141414;
-    border: 1px solid #ffffff;
+    background: #e4e6e8;
+    color: #1a1a1a;
+    border: 1px solid #e4e6e8;
     font-weight: 600;
     border-radius: 8px;
 }
 
 .submit-btn:hover {
-    background: #e4e6e8;
-    color: #141414;
-    border-color: #e4e6e8;
+    background: #ffffff;
+    color: #1a1a1a;
+    border-color: #ffffff;
 }
 
 .submit-btn.is-loading {
-    background: #ffffff;
-    border-color: #ffffff;
-    color: #141414;
+    background: #e4e6e8;
+    border-color: #e4e6e8;
+    color: #ffffff;
 }
 </style>

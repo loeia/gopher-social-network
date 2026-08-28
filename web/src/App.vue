@@ -49,19 +49,19 @@ watch(isLoggedIn, (loggedIn) => {
 <style scoped>
 .main {
   min-height: 100vh;
-  background: #0a0a0a;
+  background: #1a1a1a;
 }
 </style>
 
 <style>
 body {
   margin: 0;
-  background: #0a0a0a;
-  color: #ffffff;
+  background: #1a1a1a;
+  color: #e4e6e8;
 }
 
 .el-loading-mask {
-  background-color: rgba(10, 10, 10, 0.7);
+  background-color: rgba(26, 26, 26, 0.7);
 }
 
 .el-loading-spinner .circular {

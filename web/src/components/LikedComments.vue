@@ -128,13 +128,13 @@ onMounted(loadLikedComments)
 
 .topic-row {
   padding: 14px 0;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid #262626;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
 .topic-row:first-child {
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid #262626;
 }
 
 .topic-row:hover {
@@ -200,7 +200,7 @@ onMounted(loadLikedComments)
 }
 
 .topic-author {
-  color: #bfbfbf;
+  color: #8c8c8c;
   font-weight: 500;
 }
 

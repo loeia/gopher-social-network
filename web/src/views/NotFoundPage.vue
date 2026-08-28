@@ -31,14 +31,14 @@ const router = useRouter()
   margin: 0;
   font-size: 64px;
   font-weight: 700;
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .nf-text {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .nf-hint {
@@ -49,15 +49,15 @@ const router = useRouter()
 }
 
 .nf-btn {
-  background: #ffffff;
-  color: #141414;
-  border: 1px solid #ffffff;
+  background: #e4e6e8;
+  color: #1a1a1a;
+  border: 1px solid #e4e6e8;
   font-weight: 600;
 }
 
 .nf-btn:hover {
-  background: #e4e6e8;
-  color: #141414;
-  border-color: #e4e6e8;
+  background: #ffffff;
+  color: #1a1a1a;
+  border-color: #ffffff;
 }
 </style>

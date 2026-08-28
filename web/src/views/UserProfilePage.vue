@@ -1005,12 +1005,12 @@ onActivated(async () => {
     font-size: 28px;
     font-weight: 700;
     line-height: 1.2;
-    color: #ffffff;
+    color: #e4e6e8;
 }
 
 .handle {
     font-size: 15px;
-    color: #8b949e;
+    color: #8c8c8c;
 }
 
 .bio {
@@ -1018,7 +1018,7 @@ onActivated(async () => {
     max-width: 560px;
     font-size: 14px;
     line-height: 1.6;
-    color: #c9d1d9;
+    color: #e4e6e8;
     word-break: break-word;
 }
 
@@ -1030,7 +1030,7 @@ onActivated(async () => {
     gap: 6px 22px;
     margin-top: 10px;
     font-size: 13px;
-    color: #8b949e;
+    color: #8c8c8c;
 }
 
 .meta-item {
@@ -1043,11 +1043,11 @@ onActivated(async () => {
     width: 14px;
     height: 14px;
     flex-shrink: 0;
-    color: #8b949e;
+    color: #8c8c8c;
 }
 
 .website {
-    color: #58a6ff;
+    color: #6cbbf7;
     text-decoration: none;
     word-break: break-all;
 }
@@ -1060,7 +1060,7 @@ onActivated(async () => {
     margin: 0;
     font-size: 22px;
     font-weight: 700;
-    color: #ffffff;
+    color: #e4e6e8;
 }
 
 .not-found-hint {
@@ -1079,7 +1079,7 @@ onActivated(async () => {
     max-width: 660px;
     margin-top: 20px;
     padding: 18px 0 2px;
-    border-top: 1px solid #21262d;
+    border-top: 1px solid #262626;
 }
 
 .stat {
@@ -1093,13 +1093,13 @@ onActivated(async () => {
 .stat strong {
     font-size: 20px;
     font-weight: 700;
-    color: #ffffff;
+    color: #e4e6e8;
     font-variant-numeric: tabular-nums;
 }
 
 .stat-label {
     font-size: 12px;
-    color: #8b949e;
+    color: #8c8c8c;
 }
 
 .stat.clickable {
@@ -1107,7 +1107,7 @@ onActivated(async () => {
 }
 
 .stat.clickable:hover strong {
-    color: #58a6ff;
+    color: #6cbbf7;
 }
 
 .profile-tabs {
@@ -1119,7 +1119,7 @@ onActivated(async () => {
     display: flex;
     justify-content: center;
     gap: 0;
-    border-bottom: 1px solid #21262d;
+    border-bottom: 1px solid #262626;
 }
 
 .tab-btn {
@@ -1127,7 +1127,7 @@ onActivated(async () => {
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
-    color: #8b949e;
+    color: #8c8c8c;
     font-size: 14px;
     font-weight: 500;
     cursor: pointer;
@@ -1135,12 +1135,12 @@ onActivated(async () => {
 }
 
 .tab-btn:hover {
-    color: #e6edf3;
+    color: #e4e6e8;
 }
 
 .tab-btn.active {
-    color: #ffffff;
-    border-bottom-color: #ffffff;
+    color: #e4e6e8;
+    border-bottom-color: #e4e6e8;
 }
 
 .tabs-content {
@@ -1158,13 +1158,13 @@ onActivated(async () => {
 
 .topic-row {
     padding: 14px 0;
-    border-bottom: 1px solid #1f1f1f;
+    border-bottom: 1px solid #262626;
     cursor: pointer;
     transition: background 0.15s ease;
 }
 
 .topic-row:first-child {
-    border-top: 1px solid #1f1f1f;
+    border-top: 1px solid #262626;
 }
 
 .topic-row:hover {
@@ -1232,7 +1232,7 @@ onActivated(async () => {
 }
 
 .topic-author {
-    color: #bfbfbf;
+    color: #e4e6e8;
     font-weight: 500;
 }
 
@@ -1250,7 +1250,7 @@ onActivated(async () => {
 }
 
 .meta-dot {
-    color: #555;
+    color: #595959;
 }
 
 .topic-tag {
@@ -1259,7 +1259,7 @@ onActivated(async () => {
     border: 1px solid #333;
     border-radius: 4px;
     font-size: 12px;
-    color: #bfbfbf;
+    color: #8c8c8c;
     white-space: nowrap;
 }
 

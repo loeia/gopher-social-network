@@ -66,7 +66,7 @@ const summary = computed(() => {
   margin: 0;
   font-size: 28px;
   font-weight: 600;
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .summary {

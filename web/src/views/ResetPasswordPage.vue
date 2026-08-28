@@ -101,7 +101,7 @@ async function handleReset() {
   margin: 0;
   font-size: 22px;
   font-weight: 600;
-  color: #ffffff;
+  color: #e4e6e8;
   text-align: center;
 }
 
@@ -118,41 +118,41 @@ async function handleReset() {
 
 .reset-field :deep(.el-input__wrapper) {
   background: transparent;
-  box-shadow: 0 0 0 1px #262626 inset;
+  box-shadow: 0 0 0 1px #333 inset;
 }
 
 .reset-field :deep(.el-input__wrapper.is-focus) {
   box-shadow:
-    0 0 0 1px #ffffff inset,
-    0 0 0 3px rgba(255, 255, 255, 0.15);
+    0 0 0 1px #e4e6e8 inset,
+    0 0 0 3px rgba(228, 230, 232, 0.1);
 }
 
 .reset-field :deep(.el-input__inner) {
-  color: #ffffff;
+  color: #e4e6e8;
 }
 
 .reset-field :deep(.el-input__inner::placeholder) {
-  color: #595959;
+  color: #8c8c8c;
 }
 
 .reset-btn {
   width: 100%;
-  background: #ffffff;
-  color: #141414;
-  border: 1px solid #ffffff;
+  background: #e4e6e8;
+  color: #1a1a1a;
+  border: 1px solid #e4e6e8;
   font-weight: 600;
 }
 
 .reset-btn:hover {
-  background: #e4e6e8;
-  color: #141414;
-  border-color: #e4e6e8;
+  background: #ffffff;
+  color: #1a1a1a;
+  border-color: #ffffff;
 }
 
 .reset-btn.is-loading {
-  background: #ffffff;
-  border-color: #ffffff;
-  color: #141414;
+  background: #e4e6e8;
+  border-color: #e4e6e8;
+  color: #ffffff;
 }
 
 .success-icon {

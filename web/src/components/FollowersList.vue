@@ -118,12 +118,12 @@ watch(targetUserId, loadFollowers)
   align-items: center;
   gap: 14px;
   padding: 14px 0;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid #262626;
   transition: background 0.15s ease;
 }
 
 .topic-row:first-child {
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid #262626;
 }
 
 .topic-row:hover {

@@ -86,7 +86,7 @@ function onError() {
   justify-content: center;
   flex-shrink: 0;
   border-radius: 50%;
-  border: 1px solid #262626;
+  border: 1px solid #333;
 }
 
 .avatar-img {
