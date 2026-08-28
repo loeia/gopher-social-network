@@ -38,6 +38,15 @@
                                 <circle cx="12" cy="13" r="4" />
                             </svg>
                         </label>
+                        <button
+                            v-if="isOwnProfile"
+                            class="avatar-delete-btn"
+                            title="Remove avatar"
+                            :disabled="avatarDeleting"
+                            @click.stop="deleteAvatar"
+                        >
+                            &minus;
+                        </button>
                     </div>
 
                     <h1 class="username">{{ user.username }}</h1>
@@ -419,6 +428,7 @@ const user = ref<UserProfile>({
 const avatarInputRef = ref<HTMLInputElement | null>(null);
 const cropVisible = ref(false);
 const cropSrc = ref("");
+const avatarDeleting = ref(false);
 
 const activeTab = ref<"posts" | "replies" | "likes">("posts");
 const tabs = [
@@ -526,6 +536,29 @@ async function uploadAvatar(blob: Blob) {
         notify("success", "Avatar updated");
     } catch (error) {
         handleApiError(error, "Failed to upload avatar");
+    }
+}
+
+async function deleteAvatar() {
+    if (avatarDeleting.value) return;
+    avatarDeleting.value = true;
+    try {
+        const response = await apiFetch("/users/me/avatar", {
+            method: "DELETE",
+        });
+        if (!response.ok) {
+            const message =
+                (await getApiError(response)) ??
+                `Failed to delete avatar (HTTP ${response.status})`;
+            notify("error", message);
+            return;
+        }
+        userStore.bumpAvatarVersion();
+        notify("success", "Avatar removed");
+    } catch (error) {
+        handleApiError(error, "Failed to delete avatar");
+    } finally {
+        avatarDeleting.value = false;
     }
 }
 
@@ -930,6 +963,41 @@ onActivated(async () => {
     width: 28px;
     height: 28px;
     color: #ffffff;
+}
+
+.avatar-delete-btn {
+    position: absolute;
+    left: -4px;
+    bottom: -4px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #1a1a1a;
+    background: #da3633;
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    padding: 0;
+}
+
+.avatar-wrapper.own:hover .avatar-delete-btn {
+    opacity: 1;
+}
+
+.avatar-delete-btn:hover {
+    background: #f85149;
+}
+
+.avatar-delete-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .username {
