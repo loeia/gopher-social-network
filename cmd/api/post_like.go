@@ -13,6 +13,7 @@ func (app *application) likePostHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	app.invalidatePostCache(r, post.ID)
 	app.invalidateUserCache(r, user.ID)
 
 	w.WriteHeader(http.StatusNoContent)
@@ -27,6 +28,7 @@ func (app *application) unlikePostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	app.invalidatePostCache(r, post.ID)
 	app.invalidateUserCache(r, user.ID)
 
 	w.WriteHeader(http.StatusNoContent)

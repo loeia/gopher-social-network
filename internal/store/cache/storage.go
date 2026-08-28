@@ -13,12 +13,28 @@ type User interface {
 	Delete(context.Context, int64) error
 }
 
+type Post interface {
+	Get(context.Context, int64) (*store.Post, error)
+	Set(context.Context, *store.Post) error
+	Delete(context.Context, int64) error
+}
+
+type Avatar interface {
+	Get(context.Context, int64) ([]byte, string, error)
+	Set(context.Context, int64, []byte, string) error
+	Delete(context.Context, int64) error
+}
+
 type Storage struct {
 	User
+	Post
+	Avatar
 }
 
 func NewCacheStorage(rdb *redis.Client) *Storage {
 	return &Storage{
-		User: &UserStore{rdb},
+		User:   &UserStore{rdb},
+		Post:   &PostStore{rdb},
+		Avatar: &AvatarStore{rdb},
 	}
 }

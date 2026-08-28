@@ -55,7 +55,7 @@ type CommentStorage interface {
 	Create(context.Context, *Comment) (*Comment, error)
 	GetById(context.Context, int64) (*Comment, error)
 	Delete(context.Context, int64) error
-	GetByPostId(context.Context, int64, *PaginationQuery) ([]*Comment, error)
+	GetCommentByPostId(context.Context, int64, *PaginationQuery) ([]*Comment, error)
 	GetUserComments(context.Context, int64, *PaginationQuery) ([]*Comment, error)
 }
 type FollowerStorage interface {

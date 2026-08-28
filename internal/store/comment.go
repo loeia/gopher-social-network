@@ -30,7 +30,7 @@ func NewCommentStore(db *sql.DB) *CommentStore {
 	}
 }
 
-func (s *CommentStore) GetByPostId(c context.Context, postId int64, pq *PaginationQuery) ([]*Comment, error) {
+func (s *CommentStore) GetCommentByPostId(c context.Context, postId int64, pq *PaginationQuery) ([]*Comment, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 

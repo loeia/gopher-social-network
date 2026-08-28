@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -69,7 +70,7 @@ func (app *application) invalidateUserCache(r *http.Request, userId int64) {
 	if !app.config.redisCfg.enabled {
 		return
 	}
-	if err := app.cache.Delete(r.Context(), userId); err != nil {
+	if err := app.cache.User.Delete(r.Context(), userId); err != nil {
 		app.logger.Errorw("error deleting user from cache", "error", err)
 	}
 }
@@ -379,6 +380,7 @@ func (app *application) uploadAvatarHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	app.invalidateAvatarCache(r, user.ID)
 	app.invalidateUserCache(r, user.ID)
 
 	w.WriteHeader(http.StatusNoContent)
@@ -392,7 +394,7 @@ func (app *application) getAvatarHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	data, mime, err := app.store.Users.GetAvatar(r.Context(), userId)
+	data, mime, err := app.getUserAvatar(r.Context(), userId)
 	if err != nil {
 		switch err {
 		case store.ErrNotFound:
@@ -700,5 +702,42 @@ func (app *application) deleteAvatarHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	app.invalidateAvatarCache(r, user.ID)
+	app.invalidateUserCache(r, user.ID)
+
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// invalidateAvatarCache deletes a user's cached avatar.
+func (app *application) invalidateAvatarCache(r *http.Request, userId int64) {
+	if !app.config.redisCfg.enabled {
+		return
+	}
+	if err := app.cache.Avatar.Delete(r.Context(), userId); err != nil {
+		app.logger.Errorw("error deleting avatar from cache", "error", err)
+	}
+}
+
+// getUserAvatar retrieves a user's avatar, using cache when enabled.
+func (app *application) getUserAvatar(c context.Context, userId int64) ([]byte, string, error) {
+	if !app.config.redisCfg.enabled {
+		return app.store.Users.GetAvatar(c, userId)
+	}
+
+	data, mime, err := app.cache.Avatar.Get(c, userId)
+	if err != nil {
+		return nil, "", err
+	}
+
+	if data == nil {
+		data, mime, err = app.store.Users.GetAvatar(c, userId)
+		if err != nil {
+			return nil, "", err
+		}
+		if err := app.cache.Avatar.Set(c, userId, data, mime); err != nil {
+			return nil, "", err
+		}
+	}
+
+	return data, mime, nil
 }

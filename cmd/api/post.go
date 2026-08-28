@@ -106,6 +106,7 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	app.invalidatePostCache(r, post.ID)
 	app.invalidateUserCache(r, post.UserID)
 
 	w.WriteHeader(http.StatusNoContent)
@@ -145,6 +146,8 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 		}
 		return
 	}
+
+	app.invalidatePostCache(r, post.ID)
 
 	if err := app.JSONResponse(w, http.StatusOK, postResponse(post)); err != nil {
 		app.internalServerError(w, r, err)
@@ -202,5 +205,15 @@ func (app *application) getSearchPostHandler(w http.ResponseWriter, r *http.Requ
 	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
 		app.internalServerError(w, r, err)
 		return
+	}
+}
+
+// invalidatePostCache deletes a post's cached data so the next read fetches fresh data.
+func (app *application) invalidatePostCache(r *http.Request, postId int64) {
+	if !app.config.redisCfg.enabled {
+		return
+	}
+	if err := app.cache.Post.Delete(r.Context(), postId); err != nil {
+		app.logger.Errorw("error deleting post from cache", "error", err)
 	}
 }

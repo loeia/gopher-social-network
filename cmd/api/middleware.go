@@ -77,7 +77,7 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 
 		ctx := r.Context()
 
-		post, err := app.store.Posts.GetById(ctx, postId)
+		post, err := app.getPost(ctx, postId)
 		if err != nil {
 			switch {
 			case errors.Is(err, store.ErrNotFound):
@@ -142,7 +142,7 @@ func (app *application) getUser(c context.Context, userId int64) (*store.User, e
 		return app.store.Users.GetById(c, userId)
 	}
 
-	user, err := app.cache.Get(c, userId)
+	user, err := app.cache.User.Get(c, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (app *application) getUser(c context.Context, userId int64) (*store.User, e
 		if err != nil {
 			return nil, err
 		}
-		if err := app.cache.Set(c, user); err != nil {
+		if err := app.cache.User.Set(c, user); err != nil {
 			return nil, err
 		}
 	}
@@ -230,4 +230,28 @@ func (app *application) checkCommentOwnerShip(requiredRole string, next http.Han
 
 		next.ServeHTTP(w, r)
 	}
+}
+
+// getPost retrieves a post by ID, using cache when enabled.
+func (app *application) getPost(c context.Context, postId int64) (*store.Post, error) {
+	if !app.config.redisCfg.enabled {
+		return app.store.Posts.GetById(c, postId)
+	}
+
+	post, err := app.cache.Post.Get(c, postId)
+	if err != nil {
+		return nil, err
+	}
+
+	if post == nil {
+		post, err = app.store.Posts.GetById(c, postId)
+		if err != nil {
+			return nil, err
+		}
+		if err := app.cache.Post.Set(c, post); err != nil {
+			return nil, err
+		}
+	}
+
+	return post, nil
 }

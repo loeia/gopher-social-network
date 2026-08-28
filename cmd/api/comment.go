@@ -57,7 +57,7 @@ func (app *application) getPostCommentsHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	comments, err := app.store.Comments.GetByPostId(r.Context(), post.ID, p)
+	comments, err := app.store.Comments.GetCommentByPostId(r.Context(), post.ID, p)
 	if err != nil {
 		app.internalServerError(w, r, err)
 		return
