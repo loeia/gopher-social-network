@@ -109,7 +109,10 @@
                             maxlength="25"
                             class="field"
                             :class="{
-                                'is-error': renameError || isUsernameTooShort,
+                                'is-error':
+                                    renameError ||
+                                    isUsernameTooShort ||
+                                    isUsernameStartsWithNumber,
                             }"
                             @input="renameError = ''"
                             @keyup.enter="handleRename"
@@ -117,6 +120,12 @@
                         <p class="field-hint">{{ newUsername.length }}/25</p>
                         <p v-if="renameError" class="field-error">
                             {{ renameError }}
+                        </p>
+                        <p
+                            v-else-if="isUsernameStartsWithNumber"
+                            class="field-error"
+                        >
+                            Username cannot start with a number
                         </p>
                         <p v-else-if="isUsernameTooShort" class="field-error">
                             Username must be at least 4 characters
@@ -230,6 +239,10 @@ const saving = ref(false);
 
 const isUsernameTooShort = computed(
     () => newUsername.value.length > 0 && newUsername.value.length < 4,
+);
+
+const isUsernameStartsWithNumber = computed(
+    () => newUsername.value.length > 0 && /^\d/.test(newUsername.value),
 );
 
 const bioOverLimit = computed(() => bio.value.length > 500);
@@ -350,6 +363,10 @@ async function handleRename() {
     }
     if (name.length < 4) {
         renameError.value = "Username must be at least 4 characters";
+        return;
+    }
+    if (/^\d/.test(name)) {
+        renameError.value = "Username cannot start with a number";
         return;
     }
     if (name === userStore.username) {
