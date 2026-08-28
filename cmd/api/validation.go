@@ -1,12 +1,27 @@
 package main
 
-import "github.com/go-playground/validator/v10"
+import (
+	"unicode"
+
+	"github.com/go-playground/validator/v10"
+)
 
 var Validate *validator.Validate
 
 // init initializes the global validator instance.
 func init() {
 	Validate = validator.New(validator.WithRequiredStructEnabled())
+
+	// Register a new rule named "alpha_start", where the first character must be a letter
+	Validate.RegisterValidation("alpha_start", func(fl validator.FieldLevel) bool {
+		value := fl.Field().String()
+
+		if len(value) == 0 {
+			return false
+		}
+
+		return unicode.IsLetter(rune(value[0]))
+	})
 }
 
 type CreatePostPayload struct {
@@ -23,7 +38,7 @@ type UpdatePostPayload struct {
 
 type RegisterUserPayload struct {
 	Email    string `json:"email" validate:"required,email,max=255"`
-	Username string `json:"username" validate:"required,min=4,max=25"`
+	Username string `json:"username" validate:"required,min=4,max=25,alpha_start"`
 	Password string `json:"password" validate:"required,min=3,max=72"`
 }
 
@@ -57,5 +72,5 @@ type ResetPasswordPayload struct {
 }
 
 type RenamePayload struct {
-	NewName string `json:"new_name" validate:"required,min=4,max=25"`
+	NewName string `json:"new_name" validate:"required,min=4,max=25,alpha_start"`
 }
