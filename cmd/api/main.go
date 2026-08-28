@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/loeia/gopherSocialNetwork/internal/avatar"
 	"github.com/loeia/gopherSocialNetwork/internal/auth"
 	"github.com/loeia/gopherSocialNetwork/internal/db"
 	"github.com/loeia/gopherSocialNetwork/internal/env"
@@ -69,6 +70,11 @@ func main() {
 	defer db.Close()
 	logger.Info("database connection pool established!")
 	store := store.NewStorage(db)
+
+	// avatar generator
+	if err := avatar.Init(); err != nil {
+		logger.Fatalln(err)
+	}
 
 	// cache
 	var rdb *redis.Client

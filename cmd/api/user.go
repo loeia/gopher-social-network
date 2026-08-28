@@ -18,6 +18,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/loeia/gopherSocialNetwork/internal/avatar"
 	"github.com/loeia/gopherSocialNetwork/internal/mailer"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
 )
@@ -143,6 +144,15 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 			app.internalServerError(w, r, err)
 		}
 		return
+	}
+
+	// generate default avatar
+	svg, err := avatar.Generate(user.ID)
+	if err != nil {
+		app.logger.Errorw("error generating default avatar", "error", err)
+	}
+	if err := app.store.Users.UpdateAvatar(r.Context(), user.ID, svg, "image/svg+xml"); err != nil {
+		app.logger.Errorw("error saving default avatar", "error", err)
 	}
 
 	uwt := UserWithToken{
@@ -700,6 +710,15 @@ func (app *application) deleteAvatarHandler(w http.ResponseWriter, r *http.Reque
 	if err := app.store.Users.DeleteUserAvatar(r.Context(), user.ID); err != nil {
 		app.internalServerError(w, r, err)
 		return
+	}
+
+	// generate new DiceBear avatar
+	svg, err := avatar.Generate(user.ID)
+	if err != nil {
+		app.logger.Errorw("error generating default avatar", "error", err)
+	}
+	if err := app.store.Users.UpdateAvatar(r.Context(), user.ID, svg, "image/svg+xml"); err != nil {
+		app.logger.Errorw("error saving default avatar", "error", err)
 	}
 
 	app.invalidateAvatarCache(r, user.ID)
