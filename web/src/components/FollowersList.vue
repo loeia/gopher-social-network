@@ -17,7 +17,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { apiFetch, getCurrentUserId, handleApiError } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
@@ -96,6 +96,7 @@ const canLoadMore = computed(() => hasMore.value && !loading.value)
 const { loadingMore } = useInfiniteScroll(loadMoreFollowers, canLoadMore)
 
 onMounted(loadFollowers)
+onActivated(loadFollowers)
 watch(targetUserId, loadFollowers)
 </script>
 

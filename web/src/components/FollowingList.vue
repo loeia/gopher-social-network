@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { apiFetch, getCurrentUserId, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -121,6 +121,7 @@ async function unfollow(userId: number) {
 }
 
 onMounted(loadFollowing)
+onActivated(loadFollowing)
 watch(targetUserId, loadFollowing)
 </script>
 
