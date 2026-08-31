@@ -58,7 +58,7 @@ async function fetchPage(page: number, append: boolean) {
     if (append) {
       results.value = [...results.value, ...posts]
       if (posts.length > 0) {
-        highlightId.value = posts[0].id
+        highlightId.value = posts[0]!.id
         setTimeout(() => { highlightId.value = null }, 2500)
       }
     } else {

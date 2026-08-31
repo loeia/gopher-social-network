@@ -347,22 +347,6 @@ async function loadMoreComments() {
   }
 }
 
-function expandParentComments(targetId: number) {
-  const commentMap = new Map<number, Comment>()
-  for (const c of comments.value) commentMap.set(c.id, c)
-
-  let current = commentMap.get(targetId)
-  while (current?.parent_id) {
-    const parentId = current.parent_id
-    const parentChildren = comments.value.filter((c) => c.parent_id === parentId)
-    const curShown = shownFor(parentId)
-    if (curShown < parentChildren.length) {
-      replyShown.value = { ...replyShown.value, [parentId]: parentChildren.length }
-    }
-    current = commentMap.get(parentId)
-  }
-}
-
 function scrollToComment() {
   if (hasScrolledToComment.value) return
   const hash = window.location.hash
@@ -371,7 +355,6 @@ function scrollToComment() {
   if (isNaN(id)) return
 
   hasScrolledToComment.value = true
-  expandParentComments(id)
 
   nextTick(() => {
     nextTick(() => {

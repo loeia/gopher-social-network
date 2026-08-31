@@ -50,6 +50,9 @@
                     </div>
 
                     <h1 class="username">{{ user.username }}</h1>
+                    <p v-if="user.show_email && user.email" class="email">
+                        {{ user.email }}
+                    </p>
                     <span class="handle"
                         >Joined {{ formatDate(user.created_at) }}</span
                     >
@@ -138,9 +141,7 @@
                             v-for="post in userPosts"
                             :key="post.id"
                             class="topic-row"
-                            :class="{
-                                'new-item': postsHighlightId === post.id,
-                            }"
+                            :class="{ 'new-item': postsHighlightId === post.id }"
                             @click="openPost(post.id)"
                         >
                             <div class="topic-top">
@@ -350,20 +351,29 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onActivated, ref, watch } from "vue";
+import {
+    computed,
+    nextTick,
+    onActivated,
+    onBeforeUnmount,
+    onDeactivated,
+    ref,
+    watch,
+} from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { apiFetch, getApiError, getCurrentUserId, handleApiError } from "@/api";
 import { notify } from "@/utils/message";
 import UserAvatar from "@/components/UserAvatar.vue";
 import AvatarCropDialog from "@/components/AvatarCropDialog.vue";
 import { useUserStore } from "@/stores/user";
-import { useInfiniteScroll } from "@/composables/useInfiniteScroll";
 
 defineOptions({ name: "UserProfilePage" });
 
 interface UserProfile {
     id: number;
     username: string;
+    email: string;
+    show_email: boolean;
     created_at: string;
     bio: string;
     links: string[];
@@ -415,6 +425,8 @@ const notFound = ref(false);
 const user = ref<UserProfile>({
     id: 0,
     username: "",
+    email: "",
+    show_email: false,
     created_at: "",
     bio: "",
     links: [],
@@ -568,9 +580,17 @@ async function load() {
     loadedUserId = id;
     loading.value = true;
     notFound.value = false;
+    // A fresh load must never carry over a leftover highlight from a previous
+    // visit (e.g. a load-more flash interrupted by navigation). Only items
+    // fetched by a later load-more get highlighted.
+    postsHighlightId.value = null;
+    repliesHighlightId.value = null;
+    likesHighlightId.value = null;
     user.value = {
         id,
         username: "",
+        email: "",
+        show_email: false,
         created_at: "",
         bio: "",
         links: [],
@@ -594,6 +614,8 @@ async function load() {
         user.value = {
             id: Number(data.id),
             username: data.username ?? "",
+            email: data.email ?? "",
+            show_email: !!data.show_email,
             created_at: data.created_at ?? "",
             bio: data.bio ?? "",
             links: Array.isArray(data.links) ? data.links : [],
@@ -693,6 +715,7 @@ async function apiGet(url: string): Promise<Record<string, unknown>[]> {
 async function loadUserPosts() {
     if (postsLoading.value) return;
     postsLoading.value = true;
+    postsHighlightId.value = null;
     try {
         const raw = await apiGet(
             `/users/${userId.value}/posts?limit=20&offset=0&sort=desc`,
@@ -708,31 +731,41 @@ async function loadUserPosts() {
 }
 
 async function loadMoreUserPosts() {
-    if (!postsHasMore.value) return;
+    if (postsLoadingMore.value || !postsHasMore.value) return;
+    postsLoadingMore.value = true;
     try {
         const raw = await apiGet(
             `/users/${userId.value}/posts?limit=20&offset=${postsOffset.value}&sort=desc`,
         );
-        const newPosts = mapPostsData(raw);
+        const fetched = mapPostsData(raw);
+        // Dedupe by id: a concurrent refresh can otherwise append the same
+        // batch twice, duplicating rows and lighting up two highlights.
+        const existingIds = new Set(userPosts.value.map((p) => p.id));
+        const newPosts = fetched.filter((p) => !existingIds.has(p.id));
         if (newPosts.length > 0) {
             userPosts.value = [...userPosts.value, ...newPosts];
             postsOffset.value += newPosts.length;
+            // Highlight the first item of the newly fetched batch only, not
+            // the first item of the list as a whole.
             postsHighlightId.value = newPosts[0]!.id;
             setTimeout(() => {
                 postsHighlightId.value = null;
             }, 2500);
         }
-        if (newPosts.length < 20) {
+        if (fetched.length < 20) {
             postsHasMore.value = false;
         }
     } catch (error) {
         handleApiError(error, "Failed to load more posts");
+    } finally {
+        postsLoadingMore.value = false;
     }
 }
 
 async function loadUserReplies() {
     if (repliesLoading.value) return;
     repliesLoading.value = true;
+    repliesHighlightId.value = null;
     try {
         const raw = await apiGet(
             `/users/${userId.value}/comments?limit=20&offset=0&sort=desc`,
@@ -748,12 +781,15 @@ async function loadUserReplies() {
 }
 
 async function loadMoreUserReplies() {
-    if (!repliesHasMore.value) return;
+    if (repliesLoadingMore.value || !repliesHasMore.value) return;
+    repliesLoadingMore.value = true;
     try {
         const raw = await apiGet(
             `/users/${userId.value}/comments?limit=20&offset=${repliesOffset.value}&sort=desc`,
         );
-        const newReplies = mapRepliesData(raw);
+        const fetched = mapRepliesData(raw);
+        const existingIds = new Set(userReplies.value.map((r) => r.id));
+        const newReplies = fetched.filter((r) => !existingIds.has(r.id));
         if (newReplies.length > 0) {
             userReplies.value = [...userReplies.value, ...newReplies];
             repliesOffset.value += newReplies.length;
@@ -762,17 +798,20 @@ async function loadMoreUserReplies() {
                 repliesHighlightId.value = null;
             }, 2500);
         }
-        if (newReplies.length < 20) {
+        if (fetched.length < 20) {
             repliesHasMore.value = false;
         }
     } catch (error) {
         handleApiError(error, "Failed to load more replies");
+    } finally {
+        repliesLoadingMore.value = false;
     }
 }
 
 async function loadUserLikedPosts() {
     if (likesLoading.value) return;
     likesLoading.value = true;
+    likesHighlightId.value = null;
     try {
         const raw = await apiGet(
             `/users/${userId.value}/post-likes?limit=20&offset=0&sort=desc`,
@@ -788,49 +827,79 @@ async function loadUserLikedPosts() {
 }
 
 async function loadMoreUserLikedPosts() {
-    if (!likesHasMore.value) return;
+    if (likesLoadingMore.value || !likesHasMore.value) return;
+    likesLoadingMore.value = true;
     try {
         const raw = await apiGet(
             `/users/${userId.value}/post-likes?limit=20&offset=${likesOffset.value}&sort=desc`,
         );
-        const newPosts = mapLikesData(raw);
+        const fetched = mapLikesData(raw);
+        const existingIds = new Set(userLikedPosts.value.map((p) => p.post_id));
+        const newPosts = fetched.filter((p) => !existingIds.has(p.post_id));
         if (newPosts.length > 0) {
             userLikedPosts.value = [...userLikedPosts.value, ...newPosts];
             likesOffset.value += newPosts.length;
+            // Highlight the first item of the newly fetched batch only.
             likesHighlightId.value = newPosts[0]!.post_id;
             setTimeout(() => {
                 likesHighlightId.value = null;
             }, 2500);
         }
-        if (newPosts.length < 20) {
+        if (fetched.length < 20) {
             likesHasMore.value = false;
         }
     } catch (error) {
         handleApiError(error, "Failed to load more liked posts");
+    } finally {
+        likesLoadingMore.value = false;
     }
 }
 
-const postsCanLoadMore = computed(
-    () => postsHasMore.value && !postsLoading.value,
-);
-const repliesCanLoadMore = computed(
-    () => repliesHasMore.value && !repliesLoading.value,
-);
-const likesCanLoadMore = computed(
-    () => likesHasMore.value && !likesLoading.value,
-);
-const { loadingMore: postsLoadingMore } = useInfiniteScroll(
-    loadMoreUserPosts,
-    postsCanLoadMore,
-);
-const { loadingMore: repliesLoadingMore } = useInfiniteScroll(
-    loadMoreUserReplies,
-    repliesCanLoadMore,
-);
-const { loadingMore: likesLoadingMore } = useInfiniteScroll(
-    loadMoreUserLikedPosts,
-    likesCanLoadMore,
-);
+// Only load more for the tab that is actually visible, so scrolling in the
+// replies tab does not fire hidden background requests for the other tabs.
+// All three tabs load more the same way Home (PostsList) does: fire as soon
+// as the user scrolls within 200px of the bottom, with no debounce, and only
+// from scroll events — never automatically on mount/activation. Only the
+// visible tab loads, and only the first item of a load-more batch gets
+// highlighted; the initial (first) request never highlights anything.
+const postsLoadingMore = ref(false);
+const repliesLoadingMore = ref(false);
+const likesLoadingMore = ref(false);
+
+function nearBottom() {
+    const scrollHeight = document.documentElement.scrollHeight;
+    const scrollTop = window.scrollY;
+    const clientHeight = window.innerHeight;
+    return scrollTop + clientHeight >= scrollHeight - 200;
+}
+
+function handleFeedScroll() {
+    if (activeTab.value === "posts") {
+        if (!postsLoadingMore.value && postsHasMore.value && nearBottom()) {
+            loadMoreUserPosts();
+        }
+    } else if (activeTab.value === "likes") {
+        if (!likesLoadingMore.value && likesHasMore.value && nearBottom()) {
+            loadMoreUserLikedPosts();
+        }
+    } else if (activeTab.value === "replies") {
+        if (!repliesLoadingMore.value && repliesHasMore.value && nearBottom()) {
+            loadMoreUserReplies();
+        }
+    }
+}
+
+onActivated(() => {
+    window.addEventListener("scroll", handleFeedScroll);
+});
+
+onDeactivated(() => {
+    window.removeEventListener("scroll", handleFeedScroll);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener("scroll", handleFeedScroll);
+});
 
 function openPost(id: number) {
     router.push(`/posts/${id}`);
@@ -848,11 +917,42 @@ watch(
     { immediate: true },
 );
 
+// Insert fetched items that are not already in the list, keeping desc order
+// (newest first). Returns the number of newly inserted items.
+function mergeNewItems<T>(
+    list: { value: T[] },
+    offset: { value: number },
+    fetched: T[],
+    key: (item: T) => number,
+): number {
+    const existingIds = new Set(list.value.map(key));
+    const fresh = fetched.filter((item) => !existingIds.has(key(item)));
+    if (fresh.length === 0) return 0;
+    list.value = [...fresh, ...list.value];
+    offset.value += fresh.length;
+    return fresh.length;
+}
+
 // Refresh data when re-activated from keep-alive (e.g. deleting a post on
-// My Posts changes the counts shown here, so reload them without a full remount).
+// My Posts changes the counts shown here). Lists are NOT reset to page one:
+// resetting collapses the page height and makes the restored scroll position
+// jump (jitter). New items are merged in instead, so the user keeps their
+// browsing context.
 onActivated(async () => {
     const id = userId.value;
-    if (!id) return;
+    if (!id || loading.value) return;
+
+    // Clear any leftover load-more highlight from before the page was
+    // deactivated, so returning never shows a stale highlight.
+    postsHighlightId.value = null;
+    repliesHighlightId.value = null;
+    likesHighlightId.value = null;
+
+    // Remember the scroll state so we can compensate if new items get
+    // inserted at the top and push the content down.
+    const prevScrollY = window.scrollY;
+    const prevHeight = document.documentElement.scrollHeight;
+
     try {
         const [userRes, postsRes, repliesRes, likesRes] = await Promise.all([
             apiFetch(`/users/${id}`),
@@ -867,6 +967,8 @@ onActivated(async () => {
             user.value = {
                 ...user.value,
                 username: data.username ?? user.value.username,
+                email: data.email ?? user.value.email,
+                show_email: !!data.show_email,
                 bio: data.bio ?? user.value.bio,
                 links: Array.isArray(data.links)
                     ? data.links
@@ -881,26 +983,43 @@ onActivated(async () => {
         if (postsRes.ok) {
             const json = await postsRes.json();
             const raw = Array.isArray(json) ? json : (json.data ?? []);
-            userPosts.value = mapPostsData(raw);
-            postsOffset.value = userPosts.value.length;
-            postsHasMore.value = userPosts.value.length >= 20;
+            mergeNewItems(
+                userPosts,
+                postsOffset,
+                mapPostsData(raw),
+                (p) => p.id,
+            );
         }
         if (repliesRes.ok) {
             const json = await repliesRes.json();
             const raw = Array.isArray(json) ? json : (json.data ?? []);
-            userReplies.value = mapRepliesData(raw);
-            repliesOffset.value = userReplies.value.length;
-            repliesHasMore.value = userReplies.value.length >= 20;
+            mergeNewItems(
+                userReplies,
+                repliesOffset,
+                mapRepliesData(raw),
+                (r) => r.id,
+            );
         }
         if (likesRes.ok) {
             const json = await likesRes.json();
             const raw = Array.isArray(json) ? json : (json.data ?? []);
-            userLikedPosts.value = mapLikesData(raw);
-            likesOffset.value = userLikedPosts.value.length;
-            likesHasMore.value = userLikedPosts.value.length >= 20;
+            mergeNewItems(
+                userLikedPosts,
+                likesOffset,
+                mapLikesData(raw),
+                (p) => p.post_id,
+            );
         }
     } catch {
         // Silently ignore errors on activation refresh
+    }
+
+    // New items inserted at the top push content down; compensate so the
+    // viewport keeps showing the same rows instead of jumping.
+    await nextTick();
+    const newHeight = document.documentElement.scrollHeight;
+    if (newHeight > prevHeight) {
+        window.scrollTo(0, prevScrollY + (newHeight - prevHeight));
     }
 });
 </script>
@@ -1010,6 +1129,13 @@ onActivated(async () => {
 
 .handle {
     font-size: 15px;
+    color: #8c8c8c;
+}
+
+.email {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
     color: #8c8c8c;
 }
 

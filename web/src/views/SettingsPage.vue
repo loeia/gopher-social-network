@@ -196,6 +196,16 @@
                         />
                     </div>
 
+                    <div class="field-group email-visibility">
+                        <el-checkbox v-model="showEmail">
+                            Show email on my profile
+                        </el-checkbox>
+                        <p class="email-hint">
+                            When enabled, your email is shown under your name
+                            on your public profile. Off by default.
+                        </p>
+                    </div>
+
                     <el-button
                         size="large"
                         class="submit-btn"
@@ -235,6 +245,7 @@ const renameError = ref("");
 // Edit profile form (moved from UserProfilePage)
 const bio = ref("");
 const links = ref<string[]>(Array(5).fill(""));
+const showEmail = ref(false);
 const saving = ref(false);
 
 const isUsernameTooShort = computed(
@@ -268,6 +279,7 @@ watch(activeTab, (tab) => {
         (userStore.links ?? []).slice(0, 5).forEach((link, index) => {
             links.value[index] = link;
         });
+        showEmail.value = userStore.showEmail;
     }
 });
 
@@ -292,6 +304,7 @@ async function saveProfile() {
             body: JSON.stringify({
                 bio: bio.value.trim(),
                 links: filledLinks,
+                show_email: showEmail.value,
             }),
         });
         if (!response.ok) {
@@ -474,6 +487,37 @@ async function handleRename() {
 
 .profile-section .field-group {
     width: 460px;
+}
+
+.profile-section .email-visibility {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    padding: 14px 16px;
+    border: 1px solid #262626;
+    border-radius: 8px;
+    background: #141414;
+}
+
+.profile-section .email-visibility :deep(.el-checkbox) {
+    --el-checkbox-checked-bg-color: #6cbbf7;
+    --el-checkbox-checked-input-border-color: #6cbbf7;
+    --el-checkbox-checked-icon-color: #141414;
+    --el-checkbox-input-border-color-hover: #6cbbf7;
+}
+
+.profile-section .email-visibility :deep(.el-checkbox__label) {
+    color: #e4e6e8;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.profile-section .email-hint {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #8c8c8c;
 }
 
 .reset-section .submit-btn,

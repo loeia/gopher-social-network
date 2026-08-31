@@ -10,6 +10,7 @@ export const useUserStore = defineStore('user', {
     createdAt: '',
     bio: '',
     links: [] as string[],
+    showEmail: false,
     loaded: false,
   }),
   actions: {
@@ -31,6 +32,7 @@ export const useUserStore = defineStore('user', {
         this.createdAt = user?.created_at ?? ''
         this.bio = user?.bio ?? ''
         this.links = Array.isArray(user?.links) ? user.links : []
+        this.showEmail = !!user?.show_email
         this.loaded = true
       } catch (error) {
         console.error('Load current user error:', error)
@@ -47,6 +49,7 @@ export const useUserStore = defineStore('user', {
       this.createdAt = ''
       this.bio = ''
       this.links = []
+      this.showEmail = false
       this.loaded = false
     },
   },
