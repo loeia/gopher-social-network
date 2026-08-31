@@ -5,6 +5,7 @@
       :posts="results"
       :loading="loading"
       :highlight-first="highlightFirst"
+      :highlight-id="highlightId"
     />
     <div v-if="loadingMore" class="loading-more">Loading...</div>
 
@@ -37,6 +38,7 @@ const loadingMore = ref(false)
 const currentPage = ref(1)
 const hasMore = ref(true)
 const highlightFirst = ref(false)
+const highlightId = ref<number | null>(null)
 
 let requestId = 0
 let rafId = 0
@@ -55,6 +57,10 @@ async function fetchPage(page: number, append: boolean) {
     if (id !== requestId) return
     if (append) {
       results.value = [...results.value, ...posts]
+      if (posts.length > 0) {
+        highlightId.value = posts[0].id
+        setTimeout(() => { highlightId.value = null }, 2500)
+      }
     } else {
       results.value = posts
       highlightFirst.value = true

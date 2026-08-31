@@ -371,4 +371,17 @@ const isLiking = computed(() => likingId.value === comment.value.id)
   border-radius: 8px;
   transition: background 0.3s ease;
 }
+
+.comment.new-item {
+  animation: highlight-flash 2.5s ease-out;
+}
+
+@keyframes highlight-flash {
+  0% {
+    background-color: rgba(64, 158, 255, 0.15);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
 </style>

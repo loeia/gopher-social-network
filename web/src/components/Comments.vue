@@ -508,17 +508,4 @@ watch(
   color: #8c8c8c;
   font-size: 14px;
 }
-
-.comment.new-item {
-  animation: highlight-flash 2.5s ease-out;
-}
-
-@keyframes highlight-flash {
-  0% {
-    background-color: rgba(64, 158, 255, 0.15);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
 </style>
