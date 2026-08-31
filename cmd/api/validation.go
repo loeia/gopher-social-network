@@ -58,8 +58,9 @@ type CommentReq struct {
 }
 
 type UpdateProfilePayload struct {
-	Bio   string   `json:"bio" validate:"omitempty,max=500"`
-	Links []string `json:"links" validate:"omitempty,max=5,dive,omitempty,http_url,max=255"`
+	Bio       string   `json:"bio" validate:"omitempty,max=500"`
+	Links     []string `json:"links" validate:"omitempty,max=5,dive,omitempty,http_url,max=255"`
+	ShowEmail *bool    `json:"show_email"`
 }
 
 type ForgetPasswordPayload struct {

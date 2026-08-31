@@ -39,8 +39,10 @@ type UserResponse struct {
 	ID             int64     `json:"id"`
 	Username       string    `json:"username"`
 	AvatarURL      string    `json:"avatar_url"`
+	Email          string    `json:"email"`
 	Bio            string    `json:"bio"`
 	Links          []string  `json:"links"`
+	ShowEmail      bool      `json:"show_email"`
 	CreatedAt      time.Time `json:"created_at"`
 	FollowersCount int64     `json:"followers_count"`
 	FollowingCount int64     `json:"following_count"`
@@ -50,12 +52,14 @@ type UserResponse struct {
 }
 
 func userResponse(u *store.User) *UserResponse {
-	return &UserResponse{
+	resp := &UserResponse{
 		ID:             u.ID,
 		Username:       u.Username,
 		AvatarURL:      u.AvatarURL,
+		Email:          u.Email,
 		Bio:            u.Bio,
 		Links:          u.Links,
+		ShowEmail:      u.ShowEmail,
 		CreatedAt:      u.CreatedAt,
 		FollowersCount: u.FollowersCount,
 		FollowingCount: u.FollowingCount,
@@ -63,6 +67,12 @@ func userResponse(u *store.User) *UserResponse {
 		LikesCount:     u.LikesCount,
 		RepliesCount:   u.RepliesCount,
 	}
+	// The email is private by default: only expose it on the public profile
+	// when the user explicitly opted in via the "show email" setting.
+	if !u.ShowEmail {
+		resp.Email = ""
+	}
+	return resp
 }
 
 // invalidateUserCache deletes a user's cached profile so the next read
@@ -434,7 +444,7 @@ func (app *application) updateProfileHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	if err := app.store.Users.UpdateProfile(r.Context(), user.ID, req.Bio, req.Links); err != nil {
+	if err := app.store.Users.UpdateProfile(r.Context(), user.ID, req.Bio, req.Links, req.ShowEmail != nil && *req.ShowEmail); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

@@ -28,6 +28,7 @@ type User struct {
 	AvatarURL      string    `json:"avatar_url"`
 	Bio            string    `json:"bio"`
 	Links          []string  `json:"links"`
+	ShowEmail      bool      `json:"show_email"`
 	FollowersCount int64     `json:"followers_count"`
 	FollowingCount int64     `json:"following_count"`
 	PostsCount     int64     `json:"posts_count"`
@@ -115,10 +116,11 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	query := `
+		query := `
 			SELECT
 				u.id,u.username,u.email,u.password,u.created_at,u.is_active,u.token_ver,
 				COALESCE(u.bio,''),u.links,
+				u.show_email,
 				u.followers_count,u.following_count,u.posts_count,u.likes_count,u.replies_count,
 				r.id,r.name,r.description,r.level
 			FROM users u
@@ -137,6 +139,7 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 		&user.TokenVer,
 		&user.Bio,
 		pq.Array(&user.Links),
+		&user.ShowEmail,
 		&user.FollowersCount,
 		&user.FollowingCount,
 		&user.PostsCount,
@@ -495,16 +498,16 @@ func (s *UserStore) GetUserOwnPosts(c context.Context, userId int64, pgq *Pagina
 	return posts, nil
 }
 
-func (s *UserStore) UpdateProfile(c context.Context, userId int64, bio string, links []string) error {
+func (s *UserStore) UpdateProfile(c context.Context, userId int64, bio string, links []string, showEmail bool) error {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
 	query := `
 		UPDATE users
-		SET bio = $1, links = $2
-		WHERE id = $3 AND is_active = true
+		SET bio = $1, links = $2, show_email = $3
+		WHERE id = $4 AND is_active = true
 	`
-	if _, err := s.db.ExecContext(ctx, query, bio, links, userId); err != nil {
+	if _, err := s.db.ExecContext(ctx, query, bio, links, showEmail, userId); err != nil {
 		return err
 	}
 	return nil
