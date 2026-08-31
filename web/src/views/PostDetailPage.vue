@@ -45,7 +45,7 @@
             <svg class="comment-icon" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z" />
             </svg>
-            <span class="meta-count">{{ commentsCount }}</span>
+            <span class="meta-count">{{ post.comment_count }}</span>
           </span>
           <span class="meta-sep">·</span>
           <span class="view-item">
@@ -59,7 +59,7 @@
 
         <div class="markdown-body" v-html="renderedContent" />
 
-        <Comments :post-id="post.id" @count="onCommentCount" />
+        <Comments :post-id="post.id" @comment-count-changed="onCommentCountChanged" />
       </template>
     </div>
   </div>
@@ -102,7 +102,6 @@ const isLoggedIn = computed(() => !!getToken())
 const liked = ref(false)
 const liking = ref(false)
 const likesCount = ref(0)
-const commentsCount = ref(0)
 const viewsCount = ref(0)
 
 const likeTitle = computed(() => {
@@ -161,16 +160,18 @@ function formatDate(value?: string) {
   return date.toLocaleString()
 }
 
-function onCommentCount(value: number) {
-  commentsCount.value = value
-}
-
 function loadPost() {
   const id = Number(route.params.postId)
   store.visitPost(id)
   loading.value = true
   post.value = null
   startLoad(id)
+}
+
+function onCommentCountChanged(delta: number) {
+  if (post.value) {
+    post.value.comment_count = Math.max(0, (post.value.comment_count ?? 0) + delta)
+  }
 }
 
 async function toggleLike() {
@@ -220,7 +221,6 @@ async function startLoad(id: number) {
     const data = json.data ?? json
     post.value = data
     likesCount.value = Number(data.like_count ?? 0)
-    commentsCount.value = Number(data.comment_count ?? 0)
     viewsCount.value = Number(data.view_count ?? 0)
     loadLikedState(id)
   } catch (error) {

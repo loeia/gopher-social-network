@@ -1,48 +1,47 @@
 <template>
   <div class="comments" v-loading="loading">
-    <h3 class="comments-title" v-if="comments.length">Comments ({{ comments.length }})</h3>
-
-    <CommentThread v-for="root in commentTree" :key="root.comment.id" :node="root" />
-
-    <div v-if="loadingMore" class="loading-more">Loading...</div>
-
-    <div class="add-comment" v-if="isLoggedIn">
+    <div class="comments-header">
+      <h3 class="comments-title">Comments</h3>
       <el-button
-        v-if="!showCommentBox"
+        v-if="isLoggedIn && !showCommentBox"
         text
         class="add-comment-link"
         @click="showCommentBox = true"
       >
         Add a comment
       </el-button>
-      <div v-else class="comment-box">
-        <el-input
-          ref="commentInputRef"
-          v-model="newComment"
-          type="textarea"
-          :rows="3"
-          placeholder="Write a comment..."
-          class="comment-input"
-        />
-        <div class="comment-actions">
-          <el-button class="bw-btn" size="small" :loading="commenting" @click="submitComment">
-            Add Comment
-          </el-button>
-          <el-button class="bw-btn" size="small" @click="cancelComment">Cancel</el-button>
-        </div>
+    </div>
+
+    <div v-if="isLoggedIn && showCommentBox" class="comment-box">
+      <el-input
+        ref="commentInputRef"
+        v-model="newComment"
+        type="textarea"
+        :rows="3"
+        placeholder="Write a comment..."
+        class="comment-input"
+      />
+      <div class="comment-actions">
+        <el-button class="bw-btn" size="small" :loading="commenting" @click="submitComment">
+          Add Comment
+        </el-button>
+        <el-button class="bw-btn" size="small" @click="cancelComment">Cancel</el-button>
       </div>
     </div>
+
+    <CommentThread v-for="root in commentTree" :key="root.comment.id" :node="root" />
+
+    <div v-if="loadingMore" class="loading-more">Loading...</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, onMounted, provide, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { apiFetch, getToken, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
 import type { ElInput } from 'element-plus'
 import CommentThread, { type CommentNode } from '@/components/CommentThread.vue'
 import { useFeedStore } from '@/stores/feed'
-import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 
 const store = useFeedStore()
 
@@ -63,7 +62,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  count: [value: number]
+  (e: 'comment-count-changed', delta: number): void
 }>()
 
 const comments = ref<Comment[]>([])
@@ -72,6 +71,7 @@ const commentsOffset = ref(0)
 const hasMore = ref(true)
 const highlightId = ref<number | null>(null)
 const hasScrolledToComment = ref(false)
+const loadingMore = ref(false)
 
 const isLoggedIn = computed(() => !!getToken())
 const showCommentBox = ref(false)
@@ -86,45 +86,15 @@ const currentUser = ref<string | null>(null)
 const likedComments = ref<Set<number>>(new Set())
 const likingId = ref<number | null>(null)
 
-const replyShown = ref<Record<number, number>>({})
-function shownFor(parentId: number): number {
-  return replyShown.value[parentId] ?? 0
-}
-function moreReplies(parentId: number, total: number) {
-  const cur = shownFor(parentId)
-  if (cur <= 0) {
-    replyShown.value = { ...replyShown.value, [parentId]: Math.min(3, total) }
-  } else if (cur >= total) {
-    replyShown.value = { ...replyShown.value, [parentId]: 0 }
-  } else {
-    replyShown.value = { ...replyShown.value, [parentId]: Math.min(cur + 5, total) }
-  }
-}
-
-function buildTree(list: Comment[]): CommentNode[] {
-  const map = new Map<number, CommentNode>()
-  for (const c of list) map.set(c.id, { comment: c, children: [] })
-  const roots: CommentNode[] = []
-  for (const c of list) {
-    const node = map.get(c.id)!
-    if (c.parent_id != null && map.has(c.parent_id)) {
-      map.get(c.parent_id)!.children.push(node)
-    } else {
-      roots.push(node)
-    }
-  }
-  return roots
-}
-
-const commentTree = computed(() => buildTree(comments.value))
+const commentTree = computed<CommentNode[]>(() =>
+  comments.value.map((c) => ({ comment: c, children: [] }))
+)
 
 provide('commentThread', {
   formatDate,
   toggleReply,
   deleteComment,
   submitReply,
-  shownFor,
-  moreReplies,
   currentUser,
   isLoggedIn,
   deletingId,
@@ -192,8 +162,20 @@ async function fetchLikedComments() {
   }
 }
 
-const canLoadMore = computed(() => hasMore.value && !loading.value)
-const { loadingMore } = useInfiniteScroll(loadMoreComments, canLoadMore)
+let isLoadingMore = false
+
+function handleScroll() {
+  if (isLoadingMore || loadingMore.value || !hasMore.value) return
+  const scrollHeight = document.documentElement.scrollHeight
+  const scrollTop = window.scrollY
+  const clientHeight = window.innerHeight
+  if (scrollTop + clientHeight >= scrollHeight - 200) {
+    isLoadingMore = true
+    loadMoreComments().finally(() => {
+      setTimeout(() => { isLoadingMore = false }, 1000)
+    })
+  }
+}
 
 async function deleteComment(commentId: number) {
   deletingId.value = commentId
@@ -201,10 +183,8 @@ async function deleteComment(commentId: number) {
     const response = await apiFetch(`/comments/${commentId}`, { method: 'DELETE' })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     notify('success', 'Comment deleted')
-    commentsOffset.value = 0
-    hasMore.value = true
     await loadComments()
-    store.updatePostCommentCount(props.postId, comments.value.length)
+    emit('comment-count-changed', -1)
   } catch (error) {
     handleApiError(error, 'Failed to delete comment')
   } finally {
@@ -244,10 +224,8 @@ async function submitReply(commentId: number) {
     replyContent.value = ''
     replyingTo.value = null
     notify('success', 'Reply added')
-    commentsOffset.value = 0
-    hasMore.value = true
     await loadComments()
-    store.updatePostCommentCount(props.postId, comments.value.length)
+    emit('comment-count-changed', 1)
   } catch (error) {
     handleApiError(error, 'Failed to add reply')
   } finally {
@@ -271,10 +249,8 @@ async function submitComment() {
     newComment.value = ''
     showCommentBox.value = false
     notify('success', 'Comment added')
-    commentsOffset.value = 0
-    hasMore.value = true
     await loadComments()
-    store.updatePostCommentCount(props.postId, comments.value.length)
+    emit('comment-count-changed', 1)
   } catch (error) {
     handleApiError(error, 'Failed to add comment')
   } finally {
@@ -326,19 +302,18 @@ async function loadComments(silent = false) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
     const data = json.data ?? json
+    const fetched: Comment[] = Array.isArray(data) ? data : []
     if (silent) {
       const existingIds = new Set(comments.value.map((c) => c.id))
-      const newComments = Array.isArray(data) ? data.filter((c: Comment) => !existingIds.has(c.id)) : []
+      const newComments = fetched.filter((c) => !existingIds.has(c.id))
       if (newComments.length > 0) {
         comments.value = [...newComments, ...comments.value]
       }
-      hasMore.value = comments.value.length >= 20
     } else {
-      comments.value = Array.isArray(data) ? data : []
-      commentsOffset.value = 0
-      hasMore.value = comments.value.length >= 20
+      comments.value = fetched
+      commentsOffset.value = fetched.length
     }
-    emit('count', comments.value.length)
+    hasMore.value = fetched.length >= 20
     if (!silent) nextTick(scrollToComment)
   } catch (error) {
     if (!silent) handleApiError(error, 'Failed to load comments')
@@ -348,7 +323,8 @@ async function loadComments(silent = false) {
 }
 
 async function loadMoreComments() {
-  if (!hasMore.value) return
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
   try {
     const response = await apiFetch(
       `/posts/${props.postId}/comments?limit=20&offset=${commentsOffset.value}&sort=desc`,
@@ -363,11 +339,11 @@ async function loadMoreComments() {
       highlightId.value = newComments[0].id
       setTimeout(() => { highlightId.value = null }, 2500)
     }
-    if (newComments.length < 20) {
-      hasMore.value = false
-    }
+    hasMore.value = newComments.length >= 20
   } catch (error) {
     handleApiError(error, 'Failed to load more comments')
+  } finally {
+    setTimeout(() => { loadingMore.value = false }, 500)
   }
 }
 
@@ -414,6 +390,12 @@ onMounted(() => {
   loadCurrentUser()
   loadComments()
   fetchLikedComments()
+  window.addEventListener('scroll', handleScroll)
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
+  isLoadingMore = false
 })
 watch(
   () => props.postId,
@@ -433,10 +415,19 @@ watch(
 }
 
 .comments-title {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 16px;
   font-weight: 600;
   color: #e4e6e8;
+  line-height: 32px;
+}
+
+.comments-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  margin-bottom: 12px;
 }
 
 .add-comment {
@@ -445,6 +436,8 @@ watch(
 
 .add-comment-link {
   font-size: 13px;
+  line-height: 32px;
+  height: 32px;
   color: #8c8c8c;
   padding: 0;
   background: transparent !important;

@@ -72,21 +72,25 @@
       </div>
     </div>
 
-    <div class="reply-tree" v-if="node.children.length">
-      <CommentThread v-for="child in visibleChildren" :key="child.comment.id" :node="child" />
-      <div class="more-replies">
-        <button class="more-btn" @click="moreReplies(comment.id, node.children.length)">
-          {{ replyLabel }}
-        </button>
-      </div>
+    <div class="reply-tree" v-if="replies.length > 0">
+      <CommentThread v-for="reply in replies" :key="reply.id" :node="{ comment: reply, children: [] }" />
+    </div>
+
+    <div v-if="totalCount > 0 || loadingReplies" class="more-replies">
+      <button class="more-btn" :disabled="loadingReplies" @click="toggleReplies">
+        <span v-if="loadingReplies">Loading...</span>
+        <span v-else-if="replies.length === 0">{{ totalCount === 1 ? 'Show 1 reply' : `Show ${totalCount} replies` }}</span>
+        <span v-else>Hide replies</span>
+      </button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, inject, nextTick, ref, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import type { ElInput } from 'element-plus'
+import { apiFetch } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
 
 interface Comment {
@@ -110,8 +114,6 @@ interface ThreadContext {
   toggleReply: (commentId: number) => void
   deleteComment: (commentId: number) => void
   submitReply: (commentId: number) => void
-  shownFor: (parentId: number) => number
-  moreReplies: (parentId: number, total: number) => void
   currentUser: Ref<string | null>
   isLoggedIn: ComputedRef<boolean>
   deletingId: Ref<number | null>
@@ -138,8 +140,6 @@ const {
   toggleReply,
   deleteComment,
   submitReply,
-  shownFor,
-  moreReplies,
   currentUser,
   isLoggedIn,
   deletingId,
@@ -153,14 +153,46 @@ const {
 } = ctx
 
 const comment = computed(() => props.node.comment)
-const visibleChildren = computed(() => props.node.children.slice(0, shownFor(comment.value.id)))
-const replyLabel = computed(() => {
-  const total = props.node.children.length
-  const cur = shownFor(comment.value.id)
-  if (cur <= 0) return total === 1 ? 'Show 1 reply' : `Show ${total} replies`
-  if (cur >= total) return 'Hide replies'
-  const left = total - cur
-  return left === 1 ? 'Show 1 more reply' : `Show ${left} more replies`
+
+const replies = ref<Comment[]>([])
+const totalCount = ref(0)
+const loadingReplies = ref(false)
+const repliesLoaded = ref(false)
+
+async function fetchReplyCount() {
+  try {
+    const response = await apiFetch(`/comments/${comment.value.id}/replies?limit=1&offset=0`)
+    if (!response.ok) return
+    const count = Number(response.headers.get('X-Total-Count') ?? 0)
+    totalCount.value = count
+  } catch {
+    // ignore
+  }
+}
+
+async function toggleReplies() {
+  if (repliesLoaded.value) {
+    replies.value = []
+    repliesLoaded.value = false
+    return
+  }
+  loadingReplies.value = true
+  try {
+    const response = await apiFetch(`/comments/${comment.value.id}/replies?limit=100&offset=0&sort=asc`)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const data = json.data ?? json
+    replies.value = Array.isArray(data) ? data : []
+    repliesLoaded.value = true
+  } catch {
+    // ignore
+  } finally {
+    loadingReplies.value = false
+  }
+}
+
+onMounted(() => {
+  fetchReplyCount()
 })
 
 const replyInput = ref<InstanceType<typeof ElInput> | null>(null)
@@ -361,9 +393,13 @@ const isLiking = computed(() => likingId.value === comment.value.id)
   text-underline-offset: 3px;
 }
 
-.more-btn:hover {
+.more-btn:hover:not(:disabled) {
   color: #6cbbf7;
   text-decoration-color: #6cbbf7;
+}
+
+.more-btn:disabled {
+  cursor: wait;
 }
 
 .thread.highlight {
