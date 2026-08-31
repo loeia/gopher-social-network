@@ -249,9 +249,24 @@
                             </div>
                             <p class="reply-content">{{ reply.content }}</p>
                             <div class="topic-meta">
-                                <span class="topic-date">{{
-                                    formatDate(reply.created_at)
-                                }}</span>
+                                <span class="topic-date">{{ formatDate(reply.created_at) }}</span>
+                                <span
+                                    class="reply-like"
+                                    :title="`${reply.like_count} likes`"
+                                >
+                                    <svg
+                                        class="stat-icon like-icon"
+                                        viewBox="0 0 24 24"
+                                        aria-hidden="true"
+                                    >
+                                        <path
+                                            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                                        />
+                                    </svg>
+                                    <span v-if="reply.like_count > 0">{{
+                                        reply.like_count
+                                    }}</span>
+                                </span>
                             </div>
                         </div>
                         <div
@@ -398,6 +413,7 @@ interface UserReply {
     id: number;
     post_id: number;
     content: string;
+    like_count: number;
     created_at: string;
 }
 
@@ -662,6 +678,14 @@ async function load() {
             likesOffset.value = userLikedPosts.value.length;
             likesHasMore.value = userLikedPosts.value.length >= 20;
         }
+
+        // The lists have been fully replaced by a fresh load; no item may stay
+        // highlighted. Guards above keep load-more from racing the initial
+        // fetch, but clear again here so a leftover flash can never survive
+        // a profile load (e.g. refresh with restored scroll position).
+        postsHighlightId.value = null;
+        repliesHighlightId.value = null;
+        likesHighlightId.value = null;
     } catch (error) {
         handleApiError(error, "Failed to load profile");
     } finally {
@@ -689,6 +713,7 @@ function mapRepliesData(raw: Record<string, unknown>[]): UserReply[] {
         id: Number(c.comment_id ?? c.id ?? 0),
         post_id: Number(c.post_id ?? 0),
         content: String(c.content ?? ""),
+        like_count: Number(c.like_count ?? 0),
         created_at: String(c.created_at ?? ""),
     }));
 }
@@ -731,7 +756,12 @@ async function loadUserPosts() {
 }
 
 async function loadMoreUserPosts() {
-    if (postsLoadingMore.value || !postsHasMore.value) return;
+    if (
+        postsLoading.value ||
+        postsLoadingMore.value ||
+        !postsHasMore.value
+    )
+        return;
     postsLoadingMore.value = true;
     try {
         const raw = await apiGet(
@@ -781,7 +811,12 @@ async function loadUserReplies() {
 }
 
 async function loadMoreUserReplies() {
-    if (repliesLoadingMore.value || !repliesHasMore.value) return;
+    if (
+        repliesLoading.value ||
+        repliesLoadingMore.value ||
+        !repliesHasMore.value
+    )
+        return;
     repliesLoadingMore.value = true;
     try {
         const raw = await apiGet(
@@ -827,7 +862,12 @@ async function loadUserLikedPosts() {
 }
 
 async function loadMoreUserLikedPosts() {
-    if (likesLoadingMore.value || !likesHasMore.value) return;
+    if (
+        likesLoading.value ||
+        likesLoadingMore.value ||
+        !likesHasMore.value
+    )
+        return;
     likesLoadingMore.value = true;
     try {
         const raw = await apiGet(
@@ -875,15 +915,30 @@ function nearBottom() {
 
 function handleFeedScroll() {
     if (activeTab.value === "posts") {
-        if (!postsLoadingMore.value && postsHasMore.value && nearBottom()) {
+        if (
+            !postsLoading.value &&
+            !postsLoadingMore.value &&
+            postsHasMore.value &&
+            nearBottom()
+        ) {
             loadMoreUserPosts();
         }
     } else if (activeTab.value === "likes") {
-        if (!likesLoadingMore.value && likesHasMore.value && nearBottom()) {
+        if (
+            !likesLoading.value &&
+            !likesLoadingMore.value &&
+            likesHasMore.value &&
+            nearBottom()
+        ) {
             loadMoreUserLikedPosts();
         }
     } else if (activeTab.value === "replies") {
-        if (!repliesLoadingMore.value && repliesHasMore.value && nearBottom()) {
+        if (
+            !repliesLoading.value &&
+            !repliesLoadingMore.value &&
+            repliesHasMore.value &&
+            nearBottom()
+        ) {
             loadMoreUserReplies();
         }
     }
@@ -1369,6 +1424,16 @@ onActivated(async () => {
     margin-top: 6px;
     font-size: 13px;
     color: #8c8c8c;
+}
+
+.reply-like {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: auto;
+    font-size: 13px;
+    color: #8c8c8c;
+    white-space: nowrap;
 }
 
 .topic-date {
