@@ -37,11 +37,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch, handleApiError } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
-import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 
 interface LikedComment {
   comment_id: number
@@ -58,6 +57,7 @@ const loading = ref(false)
 const commentsOffset = ref(0)
 const hasMore = ref(true)
 const highlightId = ref<number | null>(null)
+const loadingMore = ref(false)
 
 const router = useRouter()
 
@@ -88,7 +88,8 @@ async function loadLikedComments() {
 }
 
 async function loadMoreLikedComments() {
-  if (!hasMore.value) return
+  if (!hasMore.value || loadingMore.value) return
+  loadingMore.value = true
   try {
     const response = await apiFetch(
       `/users/comment-likes?limit=20&offset=${commentsOffset.value}&sort=desc`,
@@ -108,13 +109,41 @@ async function loadMoreLikedComments() {
     }
   } catch (error) {
     handleApiError(error, 'Failed to load more liked comments')
+  } finally {
+    loadingMore.value = false
   }
 }
 
-const canLoadMore = computed(() => hasMore.value && !loading.value)
-const { loadingMore } = useInfiniteScroll(loadMoreLikedComments, canLoadMore)
+// Home-style infinite scroll: fire as soon as the user scrolls within 200px of
+// the bottom, with no debounce and no automatic load on mount/activation — only
+// from scroll events, exactly like the Home page (PostsList.vue).
+function nearBottom() {
+  const scrollHeight = document.documentElement.scrollHeight
+  const scrollTop = window.scrollY
+  const clientHeight = window.innerHeight
+  return scrollTop + clientHeight >= scrollHeight - 200
+}
 
-onMounted(loadLikedComments)
+function handleScroll() {
+  if (loadingMore.value || !hasMore.value || loading.value) return
+  if (nearBottom()) {
+    loadMoreLikedComments()
+  }
+}
+
+onMounted(() => {
+  loadLikedComments()
+  window.addEventListener('scroll', handleScroll)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+onActivated(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+onDeactivated(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 </script>
 
 <style scoped>

@@ -111,7 +111,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import PostsList from '@/components/PostsList.vue'
@@ -119,7 +119,6 @@ import { apiFetch, getCurrentUserId, handleApiError } from '@/api'
 import { useFeedStore, toFeedPost, type FeedPost } from '@/stores/feed'
 import { renderMarkdown } from '@/utils/markdown'
 import { notify } from '@/utils/message'
-import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 
 defineOptions({ name: 'MyPostsPage' })
 
@@ -130,6 +129,7 @@ const loading = ref(false)
 const postsOffset = ref(0)
 const hasMore = ref(true)
 const highlightId = ref<number | null>(null)
+const loadingMore = ref(false)
 const currentUserId = getCurrentUserId()
 
 const editingPost = ref<FeedPost | null>(null)
@@ -202,7 +202,8 @@ async function loadMyPosts() {
 }
 
 async function loadMoreMyPosts() {
-  if (!currentUserId || !hasMore.value) return
+  if (!currentUserId || !hasMore.value || loadingMore.value) return
+  loadingMore.value = true
   try {
     const response = await apiFetch(
       `/users/${currentUserId}/posts?limit=20&offset=${postsOffset.value}&sort=desc`,
@@ -227,11 +228,40 @@ async function loadMoreMyPosts() {
     }
   } catch (error) {
     handleApiError(error, 'Failed to load more posts')
+  } finally {
+    loadingMore.value = false
   }
 }
 
-const canLoadMore = computed(() => hasMore.value && !loading.value && !editingPost.value)
-const { loadingMore } = useInfiniteScroll(loadMoreMyPosts, canLoadMore)
+// Home-style infinite scroll: fire as soon as the user scrolls within 200px of
+// the bottom, with no debounce and no automatic load on mount/activation — only
+// from scroll events, exactly like the Home page (PostsList.vue).
+function nearBottom() {
+  const scrollHeight = document.documentElement.scrollHeight
+  const scrollTop = window.scrollY
+  const clientHeight = window.innerHeight
+  return scrollTop + clientHeight >= scrollHeight - 200
+}
+
+function handleScroll() {
+  if (loadingMore.value || !hasMore.value || loading.value || editingPost.value) return
+  if (nearBottom()) {
+    loadMoreMyPosts()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
+onActivated(() => {
+  window.addEventListener('scroll', handleScroll)
+})
+onDeactivated(() => {
+  window.removeEventListener('scroll', handleScroll)
+})
 
 function startEdit(post: FeedPost) {
   editingPost.value = post
