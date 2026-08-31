@@ -127,6 +127,7 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 	comment.User.Username = user.Username
 
 	app.invalidateUserCache(r, user.ID)
+	app.invalidatePostCache(r, post.ID)
 
 	resp := commentResponse(comment)
 	if err := app.JSONResponse(w, http.StatusCreated, resp); err != nil {
@@ -144,6 +145,7 @@ func (app *application) deleteCommentHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	app.invalidateUserCache(r, comment.UserID)
+	app.invalidatePostCache(r, comment.PostID)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -153,6 +155,35 @@ func (app *application) getCommentHandler(w http.ResponseWriter, r *http.Request
 
 	resp := commentResponse(comment)
 	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *application) getCommentRepliesHandler(w http.ResponseWriter, r *http.Request) {
+	comment := getCommentFromCtx(r)
+
+	replies, err := app.store.Comments.GetRepliesByParentId(r.Context(), comment.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	totalCount, err := app.store.Comments.CountRepliesByParentId(r.Context(), comment.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	responseReplies := make([]*CommentResponse, 0, len(replies))
+	for _, c := range replies {
+		rc := commentResponse(c)
+		responseReplies = append(responseReplies, &rc)
+	}
+
+	w.Header().Set("X-Total-Count", strconv.Itoa(totalCount))
+
+	if err := app.JSONResponse(w, http.StatusOK, responseReplies); err != nil {
 		app.internalServerError(w, r, err)
 		return
 	}

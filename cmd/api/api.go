@@ -87,7 +87,7 @@ func (app *application) mount() http.Handler {
 		AllowedOrigins:   []string{env.GetString("CORS_ALLOWED_ORIGIN", "http://localhost:5173")},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
+		ExposedHeaders:   []string{"Link", "X-Total-Count"},
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
@@ -169,6 +169,7 @@ func (app *application) mount() http.Handler {
 		r.Route("/{commentId}", func(r chi.Router) {
 			r.Use(app.commentsContextMiddleware)
 			r.Get("/", app.getCommentHandler)
+			r.Get("/replies", app.getCommentRepliesHandler)
 			r.Group(func(r chi.Router) {
 				r.Use(app.AuthTokenMiddleware)
 				r.Delete("/", app.checkCommentOwnerShip("moderator", app.deleteCommentHandler))
