@@ -1,12 +1,7 @@
 <template>
   <div class="signup-page">
-    <div class="signup-wrap">
-      <div class="back-nav">
-        <el-button text @click="goBack">← Back</el-button>
-      </div>
-
-      <div class="signup-card">
-        <h1 class="signup-title">Create your Gopher account</h1>
+    <div class="signup-card">
+      <h1 class="signup-title">Create your Gopher account</h1>
 
         <template v-if="!registered">
           <div class="field-group">
@@ -72,7 +67,6 @@
           <el-button size="large" class="submit-btn" @click="router.push('/login')">
             Go to Sign in
           </el-button>
-        </div>
       </div>
     </div>
   </div>
@@ -93,10 +87,6 @@ const loading = ref(false)
 const registered = ref(false)
 const usernameError = ref('')
 const emailError = ref('')
-
-function goBack() {
-  router.push('/')
-}
 
 async function handleRegister() {
   const name = username.value.trim()
@@ -158,48 +148,22 @@ async function handleRegister() {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 61px);
-  padding: 48px 16px;
-}
-
-.signup-wrap {
-  width: 100%;
-  max-width: 348px;
-}
-
-.back-nav {
-  margin-bottom: 12px;
-}
-
-.back-nav :deep(.el-button) {
-  color: #6a737c;
-  background: transparent;
-}
-
-.back-nav :deep(.el-button:hover),
-.back-nav :deep(.el-button:focus),
-.back-nav :deep(.el-button:focus-visible) {
-  color: #6a737c;
-  background: transparent;
-  text-decoration: underline;
-  text-decoration-color: #6a737c;
-  text-underline-offset: 4px;
-}
-
-.back-nav :deep(.el-button.is-disabled) {
-  color: #3d4043;
-  background: transparent;
-  text-decoration: none;
-  cursor: not-allowed;
+  height: 100vh;
+  padding: 32px;
+  box-sizing: border-box;
 }
 
 .signup-card {
-  background: #ffffff;
-  border: 1px solid #d1d5db;
+  width: 100%;
+  max-width: 348px;
+  
+  background: #1a1a1a;
+  border: 1px solid #333;
   border-radius: 8px;
-  padding: 24px;
+  padding: 32px 24px;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 16px;
 }
 
@@ -207,7 +171,7 @@ async function handleRegister() {
   margin: 0 0 8px;
   font-size: 20px;
   font-weight: 500;
-  color: #1f2328;
+  color: #e4e6e8;
   text-align: center;
 }
 
@@ -220,54 +184,56 @@ async function handleRegister() {
 .field-label {
   font-size: 14px;
   font-weight: 600;
-  color: #1f2328;
+  color: #e4e6e8;
 }
 
 .field :deep(.el-input__wrapper) {
-  background: #ffffff;
-  box-shadow: 0 0 0 1px #d1d5db inset;
+  background: transparent;
+  box-shadow: 0 0 0 1px #333 inset;
   border-radius: 6px;
   transition: box-shadow 0.2s ease;
 }
 
 .field :deep(.el-input__wrapper.is-focus) {
   box-shadow:
-    0 0 0 1px #0969da inset,
-    0 0 0 3px rgba(9, 105, 218, 0.3);
+    0 0 0 1px #e4e6e8 inset,
+    0 0 0 3px rgba(228, 230, 232, 0.1);
 }
 
 .field :deep(.el-input__inner) {
-  color: #1f2328;
+  color: #e4e6e8;
 }
 
 .field :deep(.el-input__inner::placeholder) {
-  color: #6e7781;
+  color: #8c8c8c;
 }
 
-.field :deep(.el-input__suffix) {
-  color: #57606a;
+.field :deep(.el-input__inner:-webkit-autofill) {
+  -webkit-box-shadow: 0 0 0 1000px #1a1a1a inset !important;
+  -webkit-text-fill-color: #e4e6e8 !important;
+  caret-color: #e4e6e8;
 }
 
 .field.is-error :deep(.el-input__wrapper),
 .field.is-error :deep(.el-input__wrapper.is-focus) {
   box-shadow:
-    0 0 0 1px #cf222e inset,
-    0 0 0 3px rgba(207, 34, 46, 0.3);
+    0 0 0 1px #f85149 inset,
+    0 0 0 3px rgba(248, 81, 73, 0.3);
 }
 
 .submit-btn {
   width: 100%;
-  background: #1f2328;
-  color: #ffffff;
-  border: 1px solid #1f2328;
+  background: #e4e6e8;
+  color: #1a1a1a;
+  border: 1px solid #e4e6e8;
   border-radius: 6px;
   font-weight: 500;
 }
 
 .submit-btn:hover {
-  background: #32383f;
-  color: #ffffff;
-  border-color: #32383f;
+  background: #ffffff;
+  color: #1a1a1a;
+  border-color: #ffffff;
 }
 
 .submit-btn.is-loading {
@@ -278,10 +244,10 @@ async function handleRegister() {
 
 .signup-footer {
   padding-top: 16px;
-  border-top: 1px solid #d1d5db;
+  border-top: 1px solid #333;
   text-align: center;
   font-size: 14px;
-  color: #1f2328;
+  color: #e4e6e8;
 }
 
 .success {
@@ -300,7 +266,7 @@ async function handleRegister() {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #2da44e;
+  background: #238636;
   color: #ffffff;
   font-size: 26px;
   font-weight: 600;
@@ -310,17 +276,17 @@ async function handleRegister() {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
-  color: #1f2328;
+  color: #e4e6e8;
 }
 
 .success-text {
   margin: 0;
   font-size: 14px;
-  color: #57606a;
+  color: #8c8c8c;
 }
 
 .footer-link {
-  color: #0969da;
+  color: #58a6ff;
   text-decoration: none;
 }
 

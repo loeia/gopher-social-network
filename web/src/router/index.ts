@@ -71,6 +71,7 @@ const router = createRouter({
       path: '/login',
       name: 'Login',
       component: LoginPage,
+      meta: { hideNavBar: true },
     },
     {
       path: '/search',
@@ -81,11 +82,13 @@ const router = createRouter({
       path: '/signup',
       name: 'SignUp',
       component: SignUpPage,
+      meta: { hideNavBar: true },
     },
     {
       path: '/forgot-password',
       name: 'ForgotPassword',
       component: ForgetPasswordPage,
+      meta: { hideNavBar: true },
     },
     {
       path: '/reset-password/:token',
