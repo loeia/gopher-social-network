@@ -37,8 +37,9 @@ type UserStorage interface {
 	GetById(context.Context, int64) (*User, error)
 	CreateAndInvite(context.Context, *User, string, time.Duration) error
 	Activate(context.Context, string) error
-	Delete(context.Context, int64) error
+	DeleteByID(context.Context, int64) error
 	GetByEmail(context.Context, string) (*User, error)
+	GetByUsername(context.Context, string) (*User, error)
 	UpdatePassword(context.Context, string, int64) error
 	UpdateAvatar(context.Context, int64, []byte, string) error
 	GetAvatar(context.Context, int64) ([]byte, string, error)
@@ -50,6 +51,8 @@ type UserStorage interface {
 	ResetPassword(context.Context, string, string) error
 	Rename(context.Context, int64, string) error
 	DeleteUserAvatar(context.Context, int64) error
+	BanByUsername(context.Context, string) error
+	UnbanByUsername(context.Context, string) error
 }
 type CommentStorage interface {
 	Create(context.Context, *Comment) (*Comment, error)

@@ -184,6 +184,12 @@ func (app *application) mount() http.Handler {
 		r.Post("/token", app.createTokenHandler)
 	})
 
+	r.Route("/admin", func(r chi.Router) {
+		r.Use(app.AuthTokenMiddleware)
+		r.Patch("/ban-user/{username}", app.verifyAdminPermMiddleware(app.adminDeleteUserHandler))
+		r.Patch("/unban-user/{username}", app.verifyAdminPermMiddleware(app.adminUnbanUserHandler))
+	})
+
 	return r
 }
 

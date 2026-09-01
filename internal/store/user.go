@@ -116,7 +116,7 @@ func (s *UserStore) GetById(c context.Context, userId int64) (*User, error) {
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-		query := `
+	query := `
 			SELECT
 				u.id,u.username,u.email,u.password,u.created_at,u.is_active,u.token_ver,
 				COALESCE(u.bio,''),u.links,
@@ -264,7 +264,7 @@ func (s *UserStore) deleteUserInvitations(c context.Context, tx *sql.Tx, userId 
 	return nil
 }
 
-func (s *UserStore) Delete(c context.Context, userId int64) error {
+func (s *UserStore) DeleteByID(c context.Context, userId int64) error {
 	return withTx(s.db, c, func(tx *sql.Tx) error {
 		ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 		defer cancel()
@@ -318,6 +318,29 @@ func (s *UserStore) GetByEmail(c context.Context, email string) (*User, error) {
 
 	return &user, nil
 
+}
+
+func (s *UserStore) GetByUsername(c context.Context, username string) (*User, error) {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	query := "SELECT id, email, username FROM users WHERE username = $1"
+
+	var user User
+	if err := s.db.QueryRowContext(ctx, query, username).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Username,
+	); err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
 }
 
 func (s *UserStore) UpdatePassword(c context.Context, newPass string, userId int64) error {

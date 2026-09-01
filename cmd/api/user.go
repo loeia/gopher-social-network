@@ -182,11 +182,11 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// send email
-	status, err := app.mailer.Send(mailer.UserWelcomeTemplate, user.Username, user.Email, vars, !isProdEnv)
+	status, err := app.mailer.Send(mailer.UserWelcomeTemplate, user.Email, vars, !isProdEnv)
 	if err != nil {
 		app.logger.Errorw("error sending welcome email", "error", err)
 
-		if err := app.store.Users.Delete(r.Context(), user.ID); err != nil {
+		if err := app.store.Users.DeleteByID(r.Context(), user.ID); err != nil {
 			app.logger.Errorw("error deleting user", "error", err)
 		}
 		app.internalServerError(w, r, err)
@@ -498,7 +498,7 @@ func (app *application) forgetPassHandler(w http.ResponseWriter, r *http.Request
 		ResetURL: resetURL,
 	}
 
-	status, err := app.mailer.Send(mailer.PasswordResetTemplate, user.Username, user.Email, vars, !isProdEnv)
+	status, err := app.mailer.Send(mailer.PasswordResetTemplate, user.Email, vars, !isProdEnv)
 	if err != nil {
 		app.logger.Errorw("error sending password reset email", "error", err)
 		app.internalServerError(w, r, err)

@@ -255,3 +255,22 @@ func (app *application) getPost(c context.Context, postId int64) (*store.Post, e
 
 	return post, nil
 }
+
+func (app *application) verifyAdminPermMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := getUserFromCtx(r)
+
+		allowed, err := app.checkRolePrecedence(r.Context(), user, "admin")
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		if !allowed {
+			app.forbiddenResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
