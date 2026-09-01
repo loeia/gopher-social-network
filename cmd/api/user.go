@@ -15,9 +15,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"uuid"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
 	"github.com/loeia/gopherSocialNetwork/internal/avatar"
 	"github.com/loeia/gopherSocialNetwork/internal/mailer"
 	"github.com/loeia/gopherSocialNetwork/internal/store"
