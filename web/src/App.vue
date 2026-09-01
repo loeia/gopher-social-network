@@ -1,5 +1,5 @@
 <template>
-  <el-config-provider :message="{ placement: 'top-right', offset: 64 }">
+  <el-config-provider :message="{ placement: 'top-left', offset: 64 }">
     <div class="layout">
       <NavBar v-if="!route.meta.hideNavBar" />
       <div class="main">
@@ -97,18 +97,18 @@ body {
   color: #141414;
 }
 
-.el-message-fade-enter-from.is-right {
-  transform: translateX(calc(100% + 32px));
+.el-message-fade-enter-from.is-left {
+  transform: translateX(calc(-100% - 32px));
   opacity: 0;
 }
 
-.el-message-fade-leave-to.is-right {
-  transform: translateX(calc(100% + 32px));
+.el-message-fade-leave-to.is-left {
+  transform: translateX(calc(-100% - 32px));
   opacity: 0;
 }
 
-.el-message-fade-enter-active.is-right,
-.el-message-fade-leave-active.is-right {
+.el-message-fade-enter-active.is-left,
+.el-message-fade-leave-active.is-left {
   transition:
     opacity 0.35s ease,
     transform 0.35s ease;
