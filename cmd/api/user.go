@@ -90,7 +90,7 @@ func (app *application) invalidateUserCache(r *http.Request, userId int64) {
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.ParseInt(chi.URLParam(r, "userId"), 10, 64)
 	if err != nil {
-		app.internalServerError(w, r, err)
+		app.badRequestError(w, r, err)
 		return
 	}
 
