@@ -160,28 +160,25 @@ func (s *PostStore) Update(c context.Context, post *Post) error {
 	return nil
 }
 
-func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *FilterQuery) ([]*Post, error) {
+func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginationQuery) ([]*Post, error) {
 	query := `
 		SELECT
 		    p.id,
 		    p.user_id,
 		    p.title,
 		    p.content,
-		    p.created_at,
-		    p.version,
 		    p.tags,
+		    p.version,
+		    p.created_at,
+		    p.updated_at,
 		    u.username,
 		    p.comment_count,
 		    p.like_count,
 		    p.view_count
 		FROM posts p
-		LEFT JOIN users u ON p.user_id = u.id
-		LEFT JOIN followers f ON f.user_id = p.user_id
+		JOIN users u ON p.user_id = u.id
+		JOIN followers f ON f.user_id = p.user_id
 		WHERE f.follower_id = $1
-		AND (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%')
-		AND (p.tags @> $5 OR $5 = '{}')
-		AND (p.created_at >= $6::timestamptz OR $6 IS NULL)
-		AND (p.created_at <= $7::timestamptz OR $7 IS NULL)
 		ORDER BY p.created_at ` + pfq.Sort + `
 		LIMIT $2 OFFSET $3
 	`
@@ -189,17 +186,7 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *FilterQuer
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	var sinceArg any = nil
-	if pfq.Since != "" {
-		sinceArg = pfq.Since
-	}
-
-	var untilArg any = nil
-	if pfq.Until != "" {
-		untilArg = pfq.Until
-	}
-
-	rows, err := s.db.QueryContext(ctx, query, userId, pfq.Limit, pfq.Offset, pfq.Search, pq.Array(pfq.Tags), sinceArg, untilArg)
+	rows, err := s.db.QueryContext(ctx, query, userId, pfq.Limit, pfq.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -213,9 +200,10 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *FilterQuer
 			&post.UserID,
 			&post.Title,
 			&post.Content,
-			&post.CreatedAt,
-			&post.Version,
 			pq.Array(&post.Tags),
+			&post.Version,
+			&post.CreatedAt,
+			&post.UpdatedAt,
 			&post.User.Username,
 			&post.CommentCount,
 			&post.LikeCount,

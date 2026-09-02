@@ -217,3 +217,41 @@ func (app *application) invalidatePostCache(r *http.Request, postId int64) {
 		app.logger.Errorw("error deleting post from cache", "error", err)
 	}
 }
+
+// getUserFeedHandler returns the paginated feed for the authenticated user.
+func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Request) {
+	pfq := store.PaginationQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+	}
+
+	p, err := pfq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(p); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	user := getUserFromCtx(r)
+
+	feed, err := app.store.Posts.GetUserFeed(r.Context(), user.ID, p)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	resp := make([]*PostResponse, len(feed))
+	for i, p := range feed {
+		resp[i] = postResponse(p)
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
