@@ -6,6 +6,7 @@ import ConfirmationPage from '@/views/ConfirmationPage.vue'
 import PostDetailPage from '@/views/PostDetailPage.vue'
 import CreatePostPage from '@/views/CreatePostPage.vue'
 import MyPostsPage from '@/views/MyPostsPage.vue'
+import FeedPage from '@/views/FeedPage.vue'
 import PostLikesPage from '@/views/PostLikesPage.vue'
 import CommentLikesPage from '@/views/CommentLikesPage.vue'
 import FollowingPage from '@/views/FollowingPage.vue'
@@ -41,6 +42,11 @@ const router = createRouter({
       path: '/my-posts',
       name: 'MyPosts',
       component: MyPostsPage,
+    },
+    {
+      path: '/feed',
+      name: 'Feed',
+      component: FeedPage,
     },
     {
       path: '/post-likes',

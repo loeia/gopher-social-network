@@ -4,7 +4,7 @@
       <NavBar v-if="!route.meta.hideNavBar" />
       <div class="main">
         <router-view v-slot="{ Component }">
-          <keep-alive include="HomePage,MyPostsPage,SearchResults,PostLikesPage,CommentLikesPage,FollowingPage,FollowersPage,UserProfilePage">
+          <keep-alive include="HomePage,MyPostsPage,FeedPage,SearchResults,PostLikesPage,CommentLikesPage,FollowingPage,FollowersPage,UserProfilePage">
             <component :is="Component" />
           </keep-alive>
         </router-view>

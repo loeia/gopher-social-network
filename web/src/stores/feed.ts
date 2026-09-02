@@ -124,6 +124,10 @@ export const useFeedStore = defineStore('feed', {
   state: () => ({
     posts: [] as FeedPost[],
     postsLoaded: false,
+    feedPosts: [] as FeedPost[],
+    feedPostsLoaded: false,
+    feedOffset: 0,
+    feedHasMore: true,
     activeNav: 'all' as ViewType,
     likedPosts: [] as LikedPost[],
     likedPostsLoaded: false,
@@ -273,6 +277,32 @@ export const useFeedStore = defineStore('feed', {
         }, 2500)
       }
     },
+    async fetchFeedPosts() {
+      if (this.feedPostsLoaded) return
+      const response = await apiFetch('/users/feed?limit=20&offset=0&sort=desc')
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const json = await response.json()
+      const raw = Array.isArray(json) ? json : (json.data ?? [])
+      this.feedPosts = raw.map(toFeedPost)
+      this.feedOffset = this.feedPosts.length
+      this.feedHasMore = this.feedPosts.length >= 20
+      this.feedPostsLoaded = true
+    },
+    async loadMoreFeedPosts() {
+      const response = await apiFetch(`/users/feed?limit=20&offset=${this.feedOffset}&sort=desc`)
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const json = await response.json()
+      const raw = Array.isArray(json) ? json : (json.data ?? [])
+      const newPosts = raw.map(toFeedPost)
+      const existingIds = new Set(this.feedPosts.map((p) => p.id))
+      for (const post of newPosts) {
+        if (!existingIds.has(post.id)) {
+          this.feedPosts.push(post)
+        }
+      }
+      this.feedOffset = this.feedPosts.length
+      this.feedHasMore = newPosts.length >= 20
+    },
     async fetchSearch(params: SearchParams): Promise<FeedPost[]> {
       const query = new URLSearchParams()
       if (params.search?.trim()) query.set('search', params.search.trim())
@@ -313,7 +343,7 @@ export const useFeedStore = defineStore('feed', {
       this.likedPostsLoaded = true
     },
     async fetchLikedComments() {
-      const response = await apiFetch('/users/comment-likes')
+      const response = await apiFetch('/users/me/comment-likes')
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       const json = await response.json()
       const raw = Array.isArray(json) ? json : (json.data ?? [])
