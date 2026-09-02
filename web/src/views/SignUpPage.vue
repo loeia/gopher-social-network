@@ -14,8 +14,9 @@
               autocomplete="username"
               class="field"
               :class="{ 'is-error': usernameError }"
-              @input="usernameError = ''"
+              @input="validateUsername"
             />
+            <p v-if="usernameError" class="field-error">{{ usernameError }}</p>
           </div>
 
           <div class="field-group">
@@ -28,8 +29,9 @@
               autocomplete="new-password"
               class="field"
               :class="{ 'is-error': emailError }"
-              @input="emailError = ''"
+              @input="validateEmail"
             />
+            <p v-if="emailError" class="field-error">{{ emailError }}</p>
           </div>
 
           <div class="field-group">
@@ -43,11 +45,20 @@
               show-password
               autocomplete="new-password"
               class="field"
+              :class="{ 'is-error': passwordError }"
+              @input="validatePassword"
               @keyup.enter="handleRegister"
             />
+            <p v-if="passwordError" class="field-error">{{ passwordError }}</p>
           </div>
 
-          <el-button size="large" class="submit-btn" :loading="loading" @click="handleRegister">
+          <el-button
+            size="large"
+            class="submit-btn"
+            :loading="loading"
+            :disabled="!isFormValid"
+            @click="handleRegister"
+          >
             Create account
           </el-button>
 
@@ -73,7 +84,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { apiFetch, handleApiError } from '@/api'
 import { notify } from '@/utils/message'
@@ -87,24 +98,97 @@ const loading = ref(false)
 const registered = ref(false)
 const usernameError = ref('')
 const emailError = ref('')
+const passwordError = ref('')
+
+// 后端验证规则：
+// Username: required, min=4, max=25, alpha_start (必须以字母开头)
+// Email: required, email, max=255
+// Password: required, min=3, max=72
+
+function validateUsername() {
+  usernameError.value = ''
+  const name = username.value.trim()
+  if (!name) {
+    usernameError.value = 'Username is required'
+    return false
+  }
+  if (name.length < 4) {
+    usernameError.value = 'Username must be at least 4 characters'
+    return false
+  }
+  if (name.length > 25) {
+    usernameError.value = 'Username must be at most 25 characters'
+    return false
+  }
+  if (!/^[a-zA-Z]/.test(name)) {
+    usernameError.value = 'Username must start with a letter'
+    return false
+  }
+  return true
+}
+
+function validateEmail() {
+  emailError.value = ''
+  const mail = email.value.trim()
+  if (!mail) {
+    emailError.value = 'Email is required'
+    return false
+  }
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(mail)) {
+    emailError.value = 'Please enter a valid email address'
+    return false
+  }
+  if (mail.length > 255) {
+    emailError.value = 'Email must be at most 255 characters'
+    return false
+  }
+  return true
+}
+
+function validatePassword() {
+  passwordError.value = ''
+  if (!password.value) {
+    passwordError.value = 'Password is required'
+    return false
+  }
+  if (password.value.length < 3) {
+    passwordError.value = 'Password must be at least 3 characters'
+    return false
+  }
+  if (password.value.length > 72) {
+    passwordError.value = 'Password must be at most 72 characters'
+    return false
+  }
+  return true
+}
+
+const isFormValid = computed(() => {
+  const name = username.value.trim()
+  const mail = email.value.trim()
+  const pass = password.value
+
+  // 仅在用户输入后才验证
+  if (!name && !mail && !pass) return false
+
+  // 验证所有字段
+  const nameValid = name.length >= 4 && name.length <= 25 && /^[a-zA-Z]/.test(name)
+  const mailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail) && mail.length <= 255
+  const passValid = pass.length >= 3 && pass.length <= 72
+
+  return nameValid && mailValid && passValid
+})
 
 async function handleRegister() {
   const name = username.value.trim()
   const mail = email.value.trim()
 
-  usernameError.value = ''
-  emailError.value = ''
+  // 执行完整验证
+  const isUsernameValid = validateUsername()
+  const isEmailValid = validateEmail()
+  const isPasswordValid = validatePassword()
 
-  if (!name) {
-    notify('warning', 'Please enter a username')
-    return
-  }
-  if (!mail) {
-    notify('warning', 'Please enter your email')
-    return
-  }
-  if (!password.value) {
-    notify('warning', 'Please enter a password')
+  if (!isUsernameValid || !isEmailValid || !isPasswordValid) {
     return
   }
 
@@ -221,6 +305,12 @@ async function handleRegister() {
     0 0 0 3px rgba(248, 81, 73, 0.3);
 }
 
+.field-error {
+  margin: 0;
+  font-size: 13px;
+  color: #f85149;
+}
+
 .submit-btn {
   width: 100%;
   background: #e4e6e8;
@@ -228,6 +318,13 @@ async function handleRegister() {
   border: 1px solid #e4e6e8;
   border-radius: 6px;
   font-weight: 500;
+}
+
+.submit-btn:disabled {
+  background: #333;
+  color: #666;
+  border-color: #333;
+  cursor: not-allowed;
 }
 
 .submit-btn:hover {
