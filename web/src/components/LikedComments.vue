@@ -73,7 +73,7 @@ function truncateContent(content: string): string {
 async function loadLikedComments() {
   loading.value = true
   try {
-    const response = await apiFetch('/users/comment-likes?limit=20&offset=0&sort=desc')
+    const response = await apiFetch('/users/me/comment-likes?limit=20&offset=0&sort=desc')
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
     const data = json.data ?? json
@@ -92,7 +92,7 @@ async function loadMoreLikedComments() {
   loadingMore.value = true
   try {
     const response = await apiFetch(
-      `/users/comment-likes?limit=20&offset=${commentsOffset.value}&sort=desc`,
+      `/users/me/comment-likes?limit=20&offset=${commentsOffset.value}&sort=desc`,
     )
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()

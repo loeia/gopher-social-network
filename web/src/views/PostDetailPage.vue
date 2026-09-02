@@ -9,7 +9,12 @@
         </div>
 
         <div class="meta">
-          <UserAvatar :user-id="post.author_id" :username="post.author" :size="20" />
+          <div class="avatar-wrapper">
+            <div class="avatar-clickable" @click="showUserCard">
+              <UserAvatar :user-id="post.author_id" :username="post.author" :size="20" />
+            </div>
+            <UserCard ref="userCardRef" :user-id="post?.author_id ?? null" :username="post?.author ?? ''" />
+          </div>
           <span class="meta-item">{{ post.author }}</span>
           <button
             v-if="canFollowAuthor"
@@ -75,6 +80,7 @@ import { renderMarkdown } from '@/utils/markdown'
 import { notify } from '@/utils/message'
 import Comments from '@/components/Comments.vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import UserCard from '@/components/UserCard.vue'
 
 interface PostDetail {
   id: number
@@ -119,6 +125,12 @@ const isFollowingAuthor = computed(() => {
   const authorId = post.value?.author_id
   return !!authorId && following.value.some((f) => f.following_id === authorId)
 })
+
+const userCardRef = ref<InstanceType<typeof UserCard> | null>(null)
+
+function showUserCard(event: MouseEvent) {
+  userCardRef.value?.show(event)
+}
 
 async function toggleFollowAuthor() {
   const current = post.value
@@ -275,6 +287,22 @@ watch(() => route.params.postId, loadPost)
 
 .meta-sep {
   color: #595959;
+}
+
+.avatar-wrapper {
+  position: relative;
+}
+
+.avatar-clickable {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+}
+
+.avatar-clickable:hover {
+  transform: scale(1.1);
 }
 
 .like-btn {

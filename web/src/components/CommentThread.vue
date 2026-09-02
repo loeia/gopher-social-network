@@ -1,8 +1,11 @@
 <template>
   <div class="thread" :id="`comment-${comment.id}`">
     <div class="comment" :class="{ 'new-item': highlightId === comment.id }">
-      <div class="comment-avatar">
-        <UserAvatar :user-id="comment.user_id" :username="comment.username" :size="30" />
+      <div class="comment-avatar-wrapper">
+        <div class="comment-avatar avatar-clickable" @click="showUserCard">
+          <UserAvatar :user-id="comment.user_id" :username="comment.username" :size="30" />
+        </div>
+        <UserCard ref="userCardRef" :user-id="comment.user_id ?? null" :username="comment.username" />
       </div>
       <div class="comment-main">
         <div class="comment-head">
@@ -87,11 +90,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, inject, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import type { ElInput } from 'element-plus'
 import { apiFetch } from '@/api'
 import UserAvatar from '@/components/UserAvatar.vue'
+import UserCard from '@/components/UserCard.vue'
 
 interface Comment {
   id: number
@@ -124,6 +128,8 @@ interface ThreadContext {
   likedComments: Ref<Set<number>>
   likingId: Ref<number | null>
   highlightId: Ref<number | null>
+  registerReplyCallback: (commentId: number, cb: () => Promise<void>) => void
+  unregisterReplyCallback: (commentId: number) => void
 }
 
 const props = defineProps<{
@@ -150,9 +156,17 @@ const {
   likedComments,
   likingId,
   highlightId,
+  registerReplyCallback,
+  unregisterReplyCallback,
 } = ctx
 
 const comment = computed(() => props.node.comment)
+
+const userCardRef = ref<InstanceType<typeof UserCard> | null>(null)
+
+function showUserCard(event: MouseEvent) {
+  userCardRef.value?.show(event)
+}
 
 const replies = ref<Comment[]>([])
 const totalCount = ref(0)
@@ -191,8 +205,29 @@ async function toggleReplies() {
   }
 }
 
+async function refreshReplies() {
+  if (!repliesLoaded.value) {
+    await fetchReplyCount()
+    return
+  }
+  try {
+    const response = await apiFetch(`/comments/${comment.value.id}/replies?limit=100&offset=0&sort=asc`)
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const json = await response.json()
+    const data = json.data ?? json
+    replies.value = Array.isArray(data) ? data : []
+  } catch {
+    // ignore
+  }
+}
+
 onMounted(() => {
   fetchReplyCount()
+  registerReplyCallback(comment.value.id, refreshReplies)
+})
+
+onBeforeUnmount(() => {
+  unregisterReplyCallback(comment.value.id)
 })
 
 const replyInput = ref<InstanceType<typeof ElInput> | null>(null)
@@ -233,6 +268,19 @@ const isLiking = computed(() => likingId.value === comment.value.id)
   color: #e4e6e8;
   font-size: 14px;
   font-weight: 600;
+}
+
+.comment-avatar-wrapper {
+  position: relative;
+}
+
+.avatar-clickable {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.avatar-clickable:hover {
+  transform: scale(1.1);
 }
 
 .comment-main {

@@ -90,6 +90,21 @@ const commentTree = computed<CommentNode[]>(() =>
   comments.value.map((c) => ({ comment: c, children: [] }))
 )
 
+const replyCallbacks = new Map<number, () => Promise<void>>()
+
+function registerReplyCallback(commentId: number, cb: () => Promise<void>) {
+  replyCallbacks.set(commentId, cb)
+}
+
+function unregisterReplyCallback(commentId: number) {
+  replyCallbacks.delete(commentId)
+}
+
+async function triggerReplyReload(parentCommentId: number) {
+  const cb = replyCallbacks.get(parentCommentId)
+  if (cb) await cb()
+}
+
 provide('commentThread', {
   formatDate,
   toggleReply,
@@ -105,6 +120,8 @@ provide('commentThread', {
   likedComments,
   likingId,
   highlightId,
+  registerReplyCallback,
+  unregisterReplyCallback,
 })
 
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
@@ -148,7 +165,7 @@ async function fetchLikedComments() {
     return
   }
   try {
-    const response = await apiFetch('/users/comment-likes?limit=20&offset=0&sort=desc')
+    const response = await apiFetch('/users/me/comment-likes?limit=20&offset=0&sort=desc')
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const json = await response.json()
     const data = json.data ?? json
@@ -216,7 +233,7 @@ async function submitReply(commentId: number) {
   }
   replying.value = true
   try {
-    const response = await apiFetch(`/posts/${props.postId}/comments/${commentId}/reply`, {
+    const response = await apiFetch(`/posts/${props.postId}/comments/${commentId}/replies`, {
       method: 'POST',
       body: JSON.stringify({ content }),
     })
@@ -224,7 +241,7 @@ async function submitReply(commentId: number) {
     replyContent.value = ''
     replyingTo.value = null
     notify('success', 'Reply added')
-    await loadComments()
+    await triggerReplyReload(commentId)
     emit('comment-count-changed', 1)
   } catch (error) {
     handleApiError(error, 'Failed to add reply')
