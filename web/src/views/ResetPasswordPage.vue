@@ -54,7 +54,7 @@ async function handleReset() {
 
   loading.value = true
   try {
-    const response = await apiFetch('/users/reset-password', {
+    const response = await apiFetch('/auth/reset-password', {
       method: 'POST',
       body: JSON.stringify({
         token,

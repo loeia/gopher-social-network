@@ -300,7 +300,7 @@ async function saveProfile() {
     saving.value = true;
     try {
         const response = await apiFetch("/users/me/profile", {
-            method: "PUT",
+            method: "PATCH",
             body: JSON.stringify({
                 bio: bio.value.trim(),
                 links: filledLinks,
@@ -340,7 +340,7 @@ async function handleSubmit() {
 
     loading.value = true;
     try {
-        const response = await apiFetch("/users/reset", {
+        const response = await apiFetch("/users/me/password", {
             method: "PATCH",
             body: JSON.stringify({
                 old_password: oldPassword.value,
@@ -389,7 +389,7 @@ async function handleRename() {
     renameLoading.value = true;
     renameError.value = "";
     try {
-        const response = await apiFetch("/users/rename", {
+        const response = await apiFetch("/users/me/username", {
             method: "PATCH",
             body: JSON.stringify({ new_name: name }),
         });

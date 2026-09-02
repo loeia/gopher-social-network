@@ -22,8 +22,8 @@ const loading = ref(false)
 const handleConfirm = async () => {
   loading.value = true
   try {
-    const response = await apiFetch(`/users/activate/${token}`, {
-      method: 'PUT',
+    const response = await apiFetch(`/auth/activate/${token}`, {
+      method: 'POST',
     })
 
     if (response.ok) {

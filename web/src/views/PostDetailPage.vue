@@ -178,8 +178,8 @@ async function toggleLike() {
   if (!isLoggedIn.value || !post.value) return
   liking.value = true
   try {
-    const action = liked.value ? 'dislike' : 'like'
-    const response = await apiFetch(`/posts/${post.value.id}/${action}`, { method: 'PUT' })
+    const method = liked.value ? 'DELETE' : 'PUT'
+    const response = await apiFetch(`/posts/${post.value.id}/like`, { method })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     liked.value = !liked.value
     likesCount.value += liked.value ? 1 : -1

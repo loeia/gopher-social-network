@@ -64,7 +64,7 @@ async function handleLogin() {
 
   loading.value = true
   try {
-    const response = await apiFetch('/authentication/token', {
+    const response = await apiFetch('/auth/token', {
       method: 'POST',
       body: JSON.stringify({
         email: email.value.trim(),

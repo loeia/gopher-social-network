@@ -348,8 +348,8 @@ export const useFeedStore = defineStore('feed', {
       this.followersUserId = userId
     },
     async unfollowUser(userId: number) {
-      const response = await apiFetch(`/users/${userId}/unfollow`, {
-        method: 'PUT',
+      const response = await apiFetch(`/users/${userId}/follow`, {
+        method: 'DELETE',
       })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
       this.following = this.following.filter((user) => user.following_id !== userId)

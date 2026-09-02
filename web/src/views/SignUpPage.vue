@@ -110,7 +110,7 @@ async function handleRegister() {
 
   loading.value = true
   try {
-    const response = await apiFetch('/authentication/users', {
+    const response = await apiFetch('/auth/register', {
       method: 'POST',
       body: JSON.stringify({
         username: name,

@@ -110,7 +110,7 @@ const { loadingMore } = useInfiniteScroll(loadMoreFollowing, canLoadMore)
 async function unfollow(userId: number) {
   unfollowingId.value = userId
   try {
-    const response = await apiFetch(`/users/${userId}/unfollow`, { method: 'PUT' })
+    const response = await apiFetch(`/users/${userId}/follow`, { method: 'DELETE' })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     users.value = users.value.filter((u) => u.following_id !== userId)
   } catch (error) {

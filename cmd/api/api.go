@@ -116,14 +116,14 @@ func (app *application) mount() http.Handler {
 				r.Patch("/", app.checkPostOwnerShip("moderator", app.updatePostHandler))
 				r.Delete("/", app.checkPostOwnerShip("admin", app.deletePostHandler))
 				r.Put("/like", app.likePostHandler)
-				r.Put("/dislike", app.unlikePostHandler)
+				r.Delete("/like", app.unlikePostHandler)
 			})
 			r.Route("/comments", func(r chi.Router) {
 				r.Get("/", app.getPostCommentsHandler)
 				r.Group(func(r chi.Router) {
 					r.Use(app.AuthTokenMiddleware)
 					r.Post("/", app.createCommentHandler)
-					r.Post("/{commentId}/reply", app.createCommentHandler)
+					r.Post("/{commentId}/replies", app.createCommentHandler)
 				})
 			})
 		})
@@ -136,19 +136,16 @@ func (app *application) mount() http.Handler {
 	})
 
 	r.Route("/users", func(r chi.Router) {
-		r.Post("/forgot-password", app.forgetPassHandler)
-		r.Post("/reset-password", app.resetPasswordFromTokenHandler)
 		r.Group(func(r chi.Router) {
 			r.Use(app.AuthTokenMiddleware)
 			r.Get("/feed", app.getUserFeedHandler)
-			r.Patch("/reset", app.resetPasswordHandler)
+			r.Patch("/me/password", app.resetPasswordHandler)
 			r.Put("/me/avatar", app.uploadAvatarHandler)
 			r.Delete("/me/avatar", app.deleteAvatarHandler)
-			r.Put("/me/profile", app.updateProfileHandler)
-			r.Get("/comment-likes", app.getUserCommentLikesHandler)
-			r.Patch("/rename", app.userRenameHandler)
+			r.Patch("/me/profile", app.updateProfileHandler)
+			r.Get("/me/comment-likes", app.getUserCommentLikesHandler)
+			r.Patch("/me/username", app.userRenameHandler)
 		})
-		r.Put("/activate/{token}", app.activateUserHandler)
 		r.Route("/{userId}", func(r chi.Router) {
 			r.Get("/", app.getUserHandler)
 			r.Get("/posts", app.getUserPostsHandler)
@@ -159,7 +156,7 @@ func (app *application) mount() http.Handler {
 			r.Group(func(r chi.Router) {
 				r.Use(app.AuthTokenMiddleware)
 				r.Put("/follow", app.followUserHandler)
-				r.Put("/unfollow", app.unfollowUserHandler)
+				r.Delete("/follow", app.unfollowUserHandler)
 			})
 		})
 		r.Get("/{userId}/avatar", app.getAvatarHandler)
@@ -174,20 +171,23 @@ func (app *application) mount() http.Handler {
 				r.Use(app.AuthTokenMiddleware)
 				r.Delete("/", app.checkCommentOwnerShip("moderator", app.deleteCommentHandler))
 				r.Put("/like", app.likeCommentHandler)
-				r.Put("/dislike", app.dislikeCommentHandler)
+				r.Delete("/like", app.dislikeCommentHandler)
 			})
 		})
 	})
 
-	r.Route("/authentication", func(r chi.Router) {
-		r.Post("/users", app.registerUserHandler)
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", app.registerUserHandler)
 		r.Post("/token", app.createTokenHandler)
+		r.Post("/activate/{token}", app.activateUserHandler)
+		r.Post("/forgot-password", app.forgetPassHandler)
+		r.Post("/reset-password", app.resetPasswordFromTokenHandler)
 	})
 
 	r.Route("/admin", func(r chi.Router) {
 		r.Use(app.AuthTokenMiddleware)
-		r.Patch("/ban-user/{username}", app.verifyAdminPermMiddleware(app.adminDeleteUserHandler))
-		r.Patch("/unban-user/{username}", app.verifyAdminPermMiddleware(app.adminUnbanUserHandler))
+		r.Patch("/users/{username}/ban", app.verifyAdminPermMiddleware(app.adminDeleteUserHandler))
+		r.Patch("/users/{username}/unban", app.verifyAdminPermMiddleware(app.adminUnbanUserHandler))
 	})
 
 	return r

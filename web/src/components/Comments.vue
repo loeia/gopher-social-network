@@ -275,8 +275,8 @@ async function toggleLike(comment: Comment) {
   likingId.value = comment.id
   const isLiked = likedComments.value.has(comment.id)
   try {
-    const endpoint = isLiked ? `/comments/${comment.id}/dislike` : `/comments/${comment.id}/like`
-    const response = await apiFetch(endpoint, { method: 'PUT' })
+    const method = isLiked ? 'DELETE' : 'PUT'
+    const response = await apiFetch(`/comments/${comment.id}/like`, { method })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     if (isLiked) {
       likedComments.value.delete(comment.id)

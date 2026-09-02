@@ -102,8 +102,8 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
   if (
     response.status === 401 &&
     currentToken &&
-    path !== '/authentication/token' &&
-    path !== '/users/reset'
+    path !== '/auth/token' &&
+    path !== '/auth/reset-password'
   ) {
     await handleSessionExpired()
   }
