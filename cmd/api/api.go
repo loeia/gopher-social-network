@@ -46,6 +46,7 @@ type mailConfig struct {
 	fromEmail string
 	mailTrap  mailTrapConfig
 	exp       time.Duration
+	resetExp  time.Duration
 }
 
 type mailTrapConfig struct {
@@ -84,9 +85,9 @@ func (app *application) mount() http.Handler {
 	// for more ideas, see: https://developer.github.com/v3/#cross-origin-resource-sharing
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{env.GetString("CORS_ALLOWED_ORIGIN", "http://localhost:5173")},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
+		ExposedHeaders:   []string{"Link", "X-Total-Count"},
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
@@ -107,43 +108,86 @@ func (app *application) mount() http.Handler {
 	})
 
 	r.Route("/posts", func(r chi.Router) {
-		r.Use(app.AuthTokenMiddleware)
-		r.Post("/", app.createPostHandler)
-
 		r.Route("/{postId}", func(r chi.Router) {
 			r.Use(app.postsContextMiddleware)
-
 			r.Get("/", app.getPostHandler)
-			r.Patch("/", app.checkPostOwnerShip("moderator", app.updatePostHandler))
-			r.Delete("/", app.checkPostOwnerShip("admin", app.deletePostHandler))
+			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
+				r.Patch("/", app.checkPostOwnerShip("moderator", app.updatePostHandler))
+				r.Delete("/", app.checkPostOwnerShip("admin", app.deletePostHandler))
+				r.Put("/like", app.likePostHandler)
+				r.Delete("/like", app.unlikePostHandler)
+			})
+			r.Route("/comments", func(r chi.Router) {
+				r.Get("/", app.getPostCommentsHandler)
+				r.Group(func(r chi.Router) {
+					r.Use(app.AuthTokenMiddleware)
+					r.Post("/", app.createCommentHandler)
+					r.Post("/{commentId}/replies", app.createCommentHandler)
+				})
+			})
 		})
+		r.Group(func(r chi.Router) {
+			r.Use(app.AuthTokenMiddleware)
+			r.Post("/", app.createPostHandler)
+		})
+		r.Get("/search", app.getSearchPostHandler)
+		r.Get("/free", app.getFreePostsHandler)
 	})
 
 	r.Route("/users", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
 			r.Use(app.AuthTokenMiddleware)
 			r.Get("/feed", app.getUserFeedHandler)
+			r.Patch("/me/password", app.resetPasswordHandler)
+			r.Put("/me/avatar", app.uploadAvatarHandler)
+			r.Delete("/me/avatar", app.deleteAvatarHandler)
+			r.Patch("/me/profile", app.updateProfileHandler)
+			r.Get("/me/comment-likes", app.getUserCommentLikesHandler)
+			r.Patch("/me/username", app.userRenameHandler)
 		})
-
-		r.Put("/activate/{token}", app.activateUserHandler)
-
 		r.Route("/{userId}", func(r chi.Router) {
-			r.Use(app.AuthTokenMiddleware)
-
 			r.Get("/", app.getUserHandler)
-			r.Put("/follow", app.followUserHandler)
-			r.Put("/unfollow", app.unfollowUserHandler)
+			r.Get("/posts", app.getUserPostsHandler)
+			r.Get("/post-likes", app.getUserLikedPostsHandler)
+			r.Get("/comments", app.getUserCommentsHandler)
+			r.Get("/followers", app.getUserFollowersHandler)
+			r.Get("/following", app.getUserFollowingHandler)
+			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
+				r.Put("/follow", app.followUserHandler)
+				r.Delete("/follow", app.unfollowUserHandler)
+			})
+		})
+		r.Get("/{userId}/avatar", app.getAvatarHandler)
+	})
+
+	r.Route("/comments", func(r chi.Router) {
+		r.Route("/{commentId}", func(r chi.Router) {
+			r.Use(app.commentsContextMiddleware)
+			r.Get("/", app.getCommentHandler)
+			r.Get("/replies", app.getCommentRepliesHandler)
+			r.Group(func(r chi.Router) {
+				r.Use(app.AuthTokenMiddleware)
+				r.Delete("/", app.checkCommentOwnerShip("moderator", app.deleteCommentHandler))
+				r.Put("/like", app.likeCommentHandler)
+				r.Delete("/like", app.dislikeCommentHandler)
+			})
 		})
 	})
 
-	// public routes
-	r.Route("/authentication", func(r chi.Router) {
-		r.Post("/users", app.registerUserHandler)
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", app.registerUserHandler)
 		r.Post("/token", app.createTokenHandler)
+		r.Post("/activate/{token}", app.activateUserHandler)
+		r.Post("/forgot-password", app.forgetPassHandler)
+		r.Post("/reset-password", app.resetPasswordFromTokenHandler)
 	})
 
-	r.Route("/free", func(r chi.Router) {
-		r.Get("/", app.getRandomPosts)
+	r.Route("/admin", func(r chi.Router) {
+		r.Use(app.AuthTokenMiddleware)
+		r.Patch("/users/{username}/ban", app.verifyAdminPermMiddleware(app.adminDeleteUserHandler))
+		r.Patch("/users/{username}/unban", app.verifyAdminPermMiddleware(app.adminUnbanUserHandler))
 	})
 
 	return r

@@ -1,0 +1,47 @@
+# http server
+export ADDR=""
+
+export ENV="development" # production
+export FRONTEND_URL="http://localhost:5173"
+
+# database
+export DB_DSN=""
+export DB_MAX_OPEN_CONNS=30
+export DB_MAX_IDLE_CONNS=30
+export DB_MAX_IDLE_TIME="15m"
+export DB_MAX_LIFE_TIME="5m"
+
+# goose(optional)
+export GOOSE_DRIVER=pgx
+export GOOSE_DBSTRING=""
+export GOOSE_MIGRATION_DIR="./cmd/migrate/migrations/"
+
+# email
+export FROM_EMAIL=""
+export MAILTRAP_API_KEY=""
+
+# sandbox model
+export MAILTRAP_SANDBOX_USER=""
+export MAILTRAP_SANDBOX_PASS=""
+
+# frontend
+export VITE_API_URL="http://localhost:8080"
+
+# Auth
+export AUTH_SECRET="e91fbfe6e140f0f9767c7d807a1f194366d68731fdd51b16ecf0d41288704e6aeoijnb6667"
+export AUTH_EXP=72
+export AUTH_ISSUER="Bearer"
+
+# redis
+export REDIS_ENABLED=false
+export REDIS_ADDR="localhost:6379"
+export REDIS_PASSWORD=""
+export REDIS_DB=0
+
+# rate limiter
+export RATE_LIMITER_ENABLED=true
+export RATELIMITER_REQUESTS_COUNT=20
+export RATELIMITER_TIME_FRAME=5
+
+# cors
+export CORS_ALLOWED_ORIGIN="http://localhost:5173"

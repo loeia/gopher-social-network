@@ -1,0 +1,7 @@
+-- +goose Up
+ALTER TABLE users ADD COLUMN bio VARCHAR(500);
+ALTER TABLE users ADD COLUMN links VARCHAR(255)[] NOT NULL DEFAULT '{}';
+
+-- +goose Down
+ALTER TABLE users DROP COLUMN bio;
+ALTER TABLE users DROP COLUMN links;

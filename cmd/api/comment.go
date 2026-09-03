@@ -1,0 +1,190 @@
+package main
+
+import (
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/loeia/gopherSocialNetwork/internal/store"
+)
+
+type CommentKey string
+
+const CommentCtx CommentKey = "commentId"
+
+type CommentResponse struct {
+	ID              int64     `json:"id"`
+	Username        string    `json:"username"`
+	UserID          int64     `json:"user_id"`
+	Content         string    `json:"content"`
+	ParentID        *int64    `json:"parent_id"`
+	ReplyToUserID   *int64    `json:"reply_to_user_id"`
+	ReplyToUsername string    `json:"reply_to_username"`
+	LikeCount       int64     `json:"like_count"`
+	CreatedAt       time.Time `json:"created_at"`
+}
+
+func commentResponse(c *store.Comment) CommentResponse {
+	return CommentResponse{
+		ID:              c.ID,
+		Username:        c.User.Username,
+		UserID:          c.UserID,
+		Content:         c.Content,
+		ParentID:        c.ParentID,
+		ReplyToUserID:   c.ReplyToUserID,
+		ReplyToUsername: c.ReplyToUsername,
+		LikeCount:       c.LikeCount,
+		CreatedAt:       c.CreatedAt,
+	}
+}
+
+func (app *application) getPostCommentsHandler(w http.ResponseWriter, r *http.Request) {
+	post := getPostFromCtx(r)
+
+	pq := store.PaginationQuery{
+		Limit:  20,
+		Offset: 0,
+		Sort:   "desc",
+	}
+	p, err := pq.Parse(r)
+	if err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+	if err := Validate.Struct(p); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	comments, err := app.store.Comments.GetCommentByPostId(r.Context(), post.ID, p)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	responseComments := make([]*CommentResponse, 0, len(comments))
+	for _, c := range comments {
+		rc := commentResponse(c)
+		responseComments = append(responseComments, &rc)
+	}
+
+	if err := app.JSONResponse(w, http.StatusOK, responseComments); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Request) {
+	post := getPostFromCtx(r)
+	user := getUserFromCtx(r)
+
+	var req CommentReq
+	if err := app.readJSON(w, r, &req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	if err := Validate.Struct(req); err != nil {
+		app.badRequestError(w, r, err)
+		return
+	}
+
+	c := store.Comment{
+		PostID:  post.ID,
+		UserID:  user.ID,
+		Content: req.Content,
+	}
+
+	if raw := chi.URLParam(r, "commentId"); raw != "" {
+		parentID, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil {
+			app.badRequestError(w, r, err)
+			return
+		}
+		req.ParentID = &parentID
+	}
+
+	if req.ParentID != nil {
+		parentCmt, err := app.store.Comments.GetById(r.Context(), *req.ParentID)
+		if err != nil {
+			app.badRequestError(w, r, store.ErrNotFound)
+			return
+		}
+		if parentCmt.PostID != post.ID {
+			app.badRequestError(w, r, store.ErrNotFound)
+			return
+		}
+		c.ParentID = &parentCmt.ID
+		c.ReplyToUserID = &parentCmt.UserID
+	}
+
+	comment, err := app.store.Comments.Create(r.Context(), &c)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+	comment.User.Username = user.Username
+
+	app.invalidateUserCache(r, user.ID)
+	app.invalidatePostCache(r, post.ID)
+
+	resp := commentResponse(comment)
+	if err := app.JSONResponse(w, http.StatusCreated, resp); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *application) deleteCommentHandler(w http.ResponseWriter, r *http.Request) {
+	comment := getCommentFromCtx(r)
+
+	if err := app.store.Comments.Delete(r.Context(), comment.ID); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	app.invalidateUserCache(r, comment.UserID)
+	app.invalidatePostCache(r, comment.PostID)
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (app *application) getCommentHandler(w http.ResponseWriter, r *http.Request) {
+	comment := getCommentFromCtx(r)
+
+	resp := commentResponse(comment)
+	if err := app.JSONResponse(w, http.StatusOK, resp); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}
+
+func (app *application) getCommentRepliesHandler(w http.ResponseWriter, r *http.Request) {
+	comment := getCommentFromCtx(r)
+
+	replies, err := app.store.Comments.GetRepliesByParentId(r.Context(), comment.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	totalCount, err := app.store.Comments.CountRepliesByParentId(r.Context(), comment.ID)
+	if err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+
+	responseReplies := make([]*CommentResponse, 0, len(replies))
+	for _, c := range replies {
+		rc := commentResponse(c)
+		responseReplies = append(responseReplies, &rc)
+	}
+
+	w.Header().Set("X-Total-Count", strconv.Itoa(totalCount))
+
+	if err := app.JSONResponse(w, http.StatusOK, responseReplies); err != nil {
+		app.internalServerError(w, r, err)
+		return
+	}
+}

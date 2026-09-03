@@ -27,20 +27,41 @@ type PostStorage interface {
 	GetById(context.Context, int64) (*Post, error)
 	Delete(context.Context, *Post) error
 	Update(context.Context, *Post) error
-	GetUserFeed(context.Context, int64, *PaginatedFeedQuery) ([]*PostWithMetaData, error)
-	GetRandomPosts(context.Context, int) ([]*Post, error)
+	IncrementViewCount(context.Context, int64) error
+	GetUserFeed(context.Context, int64, *PaginationQuery) ([]*Post, error)
+	GetFree(context.Context, int) ([]*Post, error)
+	Search(context.Context, *FilterQuery) ([]*Post, error)
 }
 type UserStorage interface {
 	Create(context.Context, *User, *sql.Tx) error
 	GetById(context.Context, int64) (*User, error)
 	CreateAndInvite(context.Context, *User, string, time.Duration) error
 	Activate(context.Context, string) error
-	Delete(context.Context, int64) error
+	DeleteByID(context.Context, int64) error
 	GetByEmail(context.Context, string) (*User, error)
+	GetByUsername(context.Context, string) (*User, error)
+	UpdatePassword(context.Context, string, int64) error
+	UpdateAvatar(context.Context, int64, []byte, string) error
+	GetAvatar(context.Context, int64) ([]byte, string, error)
+	GetUserFollowing(context.Context, int64, *PaginationQuery) ([]*UserFollowing, error)
+	GetUserFollowers(context.Context, int64, *PaginationQuery) ([]*UserFollower, error)
+	GetUserOwnPosts(context.Context, int64, *PaginationQuery) ([]*Post, error)
+	UpdateProfile(context.Context, int64, string, []string, bool) error
+	CreatePasswordReset(context.Context, string, int64, time.Duration) error
+	ResetPassword(context.Context, string, string) error
+	Rename(context.Context, int64, string) error
+	DeleteUserAvatar(context.Context, int64) error
+	BanByUsername(context.Context, string) error
+	UnbanByUsername(context.Context, string) error
 }
 type CommentStorage interface {
-	Create(context.Context, *Comment) error
-	GetById(context.Context, int64) ([]*Comment, error)
+	Create(context.Context, *Comment) (*Comment, error)
+	GetById(context.Context, int64) (*Comment, error)
+	Delete(context.Context, int64) error
+	GetCommentByPostId(context.Context, int64, *PaginationQuery) ([]*Comment, error)
+	GetRepliesByParentId(context.Context, int64) ([]*Comment, error)
+	CountRepliesByParentId(context.Context, int64) (int, error)
+	GetUserComments(context.Context, int64, *PaginationQuery) ([]*Comment, error)
 }
 type FollowerStorage interface {
 	Follow(context.Context, int64, int64) error
@@ -49,22 +70,36 @@ type FollowerStorage interface {
 type RoleStorage interface {
 	GetByName(context.Context, string) (*Role, error)
 }
+type PostLikeStorage interface {
+	Like(context.Context, int64, int64) error
+	Dislike(context.Context, int64, int64) error
+	GetUserFavoritePosts(context.Context, int64, *PaginationQuery) ([]*FavoritePostList, error)
+}
+type CommentLikeStorage interface {
+	Like(context.Context, int64, int64) error
+	Dislike(context.Context, int64, int64) error
+	GetUserFavoriteComments(context.Context, int64, *PaginationQuery) ([]*FavoriteCommentList, error)
+}
 
 type Storage struct {
-	Posts     PostStorage
-	Users     UserStorage
-	Comments  CommentStorage
-	Followers FollowerStorage
-	Roles     RoleStorage
+	Posts        PostStorage
+	Users        UserStorage
+	Comments     CommentStorage
+	Followers    FollowerStorage
+	Roles        RoleStorage
+	PostLikes    PostLikeStorage
+	CommentLikes CommentLikeStorage
 }
 
 func NewStorage(db *sql.DB) *Storage {
 	return &Storage{
-		Posts:     NewPostStore(db),
-		Users:     NewUserStore(db),
-		Comments:  NewCommentStore(db),
-		Followers: NewFollowerStore(db),
-		Roles:     NewRoleStore(db),
+		Posts:        NewPostStore(db),
+		Users:        NewUserStore(db),
+		Comments:     NewCommentStore(db),
+		Followers:    NewFollowerStore(db),
+		Roles:        NewRoleStore(db),
+		PostLikes:    NewPostLikeStore(db),
+		CommentLikes: NewCommentLikeStore(db),
 	}
 }
 
@@ -75,7 +110,9 @@ func withTx(db *sql.DB, c context.Context, fn func(*sql.Tx) error) error {
 	}
 
 	if err := fn(tx); err != nil {
-		_ = tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
 		return err
 	}
 

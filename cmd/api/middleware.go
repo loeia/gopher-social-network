@@ -44,10 +44,14 @@ func (app *application) AuthTokenMiddleware(next http.Handler) http.Handler {
 		}
 
 		ctx := r.Context()
-
-		user, err := app.getUser(r.Context(), userId)
+		user, err := app.getUser(ctx, userId)
 		if err != nil {
 			app.unauthorizedErrorResponse(w, r, err)
+			return
+		}
+
+		if ver, ok := claims["ver"].(float64); !ok || int(ver) != user.TokenVer {
+			app.unauthorizedErrorResponse(w, r, fmt.Errorf("token has been revoked"))
 			return
 		}
 
@@ -73,7 +77,7 @@ func (app *application) postsContextMiddleware(next http.Handler) http.Handler {
 
 		ctx := r.Context()
 
-		post, err := app.store.Posts.GetById(ctx, postId)
+		post, err := app.getPost(ctx, postId)
 		if err != nil {
 			switch {
 			case errors.Is(err, store.ErrNotFound):
@@ -121,6 +125,7 @@ func (app *application) checkPostOwnerShip(requiredRole string, next http.Handle
 		next.ServeHTTP(w, r)
 	}
 }
+
 // checkRolePrecedence checks if the user's role level meets the required role level.
 func (app *application) checkRolePrecedence(c context.Context, user *store.User, roleName string) (bool, error) {
 	role, err := app.store.Roles.GetByName(c, roleName)
@@ -137,7 +142,7 @@ func (app *application) getUser(c context.Context, userId int64) (*store.User, e
 		return app.store.Users.GetById(c, userId)
 	}
 
-	user, err := app.cache.Get(c, userId)
+	user, err := app.cache.User.Get(c, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +152,7 @@ func (app *application) getUser(c context.Context, userId int64) (*store.User, e
 		if err != nil {
 			return nil, err
 		}
-		if err := app.cache.Set(c, user); err != nil {
+		if err := app.cache.User.Set(c, user); err != nil {
 			return nil, err
 		}
 	}
@@ -163,6 +168,107 @@ func (app *application) rateLimiterMiddleware(next http.Handler) http.Handler {
 				app.rateLimitExceededResponse(w, r, retryAfter.String())
 				return
 			}
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+// commentsContextMiddleware loads the comment by ID from the URL and sets it in the request context.
+func (app *application) commentsContextMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		commentId, err := strconv.ParseInt(chi.URLParam(r, "commentId"), 10, 64)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+		ctx := r.Context()
+
+		comment, err := app.store.Comments.GetById(ctx, commentId)
+		if err != nil {
+			switch {
+			case errors.Is(err, store.ErrNotFound):
+				app.notFoundError(w, r, err)
+			default:
+				app.internalServerError(w, r, err)
+			}
+			return
+		}
+
+		ctx = context.WithValue(ctx, CommentCtx, comment)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// getCommentFromCtx retrieves the comment from the request context.
+func getCommentFromCtx(r *http.Request) *store.Comment {
+	return r.Context().Value(CommentCtx).(*store.Comment)
+}
+
+// checkCommentOwnerShip verifies the user owns the comment or has the required role to proceed.
+func (app *application) checkCommentOwnerShip(requiredRole string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		user := getUserFromCtx(r)
+		comment := getCommentFromCtx(r)
+
+		if user.ID == comment.UserID {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// role precedence check
+		allowed, err := app.checkRolePrecedence(r.Context(), user, requiredRole)
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		if !allowed {
+			app.forbiddenResponse(w, r)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+}
+
+// getPost retrieves a post by ID, using cache when enabled.
+func (app *application) getPost(c context.Context, postId int64) (*store.Post, error) {
+	if !app.config.redisCfg.enabled {
+		return app.store.Posts.GetById(c, postId)
+	}
+
+	post, err := app.cache.Post.Get(c, postId)
+	if err != nil {
+		return nil, err
+	}
+
+	if post == nil {
+		post, err = app.store.Posts.GetById(c, postId)
+		if err != nil {
+			return nil, err
+		}
+		if err := app.cache.Post.Set(c, post); err != nil {
+			return nil, err
+		}
+	}
+
+	return post, nil
+}
+
+func (app *application) verifyAdminPermMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := getUserFromCtx(r)
+
+		allowed, err := app.checkRolePrecedence(r.Context(), user, "admin")
+		if err != nil {
+			app.internalServerError(w, r, err)
+			return
+		}
+
+		if !allowed {
+			app.forbiddenResponse(w, r)
+			return
 		}
 
 		next.ServeHTTP(w, r)

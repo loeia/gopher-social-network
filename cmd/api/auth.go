@@ -43,6 +43,7 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		"nbf": time.Now().Unix(),
 		"iss": app.config.auth.token.iss,
 		"aud": app.config.auth.token.iss,
+		"ver": user.TokenVer,
 	}
 	token, err := app.authenticator.GenerateToken(claims)
 	if err != nil {

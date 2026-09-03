@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/loeia/gopherSocialNetwork/internal/avatar"
 	"github.com/loeia/gopherSocialNetwork/internal/auth"
 	"github.com/loeia/gopherSocialNetwork/internal/db"
 	"github.com/loeia/gopherSocialNetwork/internal/env"
@@ -29,6 +30,7 @@ func main() {
 		},
 		mail: mailConfig{
 			exp:       time.Hour * 24 * 2, // 2 days
+			resetExp:  time.Minute * 15,
 			fromEmail: env.GetString("FROM_EMAIL", ""),
 			mailTrap: mailTrapConfig{
 				apiKey:      env.GetString("MAILTRAP_API_KEY", ""),
@@ -51,7 +53,7 @@ func main() {
 		},
 		rateLimiter: ratelimiter.Config{
 			RequestsPerTimeFrame: env.GetInt("RATELIMITER_REQUESTS_COUNT", 20),
-			TimeFrame:            time.Second * 5,
+			TimeFrame:            time.Duration(env.GetInt("RATELIMITER_TIME_FRAME", 5)) * time.Second,
 			Enabled:              env.GetBool("RATE_LIMITER_ENABLED", true),
 		},
 	}
@@ -68,6 +70,11 @@ func main() {
 	defer db.Close()
 	logger.Info("database connection pool established!")
 	store := store.NewStorage(db)
+
+	// avatar generator
+	if err := avatar.Init(); err != nil {
+		logger.Fatalln(err)
+	}
 
 	// cache
 	var rdb *redis.Client
@@ -92,7 +99,13 @@ func main() {
 	jwtAuthenticator := auth.NewJWTAuthenticator(config.auth.token.secret, config.auth.token.iss, config.auth.token.iss)
 
 	// rate limiter
-	rateLimiter := ratelimiter.NewFixedWindowLimiter(config.rateLimiter.RequestsPerTimeFrame, config.rateLimiter.TimeFrame)
+	var rl ratelimiter.Limiter
+	if config.rateLimiter.Enabled && config.redisCfg.enabled {
+		rl = ratelimiter.NewRedisRateLimiter(rdb, config.rateLimiter.RequestsPerTimeFrame, config.rateLimiter.TimeFrame)
+		logger.Info("redis rate limiter enabled!")
+	} else {
+		config.rateLimiter.Enabled = false
+	}
 
 	app := &application{
 		config:        config,
@@ -101,7 +114,7 @@ func main() {
 		logger:        logger,
 		mailer:        mailtrap,
 		authenticator: jwtAuthenticator,
-		rateLimiter:   rateLimiter,
+		rateLimiter:   rl,
 	}
 
 	logger.Fatalln(app.run(app.mount()))

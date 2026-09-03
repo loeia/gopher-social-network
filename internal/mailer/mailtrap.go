@@ -30,7 +30,7 @@ func NewMailTrapClient(fromEmail, apiKey, user, pass string) (*MailTrapClient, e
 	}, nil
 }
 
-func (m *MailTrapClient) Send(templateFile string, username string, email string, data any, isSandbox bool) (int, error) {
+func (m *MailTrapClient) Send(templateFile string, email string, data any, isSandbox bool) (int, error) {
 	tmpl, err := template.ParseFS(FS, "templates/"+templateFile)
 	if err != nil {
 		return -1, err

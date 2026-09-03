@@ -4,27 +4,34 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/lib/pq"
 )
 
 type Post struct {
-	ID       int64      `json:"id"`
-	Title    string     `json:"title"`
-	Content  string     `json:"content"`
-	UserID   int64      `json:"user_id"`
-	Tags     []string   `json:"tags"`
-	Comments []*Comment `json:"comments"`
-	Version  int64      `json:"version"`
-	User     User       `json:"user"`
+	ID           int64    `json:"id"`
+	Title        string   `json:"title"`
+	Content      string   `json:"content"`
+	UserID       int64    `json:"user_id"`
+	Tags         []string `json:"tags"`
+	CommentCount int64    `json:"comment_count"`
+	LikeCount    int64    `json:"like_count"`
+	ViewCount    int64    `json:"view_count"`
+	Version      int64    `json:"version"`
+	User         User     `json:"user"`
 
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type PostWithMetaData struct {
-	Post         Post  `json:"post"`
-	CommentCount int64 `json:"comment_count"`
+type SearchReq struct {
+	Author string   `json:"author" validate:"max=100"`
+	Tags   []string `json:"tags" validate:"max=5"`
+	Search string   `json:"search" validate:"max=100"`
+	Since  string   `json:"since"`
+	Until  string   `json:"until"`
 }
 
 type PostStore struct {
@@ -56,8 +63,13 @@ func (s *PostStore) Create(c context.Context, post *Post) error {
 }
 
 func (s *PostStore) GetById(c context.Context, id int64) (*Post, error) {
-	query := `SELECT p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,u.username
-	FROM posts p JOIN users u ON p.user_id = u.id WHERE p.id = $1`
+	query := `
+	SELECT
+		p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,u.username,
+		p.comment_count,p.like_count,p.view_count
+	FROM posts p
+	JOIN users u ON p.user_id = u.id WHERE p.id = $1
+	`
 
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
@@ -75,6 +87,9 @@ func (s *PostStore) GetById(c context.Context, id int64) (*Post, error) {
 		&post.CreatedAt,
 		&post.UpdatedAt,
 		&post.User.Username,
+		&post.CommentCount,
+		&post.LikeCount,
+		&post.ViewCount,
 	)
 	if err != nil {
 		switch {
@@ -109,6 +124,16 @@ func (s *PostStore) Delete(ctx context.Context, post *Post) error {
 	return nil
 }
 
+func (s *PostStore) IncrementViewCount(c context.Context, postId int64) error {
+	query := `UPDATE posts SET view_count = view_count + 1 WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	_, err := s.db.ExecContext(ctx, query, postId)
+	return err
+}
+
 func (s *PostStore) Update(c context.Context, post *Post) error {
 	query := `UPDATE posts SET title = $1, content = $2, tags = $3,updated_at = NOW(),version = version + 1 WHERE id = $4 AND version = $5 RETURNING version,updated_at`
 
@@ -135,26 +160,25 @@ func (s *PostStore) Update(c context.Context, post *Post) error {
 	return nil
 }
 
-func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedFeedQuery) ([]*PostWithMetaData, error) {
+func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginationQuery) ([]*Post, error) {
 	query := `
 		SELECT
 		    p.id,
 		    p.user_id,
 		    p.title,
 		    p.content,
-		    p.created_at,
-		    p.version,
 		    p.tags,
+		    p.version,
+		    p.created_at,
+		    p.updated_at,
 		    u.username,
-		    COUNT(c.id) AS comments_count
+		    p.comment_count,
+		    p.like_count,
+		    p.view_count
 		FROM posts p
-		LEFT JOIN comments c ON c.post_id = p.id
-		LEFT JOIN users u ON p.user_id = u.id
-		LEFT JOIN followers f ON f.user_id = p.user_id
+		JOIN users u ON p.user_id = u.id
+		JOIN followers f ON f.user_id = p.user_id
 		WHERE f.follower_id = $1
-		AND (p.title ILIKE '%' || $4 || '%' OR p.content ILIKE '%' || $4 || '%')
-		AND (p.tags @> $5 OR $5 = '{}')
-		GROUP BY p.id, u.username
 		ORDER BY p.created_at ` + pfq.Sort + `
 		LIMIT $2 OFFSET $3
 	`
@@ -162,25 +186,28 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
 	defer cancel()
 
-	rows, err := s.db.QueryContext(ctx, query, userId, pfq.Limit, pfq.Offset, pfq.Search, pq.Array(pfq.Tags))
+	rows, err := s.db.QueryContext(ctx, query, userId, pfq.Limit, pfq.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var feed []*PostWithMetaData
+	var feed []*Post
 	for rows.Next() {
-		var post PostWithMetaData
+		var post Post
 		if err := rows.Scan(
-			&post.Post.ID,
-			&post.Post.UserID,
-			&post.Post.Title,
-			&post.Post.Content,
-			&post.Post.CreatedAt,
-			&post.Post.Version,
-			pq.Array(&post.Post.Tags),
-			&post.Post.User.Username,
+			&post.ID,
+			&post.UserID,
+			&post.Title,
+			&post.Content,
+			pq.Array(&post.Tags),
+			&post.Version,
+			&post.CreatedAt,
+			&post.UpdatedAt,
+			&post.User.Username,
 			&post.CommentCount,
+			&post.LikeCount,
+			&post.ViewCount,
 		); err != nil {
 			return nil, err
 		}
@@ -194,10 +221,10 @@ func (s *PostStore) GetUserFeed(c context.Context, userId int64, pfq *PaginatedF
 	return feed, nil
 }
 
-func (s *PostStore) GetRandomPosts(c context.Context, count int) ([]*Post, error) {
+func (s *PostStore) GetFree(c context.Context, count int) ([]*Post, error) {
 
 	query := `
-		SELECT p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,u.username
+		SELECT p.id,p.user_id,p.title,p.content,p.tags,p.version,p.created_at,p.updated_at,p.comment_count,p.like_count,p.view_count,u.username
 		FROM posts p JOIN users u ON p.user_id = u.id
 		ORDER BY random()
 		LIMIT $1
@@ -224,6 +251,95 @@ func (s *PostStore) GetRandomPosts(c context.Context, count int) ([]*Post, error
 			&post.Version,
 			&post.CreatedAt,
 			&post.UpdatedAt,
+			&post.CommentCount,
+			&post.LikeCount,
+			&post.ViewCount,
+			&post.User.Username,
+		); err != nil {
+			return nil, err
+		}
+		posts = append(posts, &post)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return posts, nil
+}
+
+// escapeLike escapes LIKE wildcards so user input matches literally.
+func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
+}
+
+// Search returns posts matching search/tags/author/date-range filters, ordered by relevance.
+func (s *PostStore) Search(c context.Context, pfq *FilterQuery) ([]*Post, error) {
+	ctx, cancel := context.WithTimeout(c, QueryTimeoutDuration)
+	defer cancel()
+
+	var sinceArg any = nil
+	if pfq.Since != "" {
+		sinceArg = pfq.Since
+	}
+	var untilArg any = nil
+	if pfq.Until != "" {
+		untilArg = pfq.Until
+	}
+
+	order := "similarity(p.title, $8) DESC, p.created_at DESC"
+	switch pfq.Sort {
+	case "asc":
+		order = "p.created_at ASC, similarity(p.title, $8) DESC"
+	case "desc":
+		order = "p.created_at DESC, similarity(p.title, $8) DESC"
+	}
+
+	query := `
+		SELECT p.id, p.user_id, p.title, p.content, p.tags, p.version, p.created_at,
+		       p.comment_count, p.like_count, p.view_count, u.username
+		FROM posts p
+		JOIN users u ON p.user_id = u.id
+		WHERE (p.title ILIKE '%' || $1 || '%' ESCAPE '\')
+		  AND (p.tags @> $2)
+		  AND (u.username ILIKE '%' || $3 || '%' ESCAPE '\')
+		  AND (p.created_at >= $4::timestamptz OR $4 IS NULL)
+		  AND (p.created_at <= $5::timestamptz OR $5 IS NULL)
+		ORDER BY ` + order + `
+		LIMIT $6 OFFSET $7
+	`
+
+	rows, err := s.db.QueryContext(ctx, query,
+		escapeLike(pfq.Search),
+		pq.Array(pfq.Tags),
+		escapeLike(pfq.Author),
+		sinceArg,
+		untilArg,
+		pfq.Limit,
+		pfq.Offset,
+		pfq.Search,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var posts []*Post
+	for rows.Next() {
+		var post Post
+		if err := rows.Scan(
+			&post.ID,
+			&post.UserID,
+			&post.Title,
+			&post.Content,
+			pq.Array(&post.Tags),
+			&post.Version,
+			&post.CreatedAt,
+			&post.CommentCount,
+			&post.LikeCount,
+			&post.ViewCount,
 			&post.User.Username,
 		); err != nil {
 			return nil, err

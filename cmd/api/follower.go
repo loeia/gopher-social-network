@@ -19,6 +19,11 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	if followUserId == user.ID {
+		app.badRequestError(w, r, errors.New("cannot follow yourself"))
+		return
+	}
+
 	if err := app.store.Followers.Follow(r.Context(), followUserId, user.ID); err != nil {
 		if errors.Is(err, store.ErrConflict) {
 			app.conflictError(w, r, err)
@@ -27,6 +32,9 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 		app.internalServerError(w, r, err)
 		return
 	}
+
+	app.invalidateUserCache(r, followUserId)
+	app.invalidateUserCache(r, user.ID)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -45,6 +53,9 @@ func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Reque
 		app.internalServerError(w, r, err)
 		return
 	}
+
+	app.invalidateUserCache(r, unfollowUserId)
+	app.invalidateUserCache(r, user.ID)
 
 	w.WriteHeader(http.StatusNoContent)
 }
