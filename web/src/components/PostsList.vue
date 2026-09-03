@@ -57,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
+import { computed, onActivated, onBeforeUnmount, onDeactivated, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { storeToRefs } from 'pinia'
 import { useFeedStore, type FeedPost } from '@/stores/feed'
@@ -173,6 +173,12 @@ async function loadLikedPosts() {
 onBeforeUnmount(() => {
   if (!isStandalone.value) {
     window.removeEventListener('scroll', handleScroll)
+  }
+})
+
+onActivated(() => {
+  if (!isStandalone.value) {
+    window.addEventListener('scroll', handleScroll)
   }
 })
 
