@@ -4,6 +4,7 @@
 ![Vue Version](https://img.shields.io/badge/Vue-3.5-4FC08D?style=flat-square&logo=vuedotjs)
 ![Docker](https://img.shields.io/badge/Docker-24.0-2496ED?style=flat-square&logo=docker)
 ![Redis](https://img.shields.io/badge/Redis-7.2-DC382D?style=flat-square&logo=redis)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.3-336791?style=flat-square&logo=postgresql)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
 基于 Go 后端和 Vue 3 前端构建的社交网络应用，支持用户认证、帖子发布、评论互动、关注系统等功能。
