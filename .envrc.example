@@ -39,7 +39,7 @@ export REDIS_PASSWORD=""
 export REDIS_DB=0
 
 # rate limiter
-export RATE_LIMITER_ENABLED=true
+export RATE_LIMITER_ENABLED=false
 export RATELIMITER_REQUESTS_COUNT=20
 export RATELIMITER_TIME_FRAME=5
 
