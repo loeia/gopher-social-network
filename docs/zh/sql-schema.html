@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gopher Social Network - SQL 表设计文档</title>
+    <style>
+        :root {
+            --primary: #336791;
+            --primary-dark: #264d73;
+            --secondary: #5DC9E2;
+            --accent: #CE3263;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --success: #38a169;
+            --warning: #d69e2e;
+            --danger: #e53e3e;
+            --info: #3182ce;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .nav {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .nav.compact {
+            padding: 0.6rem 1.5rem;
+            border-radius: 0;
+        }
+
+        .nav.compact .nav-list {
+            gap: 0.3rem;
+        }
+
+        .nav.compact .nav-list a {
+            padding: 0.35rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .nav-list a {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--bg);
+            border-radius: 4px;
+            text-decoration: none;
+            color: var(--text);
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .nav-list a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .section {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .section h3 {
+            color: var(--text);
+            margin: 1.5rem 0 1rem;
+        }
+
+        .table-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .table-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .table-name {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 1.2rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .table-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .badge-main { background: var(--primary); color: white; }
+        .badge junction { background: var(--info); color: white; }
+        .badge-temp { background: var(--warning); color: white; }
+
+        .description {
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        .columns-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .columns-table th,
+        .columns-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .columns-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        .columns-table tr:hover {
+            background: var(--bg);
+        }
+
+        .col-name {
+            font-family: monospace;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .col-type {
+            font-family: monospace;
+            color: var(--info);
+        }
+
+        .constraint {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            margin-right: 0.3rem;
+        }
+
+        .constraint-pk { background: #fed7e2; color: #97266d; }
+        .constraint-fk { background: #bee3f8; color: #2a4365; }
+        .constraint-unique { background: #c6f6d5; color: #22543d; }
+        .constraint-notnull { background: #fefcbf; color: #744210; }
+        .constraint-default { background: #e9d8fd; color: #553c9a; }
+
+        pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        .inline-code {
+            background: var(--bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+            color: var(--accent);
+        }
+
+        .note {
+            background: #ebf8ff;
+            border-left: 4px solid var(--info);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .warning {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .erd-container {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .erd-container svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .relationship-list {
+            list-style: none;
+            margin: 1rem 0;
+        }
+
+        .relationship-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .relationship-list li:last-child {
+            border-bottom: none;
+        }
+
+        .rel-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+
+        .rel-1n { background: #c6f6d5; color: #22543d; }
+        .rel-n1 { background: #bee3f8; color: #2a4365; }
+        .rel-11 { background: #fed7e2; color: #97266d; }
+
+        .index-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .index-item {
+            background: var(--bg);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-family: monospace;
+        }
+
+        .trigger-card {
+            background: #fff5f5;
+            border-left: 4px solid var(--danger);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .trigger-card h4 {
+            color: var(--danger);
+            margin-bottom: 0.5rem;
+        }
+
+        .dependency-graph {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .dep-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dep-table th,
+        .dep-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dep-table th {
+            background: var(--primary);
+            color: white;
+        }
+
+        .dep-table tr:hover {
+            background: var(--bg);
+        }
+
+        .arrow {
+            color: var(--text-light);
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .nav-list {
+                flex-direction: column;
+            }
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Gopher Social Network</h1>
+        <p>SQL 数据库表设计文档 - PostgreSQL 16</p>
+    </div>
+
+    <div class="container">
+        <nav class="nav" id="mainNav">
+            <ul class="nav-list">
+                <li><a href="#overview">概述</a></li>
+                <li><a href="#erd">ER 关系图</a></li>
+                <li><a href="#tables">表结构详解</a></li>
+                <li><a href="#triggers">触发器与约束</a></li>
+                <li><a href="#indexes">索引设计</a></li>
+                <li><a href="#dependencies">依赖关系</a></li>
+                <li><a href="#seed">种子数据</a></li>
+            </ul>
+        </nav>
+
+        <!-- 概述 -->
+        <section id="overview" class="section">
+            <h2>概述</h2>
+            <p>Gopher Social Network 使用 PostgreSQL 16 作为主数据库，Redis 作为缓存层。</p>
+            
+            <h3>数据库信息</h3>
+            <table class="columns-table">
+                <tr>
+                    <td><strong>数据库类型</strong></td>
+                    <td>PostgreSQL 16.3</td>
+                </tr>
+                <tr>
+                    <td><strong>默认数据库名</strong></td>
+                    <td><code class="inline-code">gopher-social-network</code></td>
+                </tr>
+                <tr>
+                    <td><strong>默认用户</strong></td>
+                    <td><code class="inline-code">admin</code></td>
+                </tr>
+                <tr>
+                    <td><strong>连接池配置</strong></td>
+                    <td>最大连接 30，空闲连接 30，空闲超时 15m</td>
+                </tr>
+            </table>
+
+            <h3>表清单</h3>
+            <table class="columns-table">
+                <thead>
+                    <tr>
+                        <th>表名</th>
+                        <th>说明</th>
+                        <th>类型</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="col-name">users</span></td>
+                        <td>用户表</td>
+                        <td><span class="table-badge badge-main">主表</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">roles</span></td>
+                        <td>角色表</td>
+                        <td><span class="table-badge badge-main">主表</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">posts</span></td>
+                        <td>帖子表</td>
+                        <td><span class="table-badge badge-main">主表</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">comments</span></td>
+                        <td>评论表</td>
+                        <td><span class="table-badge badge-main">主表</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">followers</span></td>
+                        <td>关注关系表</td>
+                        <td><span class="table-badge junction">关联表</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">post_likes</span></td>
+                        <td>帖子点赞表</td>
+                        <td><span class="table-badge junction">关联表</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">comment_likes</span></td>
+                        <td>评论点赞表</td>
+                        <td><span class="table-badge junction">关联表</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">user_invitations</span></td>
+                        <td>用户激活邀请表</td>
+                        <td><span class="table-badge temp">临时表</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">password_resets</span></td>
+                        <td>密码重置表</td>
+                        <td><span class="table-badge temp">临时表</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ER 关系图 -->
+        <section id="erd" class="section">
+            <h2>ER 关系图</h2>
+            <p>实体关系图展示了各表之间的关联关系。</p>
+
+            <div class="erd-container">
+                <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Roles Table -->
+                    <rect x="50" y="50" width="150" height="100" fill="#336791" rx="8"/>
+                    <text x="125" y="75" text-anchor="middle" fill="white" font-weight="bold">roles</text>
+                    <text x="125" y="95" text-anchor="middle" fill="#ddd" font-size="12">id (PK)</text>
+                    <text x="125" y="110" text-anchor="middle" fill="#ddd" font-size="12">name</text>
+                    <text x="125" y="125" text-anchor="middle" fill="#ddd" font-size="12">level</text>
+
+                    <!-- Users Table -->
+                    <rect x="300" y="50" width="180" height="140" fill="#336791" rx="8"/>
+                    <text x="390" y="75" text-anchor="middle" fill="white" font-weight="bold">users</text>
+                    <text x="390" y="95" text-anchor="middle" fill="#ddd" font-size="12">id (PK)</text>
+                    <text x="390" y="110" text-anchor="middle" fill="#ddd" font-size="12">username (UQ)</text>
+                    <text x="390" y="125" text-anchor="middle" fill="#ddd" font-size="12">email (UQ)</text>
+                    <text x="390" y="140" text-anchor="middle" fill="#ddd" font-size="12">password</text>
+                    <text x="390" y="155" text-anchor="middle" fill="#ddd" font-size="12">role_id (FK)</text>
+                    <text x="390" y="170" text-anchor="middle" fill="#ddd" font-size="12">is_active</text>
+
+                    <!-- Posts Table -->
+                    <rect x="550" y="50" width="180" height="130" fill="#336791" rx="8"/>
+                    <text x="640" y="75" text-anchor="middle" fill="white" font-weight="bold">posts</text>
+                    <text x="640" y="95" text-anchor="middle" fill="#ddd" font-size="12">id (PK)</text>
+                    <text x="640" y="110" text-anchor="middle" fill="#ddd" font-size="12">user_id (FK)</text>
+                    <text x="640" y="125" text-anchor="middle" fill="#ddd" font-size="12">title</text>
+                    <text x="640" y="140" text-anchor="middle" fill="#ddd" font-size="12">content</text>
+                    <text x="640" y="155" text-anchor="middle" fill="#ddd" font-size="12">tags[]</text>
+                    <text x="640" y="170" text-anchor="middle" fill="#ddd" font-size="12">version</text>
+
+                    <!-- Comments Table -->
+                    <rect x="550" y="250" width="180" height="130" fill="#336791" rx="8"/>
+                    <text x="640" y="275" text-anchor="middle" fill="white" font-weight="bold">comments</text>
+                    <text x="640" y="295" text-anchor="middle" fill="#ddd" font-size="12">id (PK)</text>
+                    <text x="640" y="310" text-anchor="middle" fill="#ddd" font-size="12">post_id (FK)</text>
+                    <text x="640" y="325" text-anchor="middle" fill="#ddd" font-size="12">user_id (FK)</text>
+                    <text x="640" y="340" text-anchor="middle" fill="#ddd" font-size="12">parent_id (FK)</text>
+                    <text x="640" y="355" text-anchor="middle" fill="#ddd" font-size="12">content</text>
+                    <text x="640" y="370" text-anchor="middle" fill="#ddd" font-size="12">reply_to_user_id</text>
+
+                    <!-- Followers Table -->
+                    <rect x="300" y="250" width="160" height="100" fill="#5DC9E2" rx="8"/>
+                    <text x="380" y="275" text-anchor="middle" fill="white" font-weight="bold">followers</text>
+                    <text x="380" y="295" text-anchor="middle" fill="#fff" font-size="12">user_id (FK)</text>
+                    <text x="380" y="310" text-anchor="middle" fill="#fff" font-size="12">follower_id (FK)</text>
+                    <text x="380" y="325" text-anchor="middle" fill="#fff" font-size="12">created_at</text>
+
+                    <!-- Post Likes Table -->
+                    <rect x="800" y="50" width="160" height="100" fill="#5DC9E2" rx="8"/>
+                    <text x="880" y="75" text-anchor="middle" fill="white" font-weight="bold">post_likes</text>
+                    <text x="880" y="95" text-anchor="middle" fill="#fff" font-size="12">post_id (FK)</text>
+                    <text x="880" y="110" text-anchor="middle" fill="#fff" font-size="12">user_id (FK)</text>
+                    <text x="880" y="125" text-anchor="middle" fill="#fff" font-size="12">created_at</text>
+
+                    <!-- Comment Likes Table -->
+                    <rect x="800" y="250" width="170" height="100" fill="#5DC9E2" rx="8"/>
+                    <text x="885" y="275" text-anchor="middle" fill="white" font-weight="bold">comment_likes</text>
+                    <text x="885" y="295" text-anchor="middle" fill="#fff" font-size="12">comment_id (FK)</text>
+                    <text x="885" y="310" text-anchor="middle" fill="#fff" font-size="12">user_id (FK)</text>
+                    <text x="885" y="325" text-anchor="middle" fill="#fff" font-size="12">created_at</text>
+
+                    <!-- User Invitations Table -->
+                    <rect x="100" y="400" width="180" height="100" fill="#d69e2e" rx="8"/>
+                    <text x="190" y="425" text-anchor="middle" fill="white" font-weight="bold">user_invitations</text>
+                    <text x="190" y="445" text-anchor="middle" fill="#fff" font-size="12">user_id (FK)</text>
+                    <text x="190" y="460" text-anchor="middle" fill="#fff" font-size="12">token</text>
+                    <text x="190" y="475" text-anchor="middle" fill="#fff" font-size="12">expiry</text>
+
+                    <!-- Password Resets Table -->
+                    <rect x="350" y="400" width="170" height="100" fill="#d69e2e" rx="8"/>
+                    <text x="435" y="425" text-anchor="middle" fill="white" font-weight="bold">password_resets</text>
+                    <text x="435" y="445" text-anchor="middle" fill="#fff" font-size="12">user_id (FK)</text>
+                    <text x="435" y="460" text-anchor="middle" fill="#fff" font-size="12">token</text>
+                    <text x="435" y="475" text-anchor="middle" fill="#fff" font-size="12">expiry</text>
+
+                    <!-- Relationship Lines -->
+                    <line x1="200" y1="100" x2="300" y2="120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="480" y1="120" x2="550" y2="120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="640" y1="180" x2="640" y2="250" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="480" y1="160" x2="380" y2="250" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="730" y1="120" x2="800" y2="100" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="730" y1="310" x2="800" y2="300" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="390" y1="190" x2="190" y2="400" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="390" y1="190" x2="435" y2="400" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <!-- Arrow Marker -->
+                    <defs>
+                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#666"/>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+
+            <h3>关系说明</h3>
+            <ul class="relationship-list">
+                <li>
+                    <span class="rel-badge rel-n1">多对一</span>
+                    <strong>users.role_id → roles.id</strong>: 每个用户有一个角色
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">一对多</span>
+                    <strong>posts.user_id → users.id</strong>: 每个用户可以发布多个帖子
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">一对多</span>
+                    <strong>comments.post_id → posts.id</strong>: 每个帖子可以有多个评论
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">一对多</span>
+                    <strong>comments.user_id → users.id</strong>: 每个用户可以发表多个评论
+                </li>
+                <li>
+                    <span class="rel-badge rel-11">自关联</span>
+                    <strong>comments.parent_id → comments.id</strong>: 评论支持多级回复
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">一对多</span>
+                    <strong>comments.reply_to_user_id → users.id</strong>: 回复目标用户
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">多对多</span>
+                    <strong>followers</strong>: 用户之间的关注关系（自关联）
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">多对多</span>
+                    <strong>post_likes</strong>: 用户点赞帖子的关系
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">多对多</span>
+                    <strong>comment_likes</strong>: 用户点赞评论的关系
+                </li>
+            </ul>
+        </section>
+
+        <!-- 表结构详解 -->
+        <section id="tables" class="section">
+            <h2>表结构详解</h2>
+
+            <!-- roles 表 -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">roles</span>
+                    <span class="table-badge badge-main">主表</span>
+                </div>
+                <p class="description">角色表，定义系统中的用户角色和权限层级。</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>列名</th>
+                            <th>类型</th>
+                            <th>约束</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">id</span></td>
+                            <td><span class="col-type">SERIAL</span></td>
+                            <td><span class="constraint constraint-pk">PRIMARY KEY</span></td>
+                            <td>角色 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">name</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-unique">UNIQUE</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>角色名称 (user/moderator/admin)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">description</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td></td>
+                            <td>角色描述</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">level</span></td>
+                            <td><span class="col-type">INTEGER</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>权限层级 (1=user, 2=moderator, 3=admin)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>预设数据</h4>
+                <pre><code>INSERT INTO roles (name, description, level) VALUES
+    ('user', '普通用户', 1),
+    ('moderator', '版主', 2),
+    ('admin', '管理员', 3);</code></pre>
+            </div>
+
+            <!-- users 表 -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">users</span>
+                    <span class="table-badge badge-main">主表</span>
+                </div>
+                <p class="description">用户表，存储所有用户信息。</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>列名</th>
+                            <th>类型</th>
+                            <th>约束</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">id</span></td>
+                            <td><span class="col-type">BIGSERIAL</span></td>
+                            <td><span class="constraint constraint-pk">PRIMARY KEY</span></td>
+                            <td>用户 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">username</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-unique">UNIQUE</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>用户名</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">email</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-unique">UNIQUE</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>邮箱地址</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">password</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>密码哈希 (bcrypt)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>创建时间</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">is_active</span></td>
+                            <td><span class="col-type">BOOLEAN</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT FALSE</span></td>
+                            <td>是否已激活</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">role_id</span></td>
+                            <td><span class="col-type">INTEGER</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → roles.id</span></td>
+                            <td>角色 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">token_ver</span></td>
+                            <td><span class="col-type">INTEGER</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>Token 版本号（用于失效旧 Token）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">avatar</span></td>
+                            <td><span class="col-type">BYTEA</span></td>
+                            <td></td>
+                            <td>头像图片数据</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">avatar_mime</span></td>
+                            <td><span class="col-type">VARCHAR(50)</span></td>
+                            <td></td>
+                            <td>头像 MIME 类型</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">bio</span></td>
+                            <td><span class="col-type">TEXT</span></td>
+                            <td></td>
+                            <td>个人简介</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">links</span></td>
+                            <td><span class="col-type">VARCHAR(255)[]</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT '{}'</span></td>
+                            <td>个人链接数组</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">show_email</span></td>
+                            <td><span class="col-type">BOOLEAN</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT FALSE</span></td>
+                            <td>是否公开邮箱</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">is_banned</span></td>
+                            <td><span class="col-type">BOOLEAN</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT FALSE</span></td>
+                            <td>是否被封禁</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">followers_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>粉丝数（冗余字段）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">following_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>关注数（冗余字段）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">posts_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>帖子数（冗余字段）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">likes_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>获赞数（冗余字段）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">replies_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>回复数（冗余字段）</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="note">
+                    <strong>设计说明：</strong>使用冗余字段（followers_count 等）存储计数，避免频繁的 COUNT 查询，通过触发器自动维护计数一致性。
+                </div>
+            </div>
+
+            <!-- posts 表 -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">posts</span>
+                    <span class="table-badge badge-main">主表</span>
+                </div>
+                <p class="description">帖子表，存储用户发布的帖子内容。</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>列名</th>
+                            <th>类型</th>
+                            <th>约束</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">id</span></td>
+                            <td><span class="col-type">BIGSERIAL</span></td>
+                            <td><span class="constraint constraint-pk">PRIMARY KEY</span></td>
+                            <td>帖子 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>作者 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">title</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>帖子标题</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">content</span></td>
+                            <td><span class="col-type">TEXT</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>帖子内容（支持 Markdown）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">tags</span></td>
+                            <td><span class="col-type">VARCHAR(255)[]</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT '{}'</span></td>
+                            <td>标签数组</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">version</span></td>
+                            <td><span class="col-type">INTEGER</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 1</span></td>
+                            <td>乐观锁版本号</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>创建时间</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">updated_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>更新时间</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">comment_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>评论数（冗余字段）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">like_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>点赞数（冗余字段）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">view_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>浏览量</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>乐观锁更新示例</h4>
+                <pre><code>-- 更新帖子时检查版本号
+UPDATE posts 
+SET title = $1, content = $2, tags = $3, 
+    updated_at = NOW(), version = version + 1 
+WHERE id = $4 AND version = $5 
+RETURNING version, updated_at;</code></pre>
+            </div>
+
+            <!-- comments 表 -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">comments</span>
+                    <span class="table-badge badge-main">主表</span>
+                </div>
+                <p class="description">评论表，支持多级回复的评论系统。</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>列名</th>
+                            <th>类型</th>
+                            <th>约束</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">id</span></td>
+                            <td><span class="col-type">BIGSERIAL</span></td>
+                            <td><span class="constraint constraint-pk">PRIMARY KEY</span></td>
+                            <td>评论 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">post_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → posts.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>所属帖子 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>评论者 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">content</span></td>
+                            <td><span class="col-type">TEXT</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>评论内容</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">parent_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → comments.id</span></td>
+                            <td>父评论 ID（NULL 表示一级评论）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">reply_to_user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → users.id</span></td>
+                            <td>回复目标用户 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>创建时间</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">like_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>点赞数（冗余字段）</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="note">
+                    <strong>多级回复设计：</strong>通过 <code class="inline-code">parent_id</code> 自关联实现评论树结构。一级评论的 parent_id 为 NULL，回复的 parent_id 指向父评论。最多支持两级回复。
+                </div>
+            </div>
+
+            <!-- followers 表 -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">followers</span>
+                    <span class="table-badge junction">关联表</span>
+                </div>
+                <p class="description">关注关系表，存储用户之间的关注关系。</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>列名</th>
+                            <th>类型</th>
+                            <th>约束</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>被关注者 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">follower_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>关注者 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>关注时间</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>约束</h4>
+                <pre><code>-- 联合唯一约束，防止重复关注
+UNIQUE (user_id, follower_id)
+
+-- 检查约束，防止自关注
+CHECK (user_id != follower_id)</code></pre>
+            </div>
+
+            <!-- post_likes 表 -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">post_likes</span>
+                    <span class="table-badge junction">关联表</span>
+                </div>
+                <p class="description">帖子点赞表。</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>列名</th>
+                            <th>类型</th>
+                            <th>约束</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">post_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → posts.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>帖子 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>点赞用户 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>点赞时间</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>约束</h4>
+                <pre><code>-- 联合唯一约束，防止重复点赞
+UNIQUE (post_id, user_id)</code></pre>
+            </div>
+
+            <!-- comment_likes 表 -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">comment_likes</span>
+                    <span class="table-badge junction">关联表</span>
+                </div>
+                <p class="description">评论点赞表。</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>列名</th>
+                            <th>类型</th>
+                            <th>约束</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">comment_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → comments.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>评论 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>点赞用户 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>点赞时间</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>约束</h4>
+                <pre><code>-- 联合唯一约束
+UNIQUE (comment_id, user_id)</code></pre>
+            </div>
+
+            <!-- user_invitations 表 -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">user_invitations</span>
+                    <span class="table-badge temp">临时表</span>
+                </div>
+                <p class="description">用户激活邀请表，存储未激活用户的邀请令牌。</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>列名</th>
+                            <th>类型</th>
+                            <th>约束</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>用户 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">token</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>激活令牌（SHA256 哈希）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">expiry</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>过期时间</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="warning">
+                    <strong>清理策略：</strong>用户激活后，对应的邀请记录会被删除。
+                </div>
+            </div>
+
+            <!-- password_resets 表 -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">password_resets</span>
+                    <span class="table-badge temp">临时表</span>
+                </div>
+                <p class="description">密码重置表，存储密码重置令牌。</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>列名</th>
+                            <th>类型</th>
+                            <th>约束</th>
+                            <th>说明</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">token</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>重置令牌（SHA256 哈希）</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY → users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>用户 ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">expiry</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>过期时间（默认 15 分钟）</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="warning">
+                    <strong>安全策略：</strong>密码重置后，对应记录会被删除。同时 user 的 token_ver 会递增，使旧 Token 失效。
+                </div>
+            </div>
+        </section>
+
+        <!-- 触发器与约束 -->
+        <section id="triggers" class="section">
+            <h2>触发器与约束</h2>
+            <p>数据库级别的约束和触发器，用于维护数据一致性。</p>
+
+            <div class="trigger-card">
+                <h4>触发器：自动更新帖子点赞计数</h4>
+                <pre><code>-- 当 post_likes 表插入或删除时，自动更新 posts.like_count
+CREATE OR REPLACE FUNCTION update_post_like_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE posts SET like_count = like_count + 1 WHERE id = NEW.post_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE posts SET like_count = like_count - 1 WHERE id = OLD.post_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_post_like_count
+    AFTER INSERT OR DELETE ON post_likes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_post_like_count();</code></pre>
+            </div>
+
+            <div class="trigger-card">
+                <h4>触发器：自动更新评论计数</h4>
+                <pre><code>-- 当 comments 表插入或删除时，自动更新 posts.comment_count
+CREATE OR REPLACE FUNCTION update_post_comment_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE posts SET comment_count = comment_count + 1 WHERE id = NEW.post_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE posts SET comment_count = comment_count - 1 WHERE id = OLD.post_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_post_comment_count
+    AFTER INSERT OR DELETE ON comments
+    FOR EACH ROW
+    EXECUTE FUNCTION update_post_comment_count();</code></pre>
+            </div>
+
+            <div class="trigger-card">
+                <h4>触发器：自动更新评论点赞计数</h4>
+                <pre><code>-- 当 comment_likes 表插入或删除时，自动更新 comments.like_count
+CREATE OR REPLACE FUNCTION update_comment_like_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE comments SET like_count = like_count + 1 WHERE id = NEW.comment_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE comments SET like_count = like_count - 1 WHERE id = OLD.comment_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_comment_like_count
+    AFTER INSERT OR DELETE ON comment_likes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_comment_like_count();</code></pre>
+            </div>
+
+            <div class="trigger-card">
+                <h4>触发器：自动更新关注计数</h4>
+                <pre><code>-- 当 followers 表插入或删除时，自动更新 users 的 followers_count 和 following_count
+CREATE OR REPLACE FUNCTION update_user_follow_counts()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- 被关注者的粉丝数 +1
+        UPDATE users SET followers_count = followers_count + 1 WHERE id = NEW.user_id;
+        -- 关注者的关注数 +1
+        UPDATE users SET following_count = following_count + 1 WHERE id = NEW.follower_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        -- 被关注者的粉丝数 -1
+        UPDATE users SET followers_count = followers_count - 1 WHERE id = OLD.user_id;
+        -- 关注者的关注数 -1
+        UPDATE users SET following_count = following_count - 1 WHERE id = OLD.follower_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_user_follow_counts
+    AFTER INSERT OR DELETE ON followers
+    FOR EACH ROW
+    EXECUTE FUNCTION update_user_follow_counts();</code></pre>
+            </div>
+
+            <div class="trigger-card">
+                <h4>触发器：自动更新用户帖子计数</h4>
+                <pre><code>-- 当 posts 表插入或删除时，自动更新 users.posts_count
+CREATE OR REPLACE FUNCTION update_user_posts_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE users SET posts_count = posts_count + 1 WHERE id = NEW.user_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE users SET posts_count = posts_count - 1 WHERE id = OLD.user_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_user_posts_count
+    AFTER INSERT OR DELETE ON posts
+    FOR EACH ROW
+    EXECUTE FUNCTION update_user_posts_count();</code></pre>
+            </div>
+
+            <div class="trigger-card">
+                <h4>触发器：自动更新 updated_at 时间戳</h4>
+                <pre><code>-- 当 posts 表更新时，自动设置 updated_at 为当前时间
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_posts_updated_at
+    BEFORE UPDATE ON posts
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();</code></pre>
+            </div>
+
+            <h3>约束汇总</h3>
+            <table class="columns-table">
+                <thead>
+                    <tr>
+                        <th>表名</th>
+                        <th>约束类型</th>
+                        <th>约束名</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>users</td>
+                        <td>UNIQUE</td>
+                        <td>users_email_key</td>
+                        <td>邮箱唯一</td>
+                    </tr>
+                    <tr>
+                        <td>users</td>
+                        <td>UNIQUE</td>
+                        <td>users_username_key</td>
+                        <td>用户名唯一</td>
+                    </tr>
+                    <tr>
+                        <td>followers</td>
+                        <td>UNIQUE</td>
+                        <td>followers_user_id_follower_id_key</td>
+                        <td>防止重复关注</td>
+                    </tr>
+                    <tr>
+                        <td>post_likes</td>
+                        <td>UNIQUE</td>
+                        <td>post_likes_post_id_user_id_key</td>
+                        <td>防止重复点赞</td>
+                    </tr>
+                    <tr>
+                        <td>comment_likes</td>
+                        <td>UNIQUE</td>
+                        <td>comment_likes_comment_id_user_id_key</td>
+                        <td>防止重复点赞</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 索引设计 -->
+        <section id="indexes" class="section">
+            <h2>索引设计</h2>
+            <p>为提高查询性能而设计的索引。</p>
+
+            <h3>users 表索引</h3>
+            <div class="index-list">
+                <span class="index-item">idx_users_email (email)</span>
+                <span class="index-item">idx_users_username (username)</span>
+                <span class="index-item">idx_users_role_id (role_id)</span>
+                <span class="index-item">idx_users_is_active (is_active)</span>
+            </div>
+
+            <h3>posts 表索引</h3>
+            <div class="index-list">
+                <span class="index-item">idx_posts_user_id (user_id)</span>
+                <span class="index-item">idx_posts_created_at (created_at DESC)</span>
+                <span class="index-item">idx_posts_tags (tags USING GIN)</span>
+                <span class="index-item">idx_posts_title_trgm (title gin_trgm_ops)</span>
+            </div>
+
+            <h3>comments 表索引</h3>
+            <div class="index-list">
+                <span class="index-item">idx_comments_post_id (post_id)</span>
+                <span class="index-item">idx_comments_user_id (user_id)</span>
+                <span class="index-item">idx_comments_parent_id (parent_id)</span>
+                <span class="index-item">idx_comments_created_at (created_at)</span>
+            </div>
+
+            <h3>followers 表索引</h3>
+            <div class="index-list">
+                <span class="index-item">idx_followers_user_id (user_id)</span>
+                <span class="index-item">idx_followers_follower_id (follower_id)</span>
+            </div>
+
+            <h3>post_likes 表索引</h3>
+            <div class="index-list">
+                <span class="index-item">idx_post_likes_post_id (post_id)</span>
+                <span class="index-item">idx_post_likes_user_id (user_id)</span>
+            </div>
+
+            <h3>comment_likes 表索引</h3>
+            <div class="index-list">
+                <span class="index-item">idx_comment_likes_comment_id (comment_id)</span>
+                <span class="index-item">idx_comment_likes_user_id (user_id)</span>
+            </div>
+
+            <div class="note">
+                <strong>GIN 索引：</strong>posts 表的 tags 字段使用 GIN (Generalized Inverted Index) 索引，支持高效的数组包含查询（<code class="inline-code">@></code> 操作符）。
+            </div>
+
+            <div class="note">
+                <strong>pg_trgm 扩展：</strong>posts 表的 title 字段使用 pg_trgm 扩展的 GIN 索引，支持高效的模糊搜索（ILIKE 查询）。
+            </div>
+        </section>
+
+        <!-- 依赖关系 -->
+        <section id="dependencies" class="section">
+            <h2>依赖关系</h2>
+            <p>表之间的外键依赖关系。</p>
+
+            <table class="dep-table">
+                <thead>
+                    <tr>
+                        <th>源表</th>
+                        <th>源列</th>
+                        <th></th>
+                        <th>目标表</th>
+                        <th>目标列</th>
+                        <th>级联操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>users</td>
+                        <td>role_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>roles</td>
+                        <td>id</td>
+                        <td>RESTRICT</td>
+                    </tr>
+                    <tr>
+                        <td>posts</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comments</td>
+                        <td>post_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>posts</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comments</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comments</td>
+                        <td>parent_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>comments</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comments</td>
+                        <td>reply_to_user_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>SET NULL</td>
+                    </tr>
+                    <tr>
+                        <td>followers</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>followers</td>
+                        <td>follower_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>post_likes</td>
+                        <td>post_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>posts</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>post_likes</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comment_likes</td>
+                        <td>comment_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>comments</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comment_likes</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>user_invitations</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>password_resets</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">→</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>级联操作说明</h3>
+            <table class="columns-table">
+                <thead>
+                    <tr>
+                        <th>操作</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>CASCADE</strong></td>
+                        <td>删除父记录时，自动删除所有关联的子记录</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RESTRICT</strong></td>
+                        <td>如果存在关联记录，则禁止删除父记录</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SET NULL</strong></td>
+                        <td>删除父记录时，将子记录的外键设为 NULL</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- 种子数据 -->
+        <section id="seed" class="section">
+            <h2>种子数据</h2>
+            <p>初始化数据用于开发和测试环境。</p>
+
+            <h3>种子数据内容</h3>
+            <table class="columns-table">
+                <thead>
+                    <tr>
+                        <th>数据类型</th>
+                        <th>数量</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>普通用户</td>
+                        <td>50</td>
+                        <td>自动生成用户名、邮箱、密码（统一为 "123"）</td>
+                    </tr>
+                    <tr>
+                        <td>管理员用户</td>
+                        <td>1</td>
+                        <td>用户名 "admin"，具有管理员权限</td>
+                    </tr>
+                    <tr>
+                        <td>帖子</td>
+                        <td>50+</td>
+                        <td>Go 技术相关文章，包含 Markdown 内容</td>
+                    </tr>
+                    <tr>
+                        <td>评论</td>
+                        <td>100+</td>
+                        <td>一级评论和多级回复</td>
+                    </tr>
+                    <tr>
+                        <td>关注关系</td>
+                        <td>随机</td>
+                        <td>用户之间随机建立关注关系</td>
+                    </tr>
+                    <tr>
+                        <td>帖子点赞</td>
+                        <td>随机</td>
+                        <td>随机点赞记录</td>
+                    </tr>
+                    <tr>
+                        <td>评论点赞</td>
+                        <td>随机</td>
+                        <td>随机点赞记录</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>初始化命令</h3>
+            <pre><code># 运行种子数据脚本
+make seed
+
+# 或直接运行
+go run cmd/migrate/seed/main.go</code></pre>
+
+            <div class="note">
+                <strong>测试账户：</strong>所有种子用户的默认密码为 <code class="inline-code">123</code>，可用于开发测试。
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const nav = document.getElementById('mainNav');
+        let lastScroll = 0;
+        const compactThreshold = 100;
+
+        window.addEventListener('scroll', () => {
+            const currentScroll = window.pageYOffset;
+            
+            if (currentScroll > compactThreshold) {
+                nav.classList.add('compact');
+            } else {
+                nav.classList.remove('compact');
+            }
+            
+            lastScroll = currentScroll;
+        });
+    </script>
+</body>
+</html>
