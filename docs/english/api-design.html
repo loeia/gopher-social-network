@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gopher Social Network - API Design Documentation</title>
+    <style>
+        :root {
+            --primary: #00ADD8;
+            --primary-dark: #0099b8;
+            --secondary: #5DC9E2;
+            --accent: #CE3263;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --success: #38a169;
+            --warning: #d69e2e;
+            --danger: #e53e3e;
+            --info: #3182ce;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .nav {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .nav.compact {
+            padding: 0.6rem 1.5rem;
+            border-radius: 0;
+        }
+
+        .nav.compact .nav-list {
+            gap: 0.3rem;
+        }
+
+        .nav.compact .nav-list a {
+            padding: 0.35rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .nav-list a {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--bg);
+            border-radius: 4px;
+            text-decoration: none;
+            color: var(--text);
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .nav-list a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .section {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .section h3 {
+            color: var(--text);
+            margin: 1.5rem 0 1rem;
+        }
+
+        .endpoint {
+            background: var(--bg);
+            border-radius: 6px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .endpoint-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: white;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .method-get { background: var(--success); }
+        .method-post { background: var(--info); }
+        .method-put { background: var(--warning); }
+        .method-patch { background: #805ad5; }
+        .method-delete { background: var(--danger); }
+
+        .path {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 1rem;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .auth-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            background: var(--accent);
+            color: white;
+        }
+
+        .description {
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        .params-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .params-table th,
+        .params-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .params-table th {
+            background: var(--bg);
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .params-table tr:hover {
+            background: var(--bg);
+        }
+
+        .param-name {
+            font-family: monospace;
+            color: var(--accent);
+        }
+
+        .param-required {
+            color: var(--danger);
+            font-size: 0.8rem;
+        }
+
+        .param-optional {
+            color: var(--text-light);
+            font-size: 0.8rem;
+        }
+
+        pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        .inline-code {
+            background: var(--bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+            color: var(--accent);
+        }
+
+        .note {
+            background: #ebf8ff;
+            border-left: 4px solid var(--info);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .warning {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .error-response {
+            background: #fed7d7;
+            border-left: 4px solid var(--danger);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .status-codes {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .status-code {
+            padding: 0.75rem;
+            border-radius: 6px;
+            background: var(--bg);
+        }
+
+        .status-code .code {
+            font-weight: bold;
+            font-family: monospace;
+        }
+
+        .status-code .desc {
+            font-size: 0.9rem;
+            color: var(--text-light);
+        }
+
+        .middleware-flow {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .middleware-step {
+            background: var(--primary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .middleware-arrow {
+            color: var(--text-light);
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+
+        .tag-public { background: #c6f6d5; color: #22543d; }
+        .tag-auth { background: #fed7e2; color: #97266d; }
+        .tag-admin { background: #fefcbf; color: #744210; }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .nav-list {
+                flex-direction: column;
+            }
+            .endpoint-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Gopher Social Network</h1>
+        <p>Backend API Design Documentation - RESTful API Specification</p>
+    </div>
+
+    <div class="container">
+        <nav class="nav" id="mainNav">
+            <ul class="nav-list">
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#auth">Authentication API</a></li>
+                <li><a href="#posts">Posts API</a></li>
+                <li><a href="#comments">Comments API</a></li>
+                <li><a href="#users">Users API</a></li>
+                <li><a href="#admin">Admin API</a></li>
+                <li><a href="#middleware">Middleware</a></li>
+                <li><a href="#errors">Error Handling</a></li>
+                <li><a href="#status-codes">Status Codes</a></li>
+            </ul>
+        </nav>
+
+        <!-- Overview -->
+        <section id="overview" class="section">
+            <h2>Overview</h2>
+            <p>The Gopher Social Network backend uses a RESTful API design style, built with Go and the Chi Router framework.</p>
+            
+            <h3>Basic Information</h3>
+            <table class="params-table">
+                <tr>
+                    <td><strong>Base URL</strong></td>
+                    <td><code class="inline-code">http://localhost:8080</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Data Format</strong></td>
+                    <td>JSON (Content-Type: application/json)</td>
+                </tr>
+                <tr>
+                    <td><strong>Authentication</strong></td>
+                    <td>JWT Bearer Token</td>
+                </tr>
+                <tr>
+                    <td><strong>Request Timeout</strong></td>
+                    <td>60 seconds</td>
+                </tr>
+                <tr>
+                    <td><strong>Rate Limiting</strong></td>
+                    <td>Max 20 requests per IP within 5 seconds (configurable)</td>
+                </tr>
+            </table>
+
+            <h3>Authenticated Request Format</h3>
+            <pre><code>Authorization: Bearer &lt;jwt_token&gt;</code></pre>
+
+            <h3>Pagination Parameters</h3>
+            <table class="params-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Default</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="param-name">limit</span></td>
+                        <td>int</td>
+                        <td>20</td>
+                        <td>Items per page (1-20)</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">offset</span></td>
+                        <td>int</td>
+                        <td>0</td>
+                        <td>Offset</td>
+                    </tr>
+                    <tr>
+                        <td><span class="param-name">sort</span></td>
+                        <td>string</td>
+                        <td>desc</td>
+                        <td>Sort order (asc/desc)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Authentication API -->
+        <section id="auth" class="section">
+            <h2>Authentication API</h2>
+            <p>Handles user registration, login, account activation, and password reset.</p>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/auth/register</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Register a new user account. The system will send an activation email.</p>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">username</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Username, unique</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">email</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Email address, unique</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">password</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Password</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Request Example</h4>
+                <pre><code>{
+    "username": "newuser",
+    "email": "user@example.com",
+    "password": "securepassword123"
+}</code></pre>
+
+                <h4>Response</h4>
+                <pre><code>// 201 Created
+{
+    "message": "registration successful, please check your email to activate your account"
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/auth/token</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">User login, verifies credentials and returns a JWT token.</p>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">email</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Registered email</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">password</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Password</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Response</h4>
+                <pre><code>// 201 Created
+{
+    "token": "eyJhbGciOiJIUzI1NiIs..."
+}</code></pre>
+
+                <div class="note">
+                    <strong>JWT Token Claims:</strong>
+                    <ul style="margin-top: 0.5rem; padding-left: 1.5rem;">
+                        <li><code>sub</code>: User ID</li>
+                        <li><code>exp</code>: Expiration time (default 72 hours)</li>
+                        <li><code>iat</code>: Issued at time</li>
+                        <li><code>iss</code>: Issuer</li>
+                        <li><code>ver</code>: Token version number (used to invalidate old tokens)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/auth/activate/{token}</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Activate user account via the activation link sent by email.</p>
+                
+                <h4>Path Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">token</span></td>
+                            <td>string</td>
+                            <td>Activation token (SHA256 hash stored)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Response</h4>
+                <pre><code>// 200 OK
+{
+    "message": "account activated successfully"
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/auth/forgot-password</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Send a password reset email.</p>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">email</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Registered email</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Response</h4>
+                <pre><code>// 200 OK
+{
+    "message": "password reset email sent"
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/auth/reset-password</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Reset password using a token.</p>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">token</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Password reset token</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">password</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>New password</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Response</h4>
+                <pre><code>// 200 OK
+{
+    "message": "password reset successfully"
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- Posts API -->
+        <section id="posts" class="section">
+            <h2>Posts API</h2>
+            <p>Handles post creation, querying, updating, deletion, and liking.</p>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/posts/free</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get a random list of posts (for homepage recommendations).</p>
+                
+                <h4>Query Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Default</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">limit</span></td>
+                            <td>int</td>
+                            <td>20</td>
+                            <td>Number of items to return</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Response</h4>
+                <pre><code>// 200 OK
+[
+    {
+        "id": 1,
+        "user_id": 1,
+        "title": "Go Concurrency Programming",
+        "content": "...",
+        "tags": ["golang", "concurrency"],
+        "version": 1,
+        "created_at": "2026-01-01T00:00:00Z",
+        "updated_at": "2026-01-01T00:00:00Z",
+        "comment_count": 5,
+        "like_count": 10,
+        "view_count": 100,
+        "user": {
+            "username": "alice"
+        }
+    }
+]</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/posts/search</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Search posts with support for keyword, tag, author, and time range filtering.</p>
+                
+                <h4>Query Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">search</span></td>
+                            <td>string</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Title search keyword</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">tags</span></td>
+                            <td>string</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Tag filter (comma-separated)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">author</span></td>
+                            <td>string</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Author username</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">since</span></td>
+                            <td>string</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Start time (RFC 3339)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">until</span></td>
+                            <td>string</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>End time (RFC 3339)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">limit</span></td>
+                            <td>int</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Items per page (1-20)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">offset</span></td>
+                            <td>int</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Offset</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">sort</span></td>
+                            <td>string</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Sort order (asc/desc)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Request Example</h4>
+                <pre><code>GET /posts/search?search=Go&tags=golang,concurrency&limit=10</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/posts/{postId}</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get post details, also increments the view count.</p>
+                
+                <h4>Path Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">postId</span></td>
+                            <td>int64</td>
+                            <td>Post ID</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Response</h4>
+                <pre><code>// 200 OK
+{
+    "id": 1,
+    "user_id": 1,
+    "title": "Go Concurrency Programming",
+    "content": "...",
+    "tags": ["golang"],
+    "version": 1,
+    "created_at": "2026-01-01T00:00:00Z",
+    "updated_at": "2026-01-01T00:00:00Z",
+    "comment_count": 5,
+    "like_count": 10,
+    "view_count": 101,
+    "user": {
+        "username": "alice"
+    }
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/posts</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Create a new post.</p>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">title</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Post title</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">content</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Post content</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">tags</span></td>
+                            <td>string[]</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Tag array</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Response</h4>
+                <pre><code>// 201 Created
+{
+    "id": 1,
+    "title": "New Post",
+    "content": "...",
+    "tags": ["golang"],
+    "created_at": "2026-01-01T00:00:00Z",
+    "updated_at": "2026-01-01T00:00:00Z"
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/posts/{postId}</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Update a post (only the author or moderator can perform this action). Uses optimistic locking (version field) to prevent concurrent conflicts.</p>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">title</span></td>
+                            <td>string</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>New title</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">content</span></td>
+                            <td>string</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>New content</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">tags</span></td>
+                            <td>string[]</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>New tags</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">version</span></td>
+                            <td>int</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Current version number</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="warning">
+                    <strong>Optimistic Locking Mechanism:</strong> The current version must be provided when updating. The database checks if the version matches. If it doesn't match, a 404 is returned, indicating the post was modified by someone else.
+                </div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/posts/{postId}</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Delete a post (only the author or admin can perform this action).</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-put">PUT</span>
+                    <span class="path">/posts/{postId}/like</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Like a post (idempotent operation, repeated likes have no effect).</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/posts/{postId}/like</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Unlike a post.</p>
+            </div>
+        </section>
+
+        <!-- Comments API -->
+        <section id="comments" class="section">
+            <h2>Comments API</h2>
+            <p>Handles post comments and multi-level replies.</p>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/posts/{postId}/comments</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get a list of top-level comments for a post (excluding replies).</p>
+                
+                <h4>Query Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">limit</span></td>
+                            <td>int</td>
+                            <td>Items per page</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">offset</span></td>
+                            <td>int</td>
+                            <td>Offset</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">sort</span></td>
+                            <td>string</td>
+                            <td>Sort order (asc/desc)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Response</h4>
+                <pre><code>// 200 OK
+[
+    {
+        "id": 1,
+        "post_id": 1,
+        "user_id": 2,
+        "content": "Great article!",
+        "parent_id": null,
+        "reply_to_user_id": null,
+        "reply_to_username": "",
+        "created_at": "2026-01-01T00:00:00Z",
+        "like_count": 3,
+        "user": {
+            "username": "bob"
+        }
+    }
+]</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/posts/{postId}/comments</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Create a top-level comment.</p>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">content</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Comment content</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-post">POST</span>
+                    <span class="path">/posts/{postId}/comments/{commentId}/replies</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Reply to a comment (create a child comment).</p>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">content</span></td>
+                            <td>string</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>Reply content</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/comments/{commentId}</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get comment details.</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/comments/{commentId}/replies</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get all replies for a comment.</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/comments/{commentId}</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Delete a comment (only the author or moderator can perform this action).</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-put">PUT</span>
+                    <span class="path">/comments/{commentId}/like</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Like a comment (idempotent operation).</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/comments/{commentId}/like</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Unlike a comment.</p>
+            </div>
+        </section>
+
+        <!-- Users API -->
+        <section id="users" class="section">
+            <h2>Users API</h2>
+            <p>Handles user profiles, follow relationships, and activity feeds.</p>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/users/feed</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Get the post feed from users that the current user follows.</p>
+                
+                <h4>Response</h4>
+                <pre><code>// 200 OK
+[
+    {
+        "id": 1,
+        "user_id": 2,
+        "title": "Post from followed user",
+        "content": "...",
+        "tags": ["golang"],
+        "created_at": "2026-01-01T00:00:00Z",
+        "comment_count": 3,
+        "like_count": 5,
+        "view_count": 50,
+        "user": {
+            "username": "bob"
+        }
+    }
+]</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/users/{userId}</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get user public information.</p>
+                
+                <h4>Response</h4>
+                <pre><code>// 200 OK
+{
+    "id": 1,
+    "username": "alice",
+    "email": "alice@example.com",
+    "created_at": "2026-01-01T00:00:00Z",
+    "is_active": true,
+    "role": {
+        "id": 1,
+        "name": "user",
+        "description": "Regular user",
+        "level": 1
+    },
+    "avatar_url": "/users/1/avatar",
+    "bio": "Go developer",
+    "links": ["https://github.com/alice"],
+    "show_email": false,
+    "followers_count": 100,
+    "following_count": 50,
+    "posts_count": 20,
+    "likes_count": 150,
+    "replies_count": 30
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/users/{userId}/posts</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get a list of posts published by the user.</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/users/{userId}/post-likes</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get a list of posts liked by the user.</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/users/{userId}/comments</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get a list of comments made by the user.</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/users/{userId}/followers</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get the user's followers list.</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/users/{userId}/following</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get the list of users that this user follows.</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-put">PUT</span>
+                    <span class="path">/users/{userId}/follow</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Follow a user (idempotent operation).</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/users/{userId}/follow</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Unfollow a user.</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/users/{userId}/avatar</span>
+                    <span class="tag tag-public">Public</span>
+                </div>
+                <p class="description">Get the user's avatar image.</p>
+                
+                <h4>Response</h4>
+                <pre><code>// 200 OK
+// Content-Type: image/svg+xml (or image/jpeg, image/png)
+// Body: Binary image data</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/users/me/profile</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Update current user's profile.</p>
+                
+                <h4>Request Body</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">bio</span></td>
+                            <td>string</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Bio</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">links</span></td>
+                            <td>string[]</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Personal links</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">show_email</span></td>
+                            <td>boolean</td>
+                            <td><span class="param-optional">No</span></td>
+                            <td>Whether to show email publicly</td>
+                        </tr>
+                        <tr>
+                            <td><span class="param-name">update_fields</span></td>
+                            <td>string[]</td>
+                            <td><span class="param-required">Yes</span></td>
+                            <td>List of fields to update</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/users/me/username</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Change username.</p>
+                
+                <h4>Request Body</h4>
+                <pre><code>{
+    "username": "newusername"
+}</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/users/me/password</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Reset password (while logged in).</p>
+                
+                <h4>Request Body</h4>
+                <pre><code>{
+    "password": "newpassword123"
+}</code></pre>
+
+                <div class="note">
+                    <strong>Note:</strong> After changing the password, the old JWT token will be invalidated through the token_ver version number mechanism.
+                </div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-put">PUT</span>
+                    <span class="path">/users/me/avatar</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Upload user avatar.</p>
+                
+                <h4>Request</h4>
+                <pre><code>Content-Type: multipart/form-data
+
+Form Data:
+- avatar: Image file (JPEG, PNG, GIF, SVG)</code></pre>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-delete">DELETE</span>
+                    <span class="path">/users/me/avatar</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Delete user avatar (restore default avatar).</p>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-get">GET</span>
+                    <span class="path">/users/me/comment-likes</span>
+                    <span class="tag tag-auth">Auth Required</span>
+                </div>
+                <p class="description">Get a list of comments liked by the current user.</p>
+            </div>
+        </section>
+
+        <!-- Admin API -->
+        <section id="admin" class="section">
+            <h2>Admin API</h2>
+            <p>Admin-only endpoints, require admin role permissions.</p>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/admin/users/{username}/ban</span>
+                    <span class="tag tag-admin">Admin</span>
+                </div>
+                <p class="description">Ban a user. Banned users will be unable to log in.</p>
+                
+                <h4>Path Parameters</h4>
+                <table class="params-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="param-name">username</span></td>
+                            <td>string</td>
+                            <td>Username to ban</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Response</h4>
+                <pre><code>// 204 No Content</code></pre>
+
+                <div class="note">
+                    <strong>Side Effect:</strong> The system will send a ban notification email to the banned user.
+                </div>
+            </div>
+
+            <div class="endpoint">
+                <div class="endpoint-header">
+                    <span class="method method-patch">PATCH</span>
+                    <span class="path">/admin/users/{username}/unban</span>
+                    <span class="tag tag-admin">Admin</span>
+                </div>
+                <p class="description">Unban a user.</p>
+                
+                <h4>Response</h4>
+                <pre><code>// 204 No Content</code></pre>
+
+                <div class="note">
+                    <strong>Side Effect:</strong> The system will send an unban notification email to the unbanned user.
+                </div>
+            </div>
+        </section>
+
+        <!-- Middleware -->
+        <section id="middleware" class="section">
+            <h2>Middleware</h2>
+            <p>Middleware chain in the request processing flow.</p>
+
+            <h3>Request Processing Flow</h3>
+            <div class="middleware-flow">
+                <span class="middleware-step">CORS</span>
+                <span class="middleware-arrow">&rarr;</span>
+                <span class="middleware-step">Recoverer</span>
+                <span class="middleware-arrow">&rarr;</span>
+                <span class="middleware-step">RequestID</span>
+                <span class="middleware-arrow">&rarr;</span>
+                <span class="middleware-step">ClientIP</span>
+                <span class="middleware-arrow">&rarr;</span>
+                <span class="middleware-step">Logger</span>
+                <span class="middleware-arrow">&rarr;</span>
+                <span class="middleware-step">Timeout</span>
+                <span class="middleware-arrow">&rarr;</span>
+                <span class="middleware-step">RateLimiter</span>
+                <span class="middleware-arrow">&rarr;</span>
+                <span class="middleware-step">Handler</span>
+            </div>
+
+            <h3>Middleware Descriptions</h3>
+            <table class="params-table">
+                <thead>
+                    <tr>
+                        <th>Middleware</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>CORS</strong></td>
+                        <td>Handles cross-origin requests, allows frontend to access the API</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Recoverer</strong></td>
+                        <td>Catches panics and returns 500 errors, prevents server crashes</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RequestID</strong></td>
+                        <td>Generates a unique ID for each request, aids in tracking</td>
+                    </tr>
+                    <tr>
+                        <td><strong>ClientIP</strong></td>
+                        <td>Extracts the client IP address</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Logger</strong></td>
+                        <td>Logs request details (method, path, status code, duration)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Timeout</strong></td>
+                        <td>Sets request timeout (60 seconds)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RateLimiter</strong></td>
+                        <td>IP-based rate limiting (optional, depends on Redis)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>AuthTokenMiddleware</strong></td>
+                        <td>Validates JWT token and injects user info into context</td>
+                    </tr>
+                    <tr>
+                        <td><strong>postsContextMiddleware</strong></td>
+                        <td>Loads post into context</td>
+                    </tr>
+                    <tr>
+                        <td><strong>commentsContextMiddleware</strong></td>
+                        <td>Loads comment into context</td>
+                    </tr>
+                    <tr>
+                        <td><strong>checkPostOwnerShip</strong></td>
+                        <td>Verifies user is the post owner or has the required role</td>
+                    </tr>
+                    <tr>
+                        <td><strong>checkCommentOwnerShip</strong></td>
+                        <td>Verifies user is the comment owner or has the required role</td>
+                    </tr>
+                    <tr>
+                        <td><strong>verifyAdminPermMiddleware</strong></td>
+                        <td>Verifies user has admin permissions</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Role Permission Hierarchy</h3>
+            <table class="params-table">
+                <thead>
+                    <tr>
+                        <th>Role</th>
+                        <th>Level</th>
+                        <th>Permission Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>user</strong></td>
+                        <td>1</td>
+                        <td>Regular user, can manage their own content</td>
+                    </tr>
+                    <tr>
+                        <td><strong>moderator</strong></td>
+                        <td>2</td>
+                        <td>Moderator, can edit/delete any posts and comments</td>
+                    </tr>
+                    <tr>
+                        <td><strong>admin</strong></td>
+                        <td>3</td>
+                        <td>Admin, can ban/unban users</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Error Handling -->
+        <section id="errors" class="section">
+            <h2>Error Handling</h2>
+            <p>Unified error response format.</p>
+
+            <h3>Error Response Format</h3>
+            <pre><code>{
+    "error": {
+        "type": "error_type",
+        "message": "Error description message"
+    }
+}</code></pre>
+
+            <h3>Error Types</h3>
+            <table class="params-table">
+                <thead>
+                    <tr>
+                        <th>Type</th>
+                        <th>HTTP Status Code</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code class="inline-code">bad_request</code></td>
+                        <td>400</td>
+                        <td>Malformed request</td>
+                    </tr>
+                    <tr>
+                        <td><code class="inline-code">unauthorized</code></td>
+                        <td>401</td>
+                        <td>Not authenticated or authentication failed</td>
+                    </tr>
+                    <tr>
+                        <td><code class="inline-code">forbidden</code></td>
+                        <td>403</td>
+                        <td>No permission to perform this action</td>
+                    </tr>
+                    <tr>
+                        <td><code class="inline-code">not_found</code></td>
+                        <td>404</td>
+                        <td>Resource does not exist</td>
+                    </tr>
+                    <tr>
+                        <td><code class="inline-code">conflict</code></td>
+                        <td>409</td>
+                        <td>Resource conflict (e.g., email already exists)</td>
+                    </tr>
+                    <tr>
+                        <td><code class="inline-code">validation_error</code></td>
+                        <td>422</td>
+                        <td>Request validation failed</td>
+                    </tr>
+                    <tr>
+                        <td><code class="inline-code">rate_limit_exceeded</code></td>
+                        <td>429</td>
+                        <td>Too many requests</td>
+                    </tr>
+                    <tr>
+                        <td><code class="inline-code">internal_server_error</code></td>
+                        <td>500</td>
+                        <td>Internal server error</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Error Response Examples</h3>
+            <pre><code>// 401 Unauthorized
+{
+    "error": {
+        "type": "unauthorized",
+        "message": "invalid or expired token"
+    }
+}
+
+// 409 Conflict
+{
+    "error": {
+        "type": "conflict",
+        "message": "a user with that email already exists"
+    }
+}
+
+// 429 Rate Limit
+{
+    "error": {
+        "type": "rate_limit_exceeded",
+        "message": "rate limit exceeded, retry after 5s"
+    }
+}</code></pre>
+        </section>
+
+        <!-- Status Codes -->
+        <section id="status-codes" class="section">
+            <h2>HTTP Status Codes</h2>
+            <p>Standard HTTP status codes used by the API.</p>
+
+            <div class="status-codes">
+                <div class="status-code">
+                    <div class="code" style="color: var(--success);">200 OK</div>
+                    <div class="desc">Request successful</div>
+                </div>
+                <div class="status-code">
+                    <div class="code" style="color: var(--success);">201 Created</div>
+                    <div class="desc">Resource created successfully</div>
+                </div>
+                <div class="status-code">
+                    <div class="code" style="color: var(--success);">204 No Content</div>
+                    <div class="desc">Deleted successfully, no content returned</div>
+                </div>
+                <div class="status-code">
+                    <div class="code" style="color: var(--danger);">400 Bad Request</div>
+                    <div class="desc">Malformed request</div>
+                </div>
+                <div class="status-code">
+                    <div class="code" style="color: var(--danger);">401 Unauthorized</div>
+                    <div class="desc">Not authenticated</div>
+                </div>
+                <div class="status-code">
+                    <div class="code" style="color: var(--danger);">403 Forbidden</div>
+                    <div class="desc">No permission</div>
+                </div>
+                <div class="status-code">
+                    <div class="code" style="color: var(--danger);">404 Not Found</div>
+                    <div class="desc">Resource does not exist</div>
+                </div>
+                <div class="status-code">
+                    <div class="code" style="color: var(--danger);">409 Conflict</div>
+                    <div class="desc">Resource conflict</div>
+                </div>
+                <div class="status-code">
+                    <div class="code" style="color: var(--danger);">422 Unprocessable</div>
+                    <div class="desc">Validation failed</div>
+                </div>
+                <div class="status-code">
+                    <div class="code" style="color: var(--danger);">429 Too Many</div>
+                    <div class="desc">Rate limit exceeded</div>
+                </div>
+                <div class="status-code">
+                    <div class="code" style="color: var(--danger);">500 Server Error</div>
+                    <div class="desc">Internal server error</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const nav = document.getElementById('mainNav');
+        let lastScroll = 0;
+        const compactThreshold = 100;
+
+        window.addEventListener('scroll', () => {
+            const currentScroll = window.pageYOffset;
+            
+            if (currentScroll > compactThreshold) {
+                nav.classList.add('compact');
+            } else {
+                nav.classList.remove('compact');
+            }
+            
+            lastScroll = currentScroll;
+        });
+    </script>
+</body>
+</html>

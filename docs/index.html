@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gopher Social Network - Documentation</title>
+    <style>
+        :root {
+            --primary: #00ADD8;
+            --primary-dark: #0099b8;
+            --secondary: #5DC9E2;
+            --accent: #CE3263;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .diagonal-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        .panel {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .panel:hover::before {
+            opacity: 1;
+        }
+
+        .panel-zh {
+            top: 0;
+            right: 0;
+            width: 60%;
+            height: 60%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            clip-path: polygon(30% 0, 100% 0, 100% 100%, 0 70%);
+            z-index: 2;
+        }
+
+        .panel-zh::before {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .panel-zh:hover {
+            width: 65%;
+            height: 65%;
+        }
+
+        .panel-english {
+            bottom: 0;
+            left: 0;
+            width: 60%;
+            height: 60%;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            clip-path: polygon(0 0, 100% 30%, 70% 100%, 0 100%);
+            z-index: 1;
+        }
+
+        .panel-english::before {
+            background: rgba(0, 173, 216, 0.04);
+        }
+
+        .panel-english:hover {
+            width: 65%;
+            height: 65%;
+        }
+
+        .panel-content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .panel-zh .panel-content {
+            color: white;
+        }
+
+        .panel-english .panel-content {
+            color: var(--text);
+        }
+
+        .lang-label {
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            opacity: 0.7;
+            margin-bottom: 0.5rem;
+        }
+
+        .lang-name {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        .panel-zh .lang-name {
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .doc-links {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            min-width: 220px;
+        }
+
+        .doc-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .panel-zh .doc-link {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .panel-zh .doc-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .panel-english .doc-link {
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .panel-english .doc-link:hover {
+            background: var(--border);
+        }
+
+        .doc-link svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+
+        .project-title {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            font-size: 0.8rem;
+            color: var(--text-light);
+            z-index: 10;
+        }
+
+        .project-title a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .project-title a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .panel {
+                width: 100% !important;
+                height: 50% !important;
+                clip-path: none !important;
+            }
+
+            .panel-zh {
+                top: 0;
+                right: 0;
+                border-radius: 0 0 16px 16px;
+            }
+
+            .panel-english {
+                bottom: 0;
+                left: 0;
+                border-radius: 16px 16px 0 0;
+            }
+
+            .lang-name {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="diagonal-container">
+        <div class="panel panel-zh">
+            <div class="panel-content">
+                <div class="lang-label">语言</div>
+                <div class="lang-name">中文</div>
+                <div class="doc-links">
+                    <a href="zh/api-design.html" class="doc-link">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6z"/></svg>
+                        API 设计文档
+                    </a>
+                    <a href="zh/sql-schema.html" class="doc-link">
+                        <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+                        SQL 表设计文档
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel panel-english">
+            <div class="panel-content">
+                <div class="lang-label">Language</div>
+                <div class="lang-name">English</div>
+                <div class="doc-links">
+                    <a href="english/api-design.html" class="doc-link">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM6 20V4h5v7h7v9H6z"/></svg>
+                        API Design Document
+                    </a>
+                    <a href="english/sql-schema.html" class="doc-link">
+                        <svg viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+                        SQL Schema Document
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="project-title">
+        Gopher Social Network © 2026 | <a href="https://github.com/loeia/gopher-social-network" target="_blank">GitHub</a>
+    </div>
+</body>
+</html>

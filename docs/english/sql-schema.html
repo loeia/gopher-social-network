@@ -1,0 +1,1677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gopher Social Network - SQL Schema Documentation</title>
+    <style>
+        :root {
+            --primary: #336791;
+            --primary-dark: #264d73;
+            --secondary: #5DC9E2;
+            --accent: #CE3263;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #2d3748;
+            --text-light: #718096;
+            --border: #e2e8f0;
+            --success: #38a169;
+            --warning: #d69e2e;
+            --danger: #e53e3e;
+            --info: #3182ce;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 2rem 0;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .nav {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .nav.compact {
+            padding: 0.6rem 1.5rem;
+            border-radius: 0;
+        }
+
+        .nav.compact .nav-list {
+            gap: 0.3rem;
+        }
+
+        .nav.compact .nav-list a {
+            padding: 0.35rem 0.75rem;
+            font-size: 0.8rem;
+        }
+
+        .nav-list {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .nav-list a {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: var(--bg);
+            border-radius: 4px;
+            text-decoration: none;
+            color: var(--text);
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .nav-list a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .section {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: var(--primary);
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .section h3 {
+            color: var(--text);
+            margin: 1.5rem 0 1rem;
+        }
+
+        .table-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary);
+        }
+
+        .table-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .table-name {
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 1.2rem;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .table-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+        }
+
+        .badge-main { background: var(--primary); color: white; }
+        .badge junction { background: var(--info); color: white; }
+        .badge-temp { background: var(--warning); color: white; }
+
+        .description {
+            color: var(--text-light);
+            margin-bottom: 1rem;
+        }
+
+        .columns-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .columns-table th,
+        .columns-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .columns-table th {
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+        }
+
+        .columns-table tr:hover {
+            background: var(--bg);
+        }
+
+        .col-name {
+            font-family: monospace;
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        .col-type {
+            font-family: monospace;
+            color: var(--info);
+        }
+
+        .constraint {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.75rem;
+            margin-right: 0.3rem;
+        }
+
+        .constraint-pk { background: #fed7e2; color: #97266d; }
+        .constraint-fk { background: #bee3f8; color: #2a4365; }
+        .constraint-unique { background: #c6f6d5; color: #22543d; }
+        .constraint-notnull { background: #fefcbf; color: #744210; }
+        .constraint-default { background: #e9d8fd; color: #553c9a; }
+
+        pre {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+        }
+
+        code {
+            font-family: 'Monaco', 'Menlo', monospace;
+        }
+
+        .inline-code {
+            background: var(--bg);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+            color: var(--accent);
+        }
+
+        .note {
+            background: #ebf8ff;
+            border-left: 4px solid var(--info);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .warning {
+            background: #fffbeb;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .erd-container {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .erd-container svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .relationship-list {
+            list-style: none;
+            margin: 1rem 0;
+        }
+
+        .relationship-list li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .relationship-list li:last-child {
+            border-bottom: none;
+        }
+
+        .rel-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+        }
+
+        .rel-1n { background: #c6f6d5; color: #22543d; }
+        .rel-n1 { background: #bee3f8; color: #2a4365; }
+        .rel-11 { background: #fed7e2; color: #97266d; }
+
+        .index-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin: 0.5rem 0;
+        }
+
+        .index-item {
+            background: var(--bg);
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-family: monospace;
+        }
+
+        .trigger-card {
+            background: #fff5f5;
+            border-left: 4px solid var(--danger);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .trigger-card h4 {
+            color: var(--danger);
+            margin-bottom: 0.5rem;
+        }
+
+        .dependency-graph {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+        }
+
+        .dep-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .dep-table th,
+        .dep-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .dep-table th {
+            background: var(--primary);
+            color: white;
+        }
+
+        .dep-table tr:hover {
+            background: var(--bg);
+        }
+
+        .arrow {
+            color: var(--text-light);
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .nav-list {
+                flex-direction: column;
+            }
+            .table-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Gopher Social Network</h1>
+        <p>SQL Database Schema Documentation - PostgreSQL 16</p>
+    </div>
+
+    <div class="container">
+        <nav class="nav" id="mainNav">
+            <ul class="nav-list">
+                <li><a href="#overview">Overview</a></li>
+                <li><a href="#erd">ER Diagram</a></li>
+                <li><a href="#tables">Table Details</a></li>
+                <li><a href="#triggers">Triggers & Constraints</a></li>
+                <li><a href="#indexes">Index Design</a></li>
+                <li><a href="#dependencies">Dependencies</a></li>
+                <li><a href="#seed">Seed Data</a></li>
+            </ul>
+        </nav>
+
+        <!-- Overview -->
+        <section id="overview" class="section">
+            <h2>Overview</h2>
+            <p>Gopher Social Network uses PostgreSQL 16 as the primary database and Redis as the caching layer.</p>
+            
+            <h3>Database Information</h3>
+            <table class="columns-table">
+                <tr>
+                    <td><strong>Database Type</strong></td>
+                    <td>PostgreSQL 16.3</td>
+                </tr>
+                <tr>
+                    <td><strong>Default Database Name</strong></td>
+                    <td><code class="inline-code">gopher-social-network</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Default User</strong></td>
+                    <td><code class="inline-code">admin</code></td>
+                </tr>
+                <tr>
+                    <td><strong>Connection Pool Config</strong></td>
+                    <td>Max connections: 30, Idle connections: 30, Idle timeout: 15m</td>
+                </tr>
+            </table>
+
+            <h3>Table List</h3>
+            <table class="columns-table">
+                <thead>
+                    <tr>
+                        <th>Table Name</th>
+                        <th>Description</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><span class="col-name">users</span></td>
+                        <td>Users table</td>
+                        <td><span class="table-badge badge-main">Main</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">roles</span></td>
+                        <td>Roles table</td>
+                        <td><span class="table-badge badge-main">Main</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">posts</span></td>
+                        <td>Posts table</td>
+                        <td><span class="table-badge badge-main">Main</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">comments</span></td>
+                        <td>Comments table</td>
+                        <td><span class="table-badge badge-main">Main</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">followers</span></td>
+                        <td>Follow relationships table</td>
+                        <td><span class="table-badge junction">Junction</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">post_likes</span></td>
+                        <td>Post likes table</td>
+                        <td><span class="table-badge junction">Junction</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">comment_likes</span></td>
+                        <td>Comment likes table</td>
+                        <td><span class="table-badge junction">Junction</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">user_invitations</span></td>
+                        <td>User activation invitations table</td>
+                        <td><span class="table-badge temp">Temporary</span></td>
+                    </tr>
+                    <tr>
+                        <td><span class="col-name">password_resets</span></td>
+                        <td>Password resets table</td>
+                        <td><span class="table-badge temp">Temporary</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- ER Diagram -->
+        <section id="erd" class="section">
+            <h2>ER Diagram</h2>
+            <p>The entity-relationship diagram shows the relationships between tables.</p>
+
+            <div class="erd-container">
+                <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Roles Table -->
+                    <rect x="50" y="50" width="150" height="100" fill="#336791" rx="8"/>
+                    <text x="125" y="75" text-anchor="middle" fill="white" font-weight="bold">roles</text>
+                    <text x="125" y="95" text-anchor="middle" fill="#ddd" font-size="12">id (PK)</text>
+                    <text x="125" y="110" text-anchor="middle" fill="#ddd" font-size="12">name</text>
+                    <text x="125" y="125" text-anchor="middle" fill="#ddd" font-size="12">level</text>
+
+                    <!-- Users Table -->
+                    <rect x="300" y="50" width="180" height="140" fill="#336791" rx="8"/>
+                    <text x="390" y="75" text-anchor="middle" fill="white" font-weight="bold">users</text>
+                    <text x="390" y="95" text-anchor="middle" fill="#ddd" font-size="12">id (PK)</text>
+                    <text x="390" y="110" text-anchor="middle" fill="#ddd" font-size="12">username (UQ)</text>
+                    <text x="390" y="125" text-anchor="middle" fill="#ddd" font-size="12">email (UQ)</text>
+                    <text x="390" y="140" text-anchor="middle" fill="#ddd" font-size="12">password</text>
+                    <text x="390" y="155" text-anchor="middle" fill="#ddd" font-size="12">role_id (FK)</text>
+                    <text x="390" y="170" text-anchor="middle" fill="#ddd" font-size="12">is_active</text>
+
+                    <!-- Posts Table -->
+                    <rect x="550" y="50" width="180" height="130" fill="#336791" rx="8"/>
+                    <text x="640" y="75" text-anchor="middle" fill="white" font-weight="bold">posts</text>
+                    <text x="640" y="95" text-anchor="middle" fill="#ddd" font-size="12">id (PK)</text>
+                    <text x="640" y="110" text-anchor="middle" fill="#ddd" font-size="12">user_id (FK)</text>
+                    <text x="640" y="125" text-anchor="middle" fill="#ddd" font-size="12">title</text>
+                    <text x="640" y="140" text-anchor="middle" fill="#ddd" font-size="12">content</text>
+                    <text x="640" y="155" text-anchor="middle" fill="#ddd" font-size="12">tags[]</text>
+                    <text x="640" y="170" text-anchor="middle" fill="#ddd" font-size="12">version</text>
+
+                    <!-- Comments Table -->
+                    <rect x="550" y="250" width="180" height="130" fill="#336791" rx="8"/>
+                    <text x="640" y="275" text-anchor="middle" fill="white" font-weight="bold">comments</text>
+                    <text x="640" y="295" text-anchor="middle" fill="#ddd" font-size="12">id (PK)</text>
+                    <text x="640" y="310" text-anchor="middle" fill="#ddd" font-size="12">post_id (FK)</text>
+                    <text x="640" y="325" text-anchor="middle" fill="#ddd" font-size="12">user_id (FK)</text>
+                    <text x="640" y="340" text-anchor="middle" fill="#ddd" font-size="12">parent_id (FK)</text>
+                    <text x="640" y="355" text-anchor="middle" fill="#ddd" font-size="12">content</text>
+                    <text x="640" y="370" text-anchor="middle" fill="#ddd" font-size="12">reply_to_user_id</text>
+
+                    <!-- Followers Table -->
+                    <rect x="300" y="250" width="160" height="100" fill="#5DC9E2" rx="8"/>
+                    <text x="380" y="275" text-anchor="middle" fill="white" font-weight="bold">followers</text>
+                    <text x="380" y="295" text-anchor="middle" fill="#fff" font-size="12">user_id (FK)</text>
+                    <text x="380" y="310" text-anchor="middle" fill="#fff" font-size="12">follower_id (FK)</text>
+                    <text x="380" y="325" text-anchor="middle" fill="#fff" font-size="12">created_at</text>
+
+                    <!-- Post Likes Table -->
+                    <rect x="800" y="50" width="160" height="100" fill="#5DC9E2" rx="8"/>
+                    <text x="880" y="75" text-anchor="middle" fill="white" font-weight="bold">post_likes</text>
+                    <text x="880" y="95" text-anchor="middle" fill="#fff" font-size="12">post_id (FK)</text>
+                    <text x="880" y="110" text-anchor="middle" fill="#fff" font-size="12">user_id (FK)</text>
+                    <text x="880" y="125" text-anchor="middle" fill="#fff" font-size="12">created_at</text>
+
+                    <!-- Comment Likes Table -->
+                    <rect x="800" y="250" width="170" height="100" fill="#5DC9E2" rx="8"/>
+                    <text x="885" y="275" text-anchor="middle" fill="white" font-weight="bold">comment_likes</text>
+                    <text x="885" y="295" text-anchor="middle" fill="#fff" font-size="12">comment_id (FK)</text>
+                    <text x="885" y="310" text-anchor="middle" fill="#fff" font-size="12">user_id (FK)</text>
+                    <text x="885" y="325" text-anchor="middle" fill="#fff" font-size="12">created_at</text>
+
+                    <!-- User Invitations Table -->
+                    <rect x="100" y="400" width="180" height="100" fill="#d69e2e" rx="8"/>
+                    <text x="190" y="425" text-anchor="middle" fill="white" font-weight="bold">user_invitations</text>
+                    <text x="190" y="445" text-anchor="middle" fill="#fff" font-size="12">user_id (FK)</text>
+                    <text x="190" y="460" text-anchor="middle" fill="#fff" font-size="12">token</text>
+                    <text x="190" y="475" text-anchor="middle" fill="#fff" font-size="12">expiry</text>
+
+                    <!-- Password Resets Table -->
+                    <rect x="350" y="400" width="170" height="100" fill="#d69e2e" rx="8"/>
+                    <text x="435" y="425" text-anchor="middle" fill="white" font-weight="bold">password_resets</text>
+                    <text x="435" y="445" text-anchor="middle" fill="#fff" font-size="12">user_id (FK)</text>
+                    <text x="435" y="460" text-anchor="middle" fill="#fff" font-size="12">token</text>
+                    <text x="435" y="475" text-anchor="middle" fill="#fff" font-size="12">expiry</text>
+
+                    <!-- Relationship Lines -->
+                    <line x1="200" y1="100" x2="300" y2="120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="480" y1="120" x2="550" y2="120" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="640" y1="180" x2="640" y2="250" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="480" y1="160" x2="380" y2="250" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="730" y1="120" x2="800" y2="100" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="730" y1="310" x2="800" y2="300" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="390" y1="190" x2="190" y2="400" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+                    <line x1="390" y1="190" x2="435" y2="400" stroke="#666" stroke-width="2" marker-end="url(#arrow)"/>
+
+                    <!-- Arrow Marker -->
+                    <defs>
+                        <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+                            <path d="M0,0 L0,6 L9,3 z" fill="#666"/>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+
+            <h3>Relationship Descriptions</h3>
+            <ul class="relationship-list">
+                <li>
+                    <span class="rel-badge rel-n1">Many-to-One</span>
+                    <strong>users.role_id &rarr; roles.id</strong>: Each user has one role
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">One-to-Many</span>
+                    <strong>posts.user_id &rarr; users.id</strong>: Each user can create multiple posts
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">One-to-Many</span>
+                    <strong>comments.post_id &rarr; posts.id</strong>: Each post can have multiple comments
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">One-to-Many</span>
+                    <strong>comments.user_id &rarr; users.id</strong>: Each user can create multiple comments
+                </li>
+                <li>
+                    <span class="rel-badge rel-11">Self-Referencing</span>
+                    <strong>comments.parent_id &rarr; comments.id</strong>: Comments support multi-level replies
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">One-to-Many</span>
+                    <strong>comments.reply_to_user_id &rarr; users.id</strong>: Reply target user
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">Many-to-Many</span>
+                    <strong>followers</strong>: Follow relationships between users (self-referencing)
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">Many-to-Many</span>
+                    <strong>post_likes</strong>: User likes on posts
+                </li>
+                <li>
+                    <span class="rel-badge rel-1n">Many-to-Many</span>
+                    <strong>comment_likes</strong>: User likes on comments
+                </li>
+            </ul>
+        </section>
+
+        <!-- Table Details -->
+        <section id="tables" class="section">
+            <h2>Table Details</h2>
+
+            <!-- roles table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">roles</span>
+                    <span class="table-badge badge-main">Main</span>
+                </div>
+                <p class="description">Roles table, defines user roles and permission levels in the system.</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Constraints</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">id</span></td>
+                            <td><span class="col-type">SERIAL</span></td>
+                            <td><span class="constraint constraint-pk">PRIMARY KEY</span></td>
+                            <td>Role ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">name</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-unique">UNIQUE</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Role name (user/moderator/admin)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">description</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td></td>
+                            <td>Role description</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">level</span></td>
+                            <td><span class="col-type">INTEGER</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Permission level (1=user, 2=moderator, 3=admin)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Default Data</h4>
+                <pre><code>INSERT INTO roles (name, description, level) VALUES
+    ('user', 'Regular user', 1),
+    ('moderator', 'Moderator', 2),
+    ('admin', 'Administrator', 3);</code></pre>
+            </div>
+
+            <!-- users table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">users</span>
+                    <span class="table-badge badge-main">Main</span>
+                </div>
+                <p class="description">Users table, stores all user information.</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Constraints</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">id</span></td>
+                            <td><span class="col-type">BIGSERIAL</span></td>
+                            <td><span class="constraint constraint-pk">PRIMARY KEY</span></td>
+                            <td>User ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">username</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-unique">UNIQUE</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Username</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">email</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-unique">UNIQUE</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Email address</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">password</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Password hash (bcrypt)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>Creation timestamp</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">is_active</span></td>
+                            <td><span class="col-type">BOOLEAN</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT FALSE</span></td>
+                            <td>Whether the user is activated</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">role_id</span></td>
+                            <td><span class="col-type">INTEGER</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; roles.id</span></td>
+                            <td>Role ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">token_ver</span></td>
+                            <td><span class="col-type">INTEGER</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>Token version number (for invalidating old tokens)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">avatar</span></td>
+                            <td><span class="col-type">BYTEA</span></td>
+                            <td></td>
+                            <td>Avatar image data</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">avatar_mime</span></td>
+                            <td><span class="col-type">VARCHAR(50)</span></td>
+                            <td></td>
+                            <td>Avatar MIME type</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">bio</span></td>
+                            <td><span class="col-type">TEXT</span></td>
+                            <td></td>
+                            <td>User biography</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">links</span></td>
+                            <td><span class="col-type">VARCHAR(255)[]</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT '{}'</span></td>
+                            <td>Personal links array</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">show_email</span></td>
+                            <td><span class="col-type">BOOLEAN</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT FALSE</span></td>
+                            <td>Whether to display email publicly</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">is_banned</span></td>
+                            <td><span class="col-type">BOOLEAN</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT FALSE</span></td>
+                            <td>Whether the user is banned</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">followers_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>Follower count (denormalized)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">following_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>Following count (denormalized)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">posts_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>Post count (denormalized)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">likes_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>Likes received count (denormalized)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">replies_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>Replies count (denormalized)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="note">
+                    <strong>Design Note:</strong> Denormalized fields (followers_count, etc.) are used to store counts, avoiding frequent COUNT queries. Count consistency is maintained automatically via triggers.
+                </div>
+            </div>
+
+            <!-- posts table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">posts</span>
+                    <span class="table-badge badge-main">Main</span>
+                </div>
+                <p class="description">Posts table, stores user-published post content.</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Constraints</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">id</span></td>
+                            <td><span class="col-type">BIGSERIAL</span></td>
+                            <td><span class="constraint constraint-pk">PRIMARY KEY</span></td>
+                            <td>Post ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Author ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">title</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Post title</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">content</span></td>
+                            <td><span class="col-type">TEXT</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Post content (supports Markdown)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">tags</span></td>
+                            <td><span class="col-type">VARCHAR(255)[]</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT '{}'</span></td>
+                            <td>Tags array</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">version</span></td>
+                            <td><span class="col-type">INTEGER</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 1</span></td>
+                            <td>Optimistic lock version number</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>Creation timestamp</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">updated_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>Update timestamp</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">comment_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>Comment count (denormalized)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">like_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>Like count (denormalized)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">view_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>View count</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Optimistic Lock Update Example</h4>
+                <pre><code>-- Check version number when updating a post
+UPDATE posts 
+SET title = $1, content = $2, tags = $3, 
+    updated_at = NOW(), version = version + 1 
+WHERE id = $4 AND version = $5 
+RETURNING version, updated_at;</code></pre>
+            </div>
+
+            <!-- comments table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">comments</span>
+                    <span class="table-badge badge-main">Main</span>
+                </div>
+                <p class="description">Comments table, supports a multi-level reply comment system.</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Constraints</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">id</span></td>
+                            <td><span class="col-type">BIGSERIAL</span></td>
+                            <td><span class="constraint constraint-pk">PRIMARY KEY</span></td>
+                            <td>Comment ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">post_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; posts.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Parent post ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Comment author ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">content</span></td>
+                            <td><span class="col-type">TEXT</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Comment content</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">parent_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; comments.id</span></td>
+                            <td>Parent comment ID (NULL for top-level comments)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">reply_to_user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; users.id</span></td>
+                            <td>Reply target user ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>Creation timestamp</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">like_count</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT 0</span></td>
+                            <td>Like count (denormalized)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="note">
+                    <strong>Multi-level Reply Design:</strong> A comment tree structure is implemented through <code class="inline-code">parent_id</code> self-referencing. Top-level comments have parent_id = NULL, while replies have parent_id pointing to the parent comment. Supports up to two levels of replies.
+                </div>
+            </div>
+
+            <!-- followers table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">followers</span>
+                    <span class="table-badge junction">Junction</span>
+                </div>
+                <p class="description">Follow relationships table, stores follow relationships between users.</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Constraints</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Followed user ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">follower_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Follower user ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>Follow timestamp</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Constraints</h4>
+                <pre><code>-- Composite unique constraint to prevent duplicate follows
+UNIQUE (user_id, follower_id)
+
+-- Check constraint to prevent self-following
+CHECK (user_id != follower_id)</code></pre>
+            </div>
+
+            <!-- post_likes table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">post_likes</span>
+                    <span class="table-badge junction">Junction</span>
+                </div>
+                <p class="description">Post likes table.</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Constraints</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">post_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; posts.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Post ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>User who liked the post</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>Like timestamp</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Constraints</h4>
+                <pre><code>-- Composite unique constraint to prevent duplicate likes
+UNIQUE (post_id, user_id)</code></pre>
+            </div>
+
+            <!-- comment_likes table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">comment_likes</span>
+                    <span class="table-badge junction">Junction</span>
+                </div>
+                <p class="description">Comment likes table.</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Constraints</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">comment_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; comments.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Comment ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>User who liked the comment</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">created_at</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-default">DEFAULT NOW()</span></td>
+                            <td>Like timestamp</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4>Constraints</h4>
+                <pre><code>-- Composite unique constraint
+UNIQUE (comment_id, user_id)</code></pre>
+            </div>
+
+            <!-- user_invitations table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">user_invitations</span>
+                    <span class="table-badge temp">Temporary</span>
+                </div>
+                <p class="description">User activation invitations table, stores invitation tokens for unactivated users.</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Constraints</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>User ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">token</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Activation token (SHA256 hash)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">expiry</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Expiry timestamp</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="warning">
+                    <strong>Cleanup Policy:</strong> After user activation, the corresponding invitation record is deleted.
+                </div>
+            </div>
+
+            <!-- password_resets table -->
+            <div class="table-card">
+                <div class="table-header">
+                    <span class="table-name">password_resets</span>
+                    <span class="table-badge temp">Temporary</span>
+                </div>
+                <p class="description">Password resets table, stores password reset tokens.</p>
+                
+                <table class="columns-table">
+                    <thead>
+                        <tr>
+                            <th>Column</th>
+                            <th>Type</th>
+                            <th>Constraints</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="col-name">token</span></td>
+                            <td><span class="col-type">VARCHAR(255)</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Reset token (SHA256 hash)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">user_id</span></td>
+                            <td><span class="col-type">BIGINT</span></td>
+                            <td><span class="constraint constraint-fk">FOREIGN KEY &rarr; users.id</span> <span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>User ID</td>
+                        </tr>
+                        <tr>
+                            <td><span class="col-name">expiry</span></td>
+                            <td><span class="col-type">TIMESTAMPTZ</span></td>
+                            <td><span class="constraint constraint-notnull">NOT NULL</span></td>
+                            <td>Expiry timestamp (default 15 minutes)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="warning">
+                    <strong>Security Policy:</strong> After password reset, the corresponding record is deleted. Additionally, the user's token_ver is incremented to invalidate old tokens.
+                </div>
+            </div>
+        </section>
+
+        <!-- Triggers & Constraints -->
+        <section id="triggers" class="section">
+            <h2>Triggers & Constraints</h2>
+            <p>Database-level constraints and triggers for maintaining data consistency.</p>
+
+            <div class="trigger-card">
+                <h4>Trigger: Auto-update Post Like Count</h4>
+                <pre><code>-- Automatically update posts.like_count when inserting or deleting from post_likes
+CREATE OR REPLACE FUNCTION update_post_like_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE posts SET like_count = like_count + 1 WHERE id = NEW.post_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE posts SET like_count = like_count - 1 WHERE id = OLD.post_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_post_like_count
+    AFTER INSERT OR DELETE ON post_likes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_post_like_count();</code></pre>
+            </div>
+
+            <div class="trigger-card">
+                <h4>Trigger: Auto-update Comment Count</h4>
+                <pre><code>-- Automatically update posts.comment_count when inserting or deleting from comments
+CREATE OR REPLACE FUNCTION update_post_comment_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE posts SET comment_count = comment_count + 1 WHERE id = NEW.post_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE posts SET comment_count = comment_count - 1 WHERE id = OLD.post_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_post_comment_count
+    AFTER INSERT OR DELETE ON comments
+    FOR EACH ROW
+    EXECUTE FUNCTION update_post_comment_count();</code></pre>
+            </div>
+
+            <div class="trigger-card">
+                <h4>Trigger: Auto-update Comment Like Count</h4>
+                <pre><code>-- Automatically update comments.like_count when inserting or deleting from comment_likes
+CREATE OR REPLACE FUNCTION update_comment_like_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE comments SET like_count = like_count + 1 WHERE id = NEW.comment_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE comments SET like_count = like_count - 1 WHERE id = OLD.comment_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_comment_like_count
+    AFTER INSERT OR DELETE ON comment_likes
+    FOR EACH ROW
+    EXECUTE FUNCTION update_comment_like_count();</code></pre>
+            </div>
+
+            <div class="trigger-card">
+                <h4>Trigger: Auto-update Follow Counts</h4>
+                <pre><code>-- Automatically update users' followers_count and following_count when inserting or deleting from followers
+CREATE OR REPLACE FUNCTION update_user_follow_counts()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        -- Increment followed user's follower count
+        UPDATE users SET followers_count = followers_count + 1 WHERE id = NEW.user_id;
+        -- Increment follower's following count
+        UPDATE users SET following_count = following_count + 1 WHERE id = NEW.follower_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        -- Decrement followed user's follower count
+        UPDATE users SET followers_count = followers_count - 1 WHERE id = OLD.user_id;
+        -- Decrement follower's following count
+        UPDATE users SET following_count = following_count - 1 WHERE id = OLD.follower_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_user_follow_counts
+    AFTER INSERT OR DELETE ON followers
+    FOR EACH ROW
+    EXECUTE FUNCTION update_user_follow_counts();</code></pre>
+            </div>
+
+            <div class="trigger-card">
+                <h4>Trigger: Auto-update User Post Count</h4>
+                <pre><code>-- Automatically update users.posts_count when inserting or deleting from posts
+CREATE OR REPLACE FUNCTION update_user_posts_count()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF TG_OP = 'INSERT' THEN
+        UPDATE users SET posts_count = posts_count + 1 WHERE id = NEW.user_id;
+    ELSIF TG_OP = 'DELETE' THEN
+        UPDATE users SET posts_count = posts_count - 1 WHERE id = OLD.user_id;
+    END IF;
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_user_posts_count
+    AFTER INSERT OR DELETE ON posts
+    FOR EACH ROW
+    EXECUTE FUNCTION update_user_posts_count();</code></pre>
+            </div>
+
+            <div class="trigger-card">
+                <h4>Trigger: Auto-update updated_at Timestamp</h4>
+                <pre><code>-- Automatically set updated_at to current time when updating posts
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_posts_updated_at
+    BEFORE UPDATE ON posts
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();</code></pre>
+            </div>
+
+            <h3>Constraints Summary</h3>
+            <table class="columns-table">
+                <thead>
+                    <tr>
+                        <th>Table</th>
+                        <th>Constraint Type</th>
+                        <th>Constraint Name</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>users</td>
+                        <td>UNIQUE</td>
+                        <td>users_email_key</td>
+                        <td>Unique email</td>
+                    </tr>
+                    <tr>
+                        <td>users</td>
+                        <td>UNIQUE</td>
+                        <td>users_username_key</td>
+                        <td>Unique username</td>
+                    </tr>
+                    <tr>
+                        <td>followers</td>
+                        <td>UNIQUE</td>
+                        <td>followers_user_id_follower_id_key</td>
+                        <td>Prevent duplicate follows</td>
+                    </tr>
+                    <tr>
+                        <td>post_likes</td>
+                        <td>UNIQUE</td>
+                        <td>post_likes_post_id_user_id_key</td>
+                        <td>Prevent duplicate likes</td>
+                    </tr>
+                    <tr>
+                        <td>comment_likes</td>
+                        <td>UNIQUE</td>
+                        <td>comment_likes_comment_id_user_id_key</td>
+                        <td>Prevent duplicate likes</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Index Design -->
+        <section id="indexes" class="section">
+            <h2>Index Design</h2>
+            <p>Indexes designed for improved query performance.</p>
+
+            <h3>Users Table Indexes</h3>
+            <div class="index-list">
+                <span class="index-item">idx_users_email (email)</span>
+                <span class="index-item">idx_users_username (username)</span>
+                <span class="index-item">idx_users_role_id (role_id)</span>
+                <span class="index-item">idx_users_is_active (is_active)</span>
+            </div>
+
+            <h3>Posts Table Indexes</h3>
+            <div class="index-list">
+                <span class="index-item">idx_posts_user_id (user_id)</span>
+                <span class="index-item">idx_posts_created_at (created_at DESC)</span>
+                <span class="index-item">idx_posts_tags (tags USING GIN)</span>
+                <span class="index-item">idx_posts_title_trgm (title gin_trgm_ops)</span>
+            </div>
+
+            <h3>Comments Table Indexes</h3>
+            <div class="index-list">
+                <span class="index-item">idx_comments_post_id (post_id)</span>
+                <span class="index-item">idx_comments_user_id (user_id)</span>
+                <span class="index-item">idx_comments_parent_id (parent_id)</span>
+                <span class="index-item">idx_comments_created_at (created_at)</span>
+            </div>
+
+            <h3>Followers Table Indexes</h3>
+            <div class="index-list">
+                <span class="index-item">idx_followers_user_id (user_id)</span>
+                <span class="index-item">idx_followers_follower_id (follower_id)</span>
+            </div>
+
+            <h3>Post Likes Table Indexes</h3>
+            <div class="index-list">
+                <span class="index-item">idx_post_likes_post_id (post_id)</span>
+                <span class="index-item">idx_post_likes_user_id (user_id)</span>
+            </div>
+
+            <h3>Comment Likes Table Indexes</h3>
+            <div class="index-list">
+                <span class="index-item">idx_comment_likes_comment_id (comment_id)</span>
+                <span class="index-item">idx_comment_likes_user_id (user_id)</span>
+            </div>
+
+            <div class="note">
+                <strong>GIN Index:</strong> The posts table's tags field uses a GIN (Generalized Inverted Index) index, supporting efficient array containment queries (<code class="inline-code">@></code> operator).
+            </div>
+
+            <div class="note">
+                <strong>pg_trgm Extension:</strong> The posts table's title field uses a GIN index with the pg_trgm extension, supporting efficient fuzzy search (ILIKE queries).
+            </div>
+        </section>
+
+        <!-- Dependencies -->
+        <section id="dependencies" class="section">
+            <h2>Dependencies</h2>
+            <p>Foreign key dependencies between tables.</p>
+
+            <table class="dep-table">
+                <thead>
+                    <tr>
+                        <th>Source Table</th>
+                        <th>Source Column</th>
+                        <th></th>
+                        <th>Target Table</th>
+                        <th>Target Column</th>
+                        <th>Cascade Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>users</td>
+                        <td>role_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>roles</td>
+                        <td>id</td>
+                        <td>RESTRICT</td>
+                    </tr>
+                    <tr>
+                        <td>posts</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comments</td>
+                        <td>post_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>posts</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comments</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comments</td>
+                        <td>parent_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>comments</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comments</td>
+                        <td>reply_to_user_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>SET NULL</td>
+                    </tr>
+                    <tr>
+                        <td>followers</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>followers</td>
+                        <td>follower_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>post_likes</td>
+                        <td>post_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>posts</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>post_likes</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comment_likes</td>
+                        <td>comment_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>comments</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>comment_likes</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>user_invitations</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                    <tr>
+                        <td>password_resets</td>
+                        <td>user_id</td>
+                        <td><span class="arrow">&rarr;</span></td>
+                        <td>users</td>
+                        <td>id</td>
+                        <td>CASCADE</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Cascade Actions</h3>
+            <table class="columns-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>CASCADE</strong></td>
+                        <td>When deleting a parent record, automatically delete all associated child records</td>
+                    </tr>
+                    <tr>
+                        <td><strong>RESTRICT</strong></td>
+                        <td>Prevent deletion of a parent record if associated child records exist</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SET NULL</strong></td>
+                        <td>When deleting a parent record, set the foreign key in child records to NULL</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <!-- Seed Data -->
+        <section id="seed" class="section">
+            <h2>Seed Data</h2>
+            <p>Initialization data for development and testing environments.</p>
+
+            <h3>Seed Data Contents</h3>
+            <table class="columns-table">
+                <thead>
+                    <tr>
+                        <th>Data Type</th>
+                        <th>Count</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Regular Users</td>
+                        <td>50</td>
+                        <td>Auto-generated usernames, emails, and passwords (all set to "123")</td>
+                    </tr>
+                    <tr>
+                        <td>Admin User</td>
+                        <td>1</td>
+                        <td>Username "admin" with administrator privileges</td>
+                    </tr>
+                    <tr>
+                        <td>Posts</td>
+                        <td>50+</td>
+                        <td>Go technology-related articles with Markdown content</td>
+                    </tr>
+                    <tr>
+                        <td>Comments</td>
+                        <td>100+</td>
+                        <td>Top-level comments and multi-level replies</td>
+                    </tr>
+                    <tr>
+                        <td>Follow Relationships</td>
+                        <td>Random</td>
+                        <td>Random follow relationships between users</td>
+                    </tr>
+                    <tr>
+                        <td>Post Likes</td>
+                        <td>Random</td>
+                        <td>Random like records</td>
+                    </tr>
+                    <tr>
+                        <td>Comment Likes</td>
+                        <td>Random</td>
+                        <td>Random like records</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Initialization Commands</h3>
+            <pre><code># Run seed data script
+make seed
+
+# Or run directly
+go run cmd/migrate/seed/main.go</code></pre>
+
+            <div class="note">
+                <strong>Test Accounts:</strong> All seed users have the default password <code class="inline-code">123</code>, which can be used for development testing.
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const nav = document.getElementById('mainNav');
+        let lastScroll = 0;
+        const compactThreshold = 100;
+
+        window.addEventListener('scroll', () => {
+            const currentScroll = window.pageYOffset;
+            
+            if (currentScroll > compactThreshold) {
+                nav.classList.add('compact');
+            } else {
+                nav.classList.remove('compact');
+            }
+            
+            lastScroll = currentScroll;
+        });
+    </script>
+</body>
+</html>
