@@ -9,6 +9,8 @@ English |[中文](README.zh.md)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.3-336791?style=flat-square&logo=postgresql)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
+[📚 Project Documentation](https://loeia.github.io/gopher-social-network/)
+
 A social network application built with Go backend and Vue 3 frontend, supporting user authentication, post publishing, comment interactions, follow system, and more.
 
 ## Features

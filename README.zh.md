@@ -7,6 +7,8 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16.3-336791?style=flat-square&logo=postgresql)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 
+[📚 项目文档](https://loeia.github.io/gopher-social-network/)
+
 基于 Go 后端和 Vue 3 前端构建的社交网络应用，支持用户认证、帖子发布、评论互动、关注系统等功能。
 
 ## 功能特性
