@@ -73,6 +73,9 @@
 
 4. **数据库迁移**
    ```bash
+   # 安装 goose：go install github.com/pressly/goose/v3/cmd/goose@latest
+   # 参见：https://github.com/pressly/goose
+   goose up
    make seed
    ```
 

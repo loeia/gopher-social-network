@@ -75,6 +75,9 @@ A social network application built with Go backend and Vue 3 frontend, supportin
 
 4. **Database Migration**
    ```bash
+   # Install goose: go install github.com/pressly/goose/v3/cmd/goose@latest
+   # See: https://github.com/pressly/goose
+   goose up
    make seed
    ```
 
